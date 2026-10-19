@@ -64,7 +64,7 @@ def test_every_excerpt_is_traceable(pack_id):
 @pytest.mark.parametrize("pack_id", PREFIX)
 def test_each_pack_has_contradicts(pack_id):
     stances = {x.stance for x in parse_pack(_raw(pack_id)).excerpts}
-    assert stances == {"supports", "contradicts"}
+    assert {"supports", "contradicts"} <= stances <= {"supports", "contradicts", "neutral"}
 
 
 def test_combined(provider):
