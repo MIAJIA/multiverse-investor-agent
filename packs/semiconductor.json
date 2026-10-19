@@ -57,8 +57,10 @@
       "sc-048": "补充调研",
       "sc-049": "补充调研",
       "sc-050": "补充调研",
-      "sc-051": "补充调研"
-    }
+      "sc-051": "补充调研",
+      "sc-052": "补充调研"
+    },
+    "tickers": "交易代码只写同一份文件里写明的：sc-034 TSM/2330、sc-039 LITE、sc-040 NVDA/LITE、sc-041 TSEM、sc-042 AVGO、sc-052 COHR；外置光源（ELS）供应方依据：sc-039（Lumentum 首笔 ELS 订单）、sc-052（Coherent ELS 模块，仅展示）。"
   },
   "excerpts": [
     {
@@ -365,7 +367,7 @@
       "date": "2026-04-23",
       "stance": "supports",
       "url": "https://pr.tsmc.com/english/news/3302",
-      "text": "TSMC 称基于 COUPE 的真正共封装光学方案将于 2026 年在基板上开始生产，相比电路板上的可插拔方案功耗效率提升 2 倍、时延降低 10 倍。"
+      "text": "TSMC（TWSE: 2330, NYSE: TSM）称基于 COUPE 的真正共封装光学方案将于 2026 年在基板上开始生产，功耗效率是可插拔方案的 2 倍、时延降为 1/10。"
     },
     {
       "source_id": "trendforce-20260727-cpo",
@@ -410,7 +412,7 @@
       "date": "2026-08-11",
       "stance": "supports",
       "url": "https://www.sec.gov/Archives/edgar/data/0001633978/000162828026055726/lite_ex991xq4fy26.htm",
-      "text": "Lumentum CEO 称超高功率 CPO 激光器需求在增加，并拿到首笔外置光源（ELS）模块订单；当季收入 $1.01 billion。"
+      "text": "Lumentum（NASDAQ: LITE）CEO 称超高功率 CPO 激光器需求在增加，并拿到首笔外置光源（ELS）模块订单；当季收入 $1.01 billion。"
     },
     {
       "source_id": "lumentum-8k-20260302-nvidia",
@@ -419,7 +421,7 @@
       "date": "2026-03-02",
       "stance": "supports",
       "url": "https://www.sec.gov/Archives/edgar/data/1633978/000119312526085412/d41019dex991.htm",
-      "text": "NVIDIA 对 Lumentum 做出数十亿美元采购承诺并取得先进激光器件的未来产能使用权，同时投资 $2 billion 支持其研发与扩产。"
+      "text": "NVIDIA（NASDAQ: NVDA）对 Lumentum（NASDAQ: LITE）做出数十亿美元采购承诺，取得先进激光器件的未来产能使用权，并投资 $2 billion。"
     },
     {
       "source_id": "tower-pr-20260804",
@@ -428,7 +430,7 @@
       "date": "2026-08-04",
       "stance": "supports",
       "url": "https://towersemi.com/2026/08/04/08042026/",
-      "text": "Tower 称硅光（SiPho）收入年化规模从 2025 Q2 的 $180 million 增至 2026 Q2 的 $680 million，计划 2026 Q4 超过 $1 billion。"
+      "text": "Tower Semiconductor（NASDAQ/TASE: TSEM）称硅光收入年化规模从 2025 Q2 的 $180 million 增至 2026 Q2 的 $680 million，计划 2026 Q4 超过 $1 billion。"
     },
     {
       "source_id": "broadcom-pr-20251010-davisson",
@@ -437,7 +439,7 @@
       "date": "2025-10-10",
       "stance": "supports",
       "url": "https://in.marketscreener.com/news/broadcom-announces-tomahawk-6-davisson-the-industry-s-first-102-4-tbps-ethernet-switch-with-co-pa-ce7d5adad189f026",
-      "text": "Broadcom 称已开始出货 102.4T CPO 交换机 Tomahawk 6 - Davisson，光引擎基于 TSMC COUPE，采用可现场更换的 ELSFP 激光模块。"
+      "text": "Broadcom（NASDAQ: AVGO）称已开始出货 102.4T CPO 交换机 Tomahawk 6 - Davisson，光引擎基于 TSMC COUPE，采用可现场更换的 ELSFP 激光模块。"
     },
     {
       "source_id": "convergedigest-20260305-openlight",
@@ -519,6 +521,15 @@
       "stance": "contradicts",
       "url": "https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000052/nvda-20260426.htm",
       "text": "NVIDIA 称已获许可向特定中国客户少量出货 H200，但截至披露时该许可计划尚未产生收入，且出货须缴 25% 关税。"
+    },
+    {
+      "source_id": "coherent-pr-20260317-ofc",
+      "excerpt_id": "sc-052",
+      "source": "Coherent 新闻稿（T1 正式公告）· OFC 2026 展示",
+      "date": "2026-03-17",
+      "stance": "supports",
+      "url": "https://www.coherent.com/news/press-releases/coherent-co-packaged-optics-cpo-technologies-ofc-2026",
+      "text": "Coherent（NYSE: COHR）在 OFC 2026 展示 6.4T 硅光 CPO，配套自家外置光源（ELS）模块，由自产高功率 InP CW 激光器驱动（是展示，不是订单）。"
     }
   ]
 }

@@ -87,6 +87,9 @@ def test_combined(provider):
     ("模型权重 出口管制", "sc-044"),
     ("宣布开放 过境 恢复", "hz-011"),
     ("曼德海峡 停火", "hz-016"),
+    ("ELS 外置光源 LITE", "sc-039"),
+    ("MoU Brent 油价", "hz-019"),
+    ("Brent 预测 库存 回补", "hz-021"),
 ])
 def test_search_top3(provider, query, expected):
     top = [x["excerpt_id"] for x in provider.search(query, ["semiconductor", "hormuz"], k=3)]

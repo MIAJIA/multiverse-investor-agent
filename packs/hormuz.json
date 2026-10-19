@@ -1,11 +1,11 @@
 {
   "pack_id": "hormuz",
   "synthetic": false,
-  "note": "主要论点：霍尔木兹海峡重新开放会带来可观测的实际通航恢复。stance 相对这个论点：supports = 支撑链上某一环（海峡是主要通道、历史基线、过境量可观测、正式开放公告、通航恢复的类比）；contradicts = 削弱它（宣布开放 / 停火后过境量未恢复或很快逆转、保险与船东不跟进、观测滞后与回修）。2026 年时间线（据片段）：4/8 停火、6/17 MoU、6/20 JMIC 宣布开放、7/12 IRGC 再次关闭；PortWatch 日数据截至 2026-10-11。关闭前基线（hz-009）是历史均值，不是「恢复」的阈值：恢复到什么水平算恢复，仍须用户确认。",
+  "note": "主要论点：霍尔木兹海峡重新开放会带来可观测的实际通航恢复，并通过中东原油供给恢复压低 Brent 近月价格。stance 相对这个论点：supports = 支撑链上某一环（海峡是主要通道、历史基线、过境量可观测、正式开放公告、开放与油价下跌的对应、通航恢复的类比）；contradicts = 削弱它（宣布开放 / 停火后过境量未恢复或很快逆转、保险与船东不跟进、观测滞后与回修、油价受绕行管道与风险溢价等其他因素驱动）。2026 年时间线（据片段）：4/8 停火、6/17 MoU、6/20 JMIC 宣布开放、7/12 IRGC 再次关闭；PortWatch 日数据截至 2026-10-11，EIA STEO 截至 2026-10-06。关闭前基线（hz-009、hz-020）是历史值，不是「恢复」的阈值：恢复到什么水平算恢复，仍须用户确认。",
   "_provenance": {
     "built": "2026-10-18，证据线（evidence 分支）",
     "material_root": "/Users/mia/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/outputs/knowledge_packs/energy.json",
-    "method": "hz-001–003 对照 EIA 原文 URL 复核；hz-004–007 取自 energy.json 的 PortWatch 事实卡。PortWatch 方法页没有发布日期，date 取 sources.json 记录的页面元数据修改日 2026-08-25（upstream_metadata_modified_at），不是观测日期。 2026-10-18 补充：hz-009/010/011/013/016 由本线直接查询 PortWatch 的 ArcGIS 数据服务（Daily_Chokepoints_Data，dataLastEditDate 2026-10-14）并按日 n_total 计算均值；hz-008 逐字核对 JMIC PDF；hz-012/014/015/017/018 回原网页核对（Reuters 原站未直接读到，用的是署名 Reuters 的转载页）。",
+    "method": "hz-001–003 对照 EIA 原文 URL 复核；hz-004–007 取自 energy.json 的 PortWatch 事实卡。PortWatch 方法页没有发布日期，date 取 sources.json 记录的页面元数据修改日 2026-08-25（upstream_metadata_modified_at），不是观测日期。 2026-10-18 补充：hz-009/010/011/013/016 由本线直接查询 PortWatch 的 ArcGIS 数据服务（Daily_Chokepoints_Data，dataLastEditDate 2026-10-14）并按日 n_total 计算均值；hz-008 逐字核对 JMIC PDF；hz-012/014/015/017/018 回原网页核对（Reuters 原站未直接读到，用的是署名 Reuters 的转载页）。 hz-019–023 逐字核对 EIA STEO 2026-08 与 2026-10 的 PDF（本地抽文本；发布日期来自 EIA 官网：8 月版 2026-08-11、10 月版 2026-10-06）。",
     "fact_ids": {
       "hz-001": "E015",
       "hz-002": "E017 + E018",
@@ -24,7 +24,12 @@
       "hz-015": "补充调研",
       "hz-016": "补充调研",
       "hz-017": "补充调研",
-      "hz-018": "补充调研"
+      "hz-018": "补充调研",
+      "hz-019": "补充调研",
+      "hz-020": "补充调研",
+      "hz-021": "补充调研",
+      "hz-022": "补充调研",
+      "hz-023": "补充调研"
     },
     "portwatch_query": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname='Strait of Hormuz'&outFields=date,n_total,n_tanker&orderByFields=date&f=json"
   },
@@ -190,6 +195,51 @@
       "stance": "supports",
       "url": "https://esmmagazine.com/supply-chain/ukraine-grain-exports-via-new-black-sea-corridor-hit-four-million-tonnes-zelenskiy-253607",
       "text": "类比（支持方）：乌克兰 2023 年 8 月启用黑海新航道后，截至 11 月 9 日已有 91 艘船运出 330 万吨货物；该航道是乌方单方开辟，与谈判重开不完全可比。"
+    },
+    {
+      "source_id": "eia-steo-2026-08",
+      "excerpt_id": "hz-019",
+      "source": "EIA Short-Term Energy Outlook 2026 年 8 月（T1 官方数据）· PDF 第 6 页 Global oil prices",
+      "date": "2026-08-11",
+      "stance": "supports",
+      "url": "https://www.eia.gov/outlooks/steo/archives/aug26.pdf",
+      "text": "EIA：6 月美伊签署 MoU 后，Brent 现货 7 月 2 日跌至最低 $69/b；7 月油轮再遭袭击、海峡运量下降后，7 月 23 日升至 $105/b。"
+    },
+    {
+      "source_id": "eia-steo-2026-08",
+      "excerpt_id": "hz-020",
+      "source": "EIA Short-Term Energy Outlook 2026 年 8 月（T1 官方数据）· PDF 第 6 页",
+      "date": "2026-08-11",
+      "stance": "supports",
+      "url": "https://www.eia.gov/outlooks/steo/archives/aug26.pdf",
+      "text": "EIA 估计经霍尔木兹海峡的原油和石油液体 2026 Q2 平均 490 万桶/日，冲突前的 2025 Q4 为 2,160 万桶/日。"
+    },
+    {
+      "source_id": "eia-steo-2026-10",
+      "excerpt_id": "hz-021",
+      "source": "EIA Short-Term Energy Outlook 2026 年 10 月（T1 官方数据）· PDF 第 6–7 页",
+      "date": "2026-10-06",
+      "stance": "supports",
+      "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
+      "text": "EIA 预测 Brent 4Q26 均价 $105/b，假设中东油流到 4Q26 仍受限；油价会维持高位，直到中东油流约束解除、库存得以回补，预计 2Q27 降至 $87/b。"
+    },
+    {
+      "source_id": "eia-steo-2026-10",
+      "excerpt_id": "hz-022",
+      "source": "EIA Short-Term Energy Outlook 2026 年 10 月（T1 官方数据）· PDF 第 6 页",
+      "date": "2026-10-06",
+      "stance": "contradicts",
+      "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
+      "text": "EIA：9 月 Brent 均价 $114/b，主要因沙特东西管道（绕开海峡的通道，受袭前日运超 500 万桶）遇袭暂停，9 月 15 日一度到 $131/b：油价不只取决于海峡本身。"
+    },
+    {
+      "source_id": "eia-steo-2026-10",
+      "excerpt_id": "hz-023",
+      "source": "EIA Short-Term Energy Outlook 2026 年 10 月（T1 官方数据）· PDF 第 7 页",
+      "date": "2026-10-06",
+      "stance": "contradicts",
+      "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
+      "text": "EIA：油轮过境风险推高运费与保险成本，抬升油价风险溢价，油轮运费 9 月创纪录；库存去化后需要时间回补，油价回落会滞后于油流恢复。"
     }
   ]
 }
