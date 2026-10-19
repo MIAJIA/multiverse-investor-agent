@@ -1,8 +1,8 @@
 # Catalyst — System architecture design (MVP)
 
-2026-10-18 · Mia
+2026-10-18 · Mia · revised 2026-10-19
 
-> **The repository version is the source of truth.** This document was first exported from Claude Docs. On the evening of 2026-10-18 it was revised according to the implementation, and the online Claude Docs version has not been synced. The revisions are collected in the next section, and sentences in the body that conflicted with them have been changed directly. For implementation-level details see `docs/core-design.md`, and for the basis of the two changes see `docs/changes/`.
+> **The repository version is the source of truth.** This document was first exported from Claude Docs. On the evening of 2026-10-18, and again on 2026-10-19, it was revised according to the implementation, and the online Claude Docs version has not been synced. The revisions are collected in the next section, and sentences in the body that conflicted with them have been changed directly. For implementation-level details see `docs/core-design.md`, and for the basis of the two changes see `docs/changes/`.
 
 ## Revisions after implementation (2026-10-18)
 
@@ -20,6 +20,19 @@
 | **Critic**: a slot is left in the flow and in the data; in this phase it always returns disabled and does not call the model | Optional item |
 | **Front end**: Vite + React + @xyflow/react, one page whose three tabs share one state; the Streamlit fallback was not used | React Flow template (Next.js) + Streamlit fallback |
 | **Model**: daily testing always uses Haiku 5.5; the web search step defaults to Haiku and reasoning defaults to Opus 5.5; no prompt caching (the cost is already negligible) | — |
+
+## Revisions after the end-to-end runs (2026-10-19)
+
+Where these conflict with the 2026-10-18 table above, these win.
+
+| Revision | What it replaces |
+| --- | --- |
+| **Discover → Inspect**: `entrypoints.inspect_candidates()` keeps every grounded and hypothesis candidate and drops not_recommended ones; the API, the CLI and the eval runner pass the kept candidates to Inspect together, which draws them as competing branches in one graph. Candidate ids are not sent to the model, so they cannot leak into plan text (prompt p8) | Each caller kept the first grounded candidate and labelled it "chosen by the user" |
+| **Branch and node kinds**: `Graph.user_event` (set by code at Inspect, copied to every later version, never sent to the model) excludes the node that restates the user's own event from the hypothetical inputs; a node is hypothetical only at or downstream of a hypothetical input, and other nodes keep their branch's evidence kind | Every role=shock node, the user's event included, made every branch and every node in it hypothetical |
+| **API default packs**: a run request without packs uses the research packs (semiconductor, hormuz) | The UI sent no packs, so live runs had no evidence |
+| **Front end**: two tabs (B1 graph, B2 approve). Assumptions are changed by editing a node in place (`change_assumption`) and new causes are added on the canvas by dragging links into existing nodes (`add_shock`, which code still validates: links only from the new node into declared impacts). Research workspaces, one per question, keep metadata in localStorage and reload versions with `GET /api/runs/{run_id}/versions/{v}`; `?run=<id>&v=<version>` opens a stored run without calling the model. The Analyze wait shows elapsed time and no fake progress | One page with three tabs; changing assumptions in a separate B3 tab with an edit bar |
+| **Structural edits** (delete a node, insert between nodes, rewire, add a conclusion) are next phase: each needs its own operation type with a code-computed write scope | — |
+| **Eval scorecard**: six code-checked metrics (discipline, refusal calibration, decidable conditions, grounding, fork integrity, research lift) combined with an LLM judge (Sonnet, a different model from the agent) at 50/50 into a score out of 100; judge calls are recorded and replayable; a human review overrides the judge; red lines mark a run untrusted. See `docs/eval/eval-plan.md` | Human review of a small sample, with no LLM judge |
 
 ## Design goals and three principles
 
@@ -84,7 +97,7 @@ Two lanes, and one deferred. Generate: belief (A + optional B) → Claim and Con
 
 ## Agent loop and harness
 
-One controlled generation path, **in three logical stages, with model calls made on demand and not a fixed three:** Discover (0–3 candidate cards, with only a short rationale, no full chain built), Inspect (after the user picks one, or when B is given directly, build the causal chain and conditions for the selected one), Fork (counterfactual reasoning, patch, diff), plus one optional critic call. Discover and Inspect can be merged: when the first output is already complete enough for the selected direction, the second call is not made; Fork is handled separately. In the implementation Inspect is split into two structured calls (build the graph, produce the plans). With web search on, the research loop runs before Inspect, and after the graph is built the code finds the gaps, runs at most one follow-up round, and reruns from scratch (see the revisions at the start of this document). For AddShock in three hours, predefined demo shock attachment points are used, and Stage 1 is done by the code with a table lookup, with no extra model call; for an arbitrary external shock Stage 1 has one more call — the README states this is a current demo limitation. The document constrains each stage's input, output and cost cap (max_model_calls_per_stage), and does not promise a fixed number of calls; the actual number of requests is also affected by evidence retrieval and by retries after validation failures. A + B skips Discover. The retry cap is 2, and beyond it a structured failure is output. The two paths share the same graph schema, the same validators and the same data contract — the UI, the agent and the eval do not each define their own.
+One controlled generation path, **in three logical stages, with model calls made on demand and not a fixed three:** Discover (0–3 candidate cards, with only a short rationale, no full chain built), Inspect (draws every grounded and hypothesis candidate together as competing branches in one graph, or checks A → B when B is given directly, and builds the causal chain and conditions), Fork (counterfactual reasoning, patch, diff), plus one optional critic call. Discover and Inspect can be merged: when the first output is already complete enough for the selected direction, the second call is not made; Fork is handled separately. In the implementation Inspect is split into two structured calls (build the graph, produce the plans). With web search on, the research loop runs before Inspect, and after the graph is built the code finds the gaps, runs at most one follow-up round, and reruns from scratch (see the revisions at the start of this document). For AddShock in three hours, predefined demo shock attachment points are used, and Stage 1 is done by the code with a table lookup, with no extra model call; for an arbitrary external shock Stage 1 has one more call — the README states this is a current demo limitation. The document constrains each stage's input, output and cost cap (max_model_calls_per_stage), and does not promise a fixed number of calls; the actual number of requests is also affected by evidence retrieval and by retries after validation failures. A + B skips Discover. The retry cap is 2, and beyond it a structured failure is output. The two paths share the same graph schema, the same validators and the same data contract — the UI, the agent and the eval do not each define their own.
 
 | Step | Who does it | What it does |
 |---------------------------|----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -129,7 +142,7 @@ Configuration items deleted, and why: min_chain_prob (there is no cumulative pro
 
 ## Verifiable: Eval design
 
-Three hours evaluate only four things. What is measured is "whether the reasoning has a basis, whether the invalidation conditions are meaningful, whether the fork stays in bounds, whether it refuses when it should, and does not refuse when it should not" — not whether the fields are complete. Only the Non-interference part of E3 can be fully automatic; E3's Expected Impact relies on a small number of golden cases whose expectations are specified by hand; E1, E2 and E4 are reviewed by hand on a small sample, and do not rely on the schema alone or on another round of LLM judge.
+Three hours evaluate only four things. What is measured is "whether the reasoning has a basis, whether the invalidation conditions are meaningful, whether the fork stays in bounds, whether it refuses when it should, and does not refuse when it should not" — not whether the fields are complete. Only the Non-interference part of E3 can be fully automatic; E3's Expected Impact relies on a small number of golden cases whose expectations are specified by hand; E1, E2 and E4 are reviewed by hand on a small sample, and do not rely on the schema alone. (Revised 2026-10-19: until human review is done, an LLM judge that is a different model from the agent scores overall quality as half of the total score; a human review overrides it.)
 
 | Eval | What is accepted | How it is tested | External data |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
@@ -253,7 +266,7 @@ The premise is that a usable project scaffold and model-calling environment alre
 
 - Given Event A, it can discover candidates or reasonably abstain
 
-- After a candidate is chosen, it can explain a causal mechanism of at most three hops
+- For the candidate directions it keeps, it can explain a causal mechanism of at most three hops
 
 - Key conditions do not make up sources, thresholds or decision dates
 
