@@ -171,9 +171,9 @@ def cmd_run(a) -> None:
         print("\n".join(_summary(res)))
         cands = res.get("candidates") or []
         if case.get("then") == "inspect" and cands:
-            pick = next((c for c in cands if c["label"] == "grounded"), cands[0])
-            print(f"→ inspect 候选 {pick['id']}")
-            res = ep.inspect(inp["event"], None, candidate_id=pick["id"], candidate=pick, reasoner=reasoner,
+            picks = ep.inspect_candidates(cands)
+            print("→ inspect candidates " + ", ".join(c["id"] for c in picks))
+            res = ep.inspect(inp["event"], None, candidates=picks, reasoner=reasoner,
                              evidence=ev, config=cfg, store=store, research=research)
         else:
             res = None

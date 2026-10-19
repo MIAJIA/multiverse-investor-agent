@@ -20,7 +20,7 @@
       "not_recommended"
     ],
     "abstain": false,
-    "behavior": "Return 1-3 candidates, each with one of the three evidence labels; Inspect the first grounded candidate. Within that direction, branch only where there is a real dispute (one branch is fine if there is none); one plan per terminal. At least one numeric condition, with a threshold grounded in the pack or null plus threshold_note. Address the counter-evidence in the pack (sc-036 ramp timing, sc-025 laser count, sc-043 integrated-laser route): either mark the claim contradicted or explain why it is not a rebuttal.",
+    "behavior": "Return 1-3 candidates, each with one of the three evidence labels; Inspect receives the grounded and hypothesis candidates together and draws them as competing branches in one graph where they disagree (candidates that are the same view may be merged); one plan per terminal. At least one numeric condition, with a threshold grounded in the pack or null plus threshold_note. Address the counter-evidence in the pack (sc-036 ramp timing, sc-025 laser count, sc-043 integrated-laser route): either mark the claim contradicted or explain why it is not a rebuttal.",
     "gate": "WAIT",
     "proposal_status": "draft",
     "approval_required": true,

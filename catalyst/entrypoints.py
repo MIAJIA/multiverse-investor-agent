@@ -204,8 +204,19 @@ def _anchor_warnings(g: Graph) -> list[str]:
     return []
 
 
+INSPECT_LABELS = ("grounded", "hypothesis")
+
+
+def inspect_candidates(candidates: list[dict]) -> list[dict]:
+    """The Discover candidates Inspect draws together as competing branches: every grounded and hypothesis candidate.
+    not_recommended candidates are left out, because a direction Discover advises against should not become a plan to
+    approve. When nothing else is left, the first candidate is kept so that Inspect still has a direction."""
+    kept = [c for c in candidates if c.get("label") in INSPECT_LABELS]
+    return kept or list(candidates[:1])
+
+
 def inspect(event: str, target: str | None = None, *, candidate_id: str | None = None, candidate: dict | None = None,
-            material: str | None = None, judgment_only: bool = False, reasoner, evidence: EvidenceProvider | None,
+            candidates: list[dict] | None = None, material: str | None = None, judgment_only: bool = False, reasoner, evidence: EvidenceProvider | None,
             config=None, packs: list[str] | None = None, store: RunStore | None = None, research=None) -> dict:
     """两步受控生成：inspect（因果图）→ inspect.plan（判定条件 + 提案草稿）。一整份 InspectOutput 超出结构化输出的
     语法上限，拆开后两步都能走 json_schema；第 2 步只在第 1 步的图通过校验后才跑，错误也只回给出错的那一步。
@@ -213,7 +224,7 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     cfg = _cfg(config, packs)
     if research is not None and not judgment_only:  # research-loop hook: after the gap follow-up, rerun this entry from scratch with all packs
         return research(lambda **kw: inspect(event, target, candidate_id=candidate_id, candidate=candidate,
-                                              material=material, evidence=evidence, **kw), cfg, store, reasoner)
+                                              candidates=candidates, material=material, evidence=evidence, **kw), cfg, store, reasoner)
     if judgment_only:
         user = f"Material:\n{material}\n\nCausal claim: {event}" + (f" → {target}" if target else "")
         r = run_stage("judge", system=prompts.JUDGE, user=user, output_model=JudgmentOutput, reasoner=reasoner,
@@ -226,7 +237,15 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     version = f"{cfg.run_prefix}-v1"
     op = Op(kind="inspect", target=target, value=event)
     focus, warnings = "", []
-    if candidate:
+    if candidates:
+        focus = ("\nCandidate directions found by Discover (the system kept these; the user has not chosen among them): "
+                 f"{json.dumps(candidates, ensure_ascii=False)}\n"
+                 "Together these candidates are the direction for this graph. Where they disagree, they are the competing "
+                 "views: draw them in one graph, share the upstream premises they have in common, and give each candidate "
+                 "its own terminal, unless two candidates are really the same view; then merge them and say so in the "
+                 "plan's direction note. A hypothesis candidate has no supporting excerpt yet, so mark its unsupported "
+                 "edges model_only. If only one candidate is given, split inside it where a premise is genuinely contested.")
+    elif candidate:
         focus = f"\nDirection chosen by the user (from Discover, id={candidate_id or candidate.get('id')}): {json.dumps(candidate, ensure_ascii=False)}"
     elif candidate_id:
         warnings.append(f"只收到 candidate_id={candidate_id}，没有候选内容：请传 candidate=<Discover 返回的候选>")
