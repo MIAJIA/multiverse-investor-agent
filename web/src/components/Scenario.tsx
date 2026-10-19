@@ -1,12 +1,14 @@
 // B3 Scenario Diff：改一个假设 → fork；基线 / 情景切换；画布按 assessment 三态着色；右侧三块。
-// assessment、diff、提案 v2 全部来自后端；「提案 v1 → v2」只把两份提案并排显示，不在前端比较。
+// assessment、diff、新版本的计划全部来自后端；失效标记读 approval_reset / rival_changed，不在前端比较。
 import { useMemo, useState } from 'react';
-import { changedTargets, keyClaimId } from '../lookup';
-import { ASSESSMENT, GATE, PROPOSAL_STATUS, ROLE, SUPPORT } from '../status';
+import { changedTargets, keyClaimIds, planOf } from '../lookup';
+import { nodeLabel } from '../node/labels';
+import { ASSESSMENT, GATE, ROLE, SUPPORT } from '../status';
 import type { TradeProposal, VersionBundle } from '../types';
 import Badge from './Badge';
 import GraphCanvas from './GraphCanvas';
 import NodePanel from './NodePanel';
+import { T } from '../strings';
 
 function ForkForm({ bundle, busy, onFork }: { bundle: VersionBundle; busy: boolean; onFork: (t: string, v: string) => void }) {
   const nodes = [...bundle.graph.nodes].sort((a, b) => Number(b.role === 'assumption') - Number(a.role === 'assumption'));
@@ -14,41 +16,39 @@ function ForkForm({ bundle, busy, onFork }: { bundle: VersionBundle; busy: boole
   const [value, setValue] = useState('');
   return (
     <div className="fork-form">
-      <span className="small">假如</span>
+      <span className="small">{T.scenario.ifLabel}</span>
       <select value={target} onChange={(e) => { setTarget(e.target.value); setValue(''); }}>
-        {nodes.map((n) => <option key={n.id} value={n.id}>{ROLE[n.role].label}：{n.statement}</option>)}
+        {nodes.map((n) => <option key={n.id} value={n.id}>{T.scenario.roleOption(ROLE[n.role].label, n.statement)}</option>)}
       </select>
-      <span className="small">改成</span>
-      <input value={value} placeholder="新的假设值，例如：主流 CPO 方案改用集成激光，不再需要外置光源"
+      <span className="small">{T.scenario.changeTo}</span>
+      <input value={value} placeholder={T.scenario.valuePlaceholder}
         onChange={(e) => setValue(e.target.value)} />
-      <button className="primary" disabled={busy || !target || !value.trim()} onClick={() => onFork(target, value.trim())}>Fork</button>
+      <button className="primary" disabled={busy || !target || !value.trim()} onClick={() => onFork(target, value.trim())}>{T.scenario.fork}</button>
     </div>
   );
 }
 
-function ProposalCompare({ a, b, av, bv }: { a: TradeProposal; b: TradeProposal; av: string; bv: string }) {
-  const row = (label: string, x: React.ReactNode, y: React.ReactNode) => (
-    <tr><th>{label}</th><td>{x}</td><td>{y}</td></tr>
-  );
-  const conds = (p: TradeProposal) => p.entry_conditions.map((c) => <div key={c.id} className="small">{c.rule}</div>);
+/** 一份计划在基线和情景两个版本里的样子：gate、支持度并排；批准状态只读后端字段。 */
+function PlanRow({ title, a, b }: { title: string; a: TradeProposal | null; b: TradeProposal }) {
   return (
-    <table className="compare">
-      <thead><tr><th /><th>{av}</th><th>{bv}</th></tr></thead>
-      <tbody>
-        {row('gate', <Badge look={GATE[a.gate]} />, <Badge look={GATE[b.gate]} />)}
-        {row('status', <Badge look={PROPOSAL_STATUS[a.status]} />, <Badge look={PROPOSAL_STATUS[b.status]} />)}
-        {row('支持度', <Badge look={SUPPORT[a.support_status]} />, <Badge look={SUPPORT[b.support_status]} />)}
-        {row('标的', `${a.direction.side} ${a.direction.instrument}`, `${b.direction.side} ${b.direction.instrument}`)}
-        {row('进场条件', conds(a), conds(b))}
-      </tbody>
-    </table>
+    <div className="plan-row">
+      <div className="plan-row-title">{title} <span className="mono">{b.direction.instrument}</span>
+        {b.user_judgment.confirmed && <span className="ok small"> {T.b3.approved}</span>}</div>
+      <div className="row small">
+        {a && <><Badge look={GATE[a.gate]} />→</>}<Badge look={GATE[b.gate]} />
+        <span style={{ color: SUPPORT[b.support_status].color }}>{T.b3.support(b.support_status)}</span>
+      </div>
+      {b.approval_reset && <div className="warn small">{T.b3.approvalReset}</div>}
+      {b.rival_changed && !b.approval_reset && <div className="small muted">{T.b3.rivalChanged}</div>}
+    </div>
   );
 }
 
-export default function Scenario({ versions, base, scenario, viewing, busy, selectedNodeId, onSelect, onToggle, onFork }: {
+export default function Scenario({ versions, base, scenario, viewing, busy, selectedNodeId, onSelect, onToggle, onFork, onReapproveHere }: {
   versions: Record<string, VersionBundle>; base: VersionBundle; scenario: VersionBundle | null;
   viewing: 'base' | 'scenario'; busy: boolean; selectedNodeId: string | null;
   onSelect: (id: string | null) => void; onToggle: (v: 'base' | 'scenario') => void; onFork: (t: string, v: string) => void;
+  onReapproveHere: () => void; // 把情景版本设为 B2 的当前版本，去重新批准
 }) {
   // 对比的基线是情景自己声明的 base_version，不一定是当前 B1 / B2 的版本
   const baseB = (scenario?.scenario && versions[scenario.scenario.base_version]) || base;
@@ -56,8 +56,8 @@ export default function Scenario({ versions, base, scenario, viewing, busy, sele
   const shown = showScenario ? scenario! : baseB;
   const sc = scenario?.scenario ?? null;
   const opts = useMemo(() => (showScenario
-    ? { assessment: sc!.assessment, changedTargets: changedTargets(sc), keyClaimId: keyClaimId(scenario!.proposal, scenario!.graph) }
-    : { keyClaimId: keyClaimId(baseB.proposal, baseB.graph) }), [showScenario, sc, scenario, baseB]);
+    ? { assessment: sc!.assessment, changedTargets: changedTargets(sc), keyClaimIds: keyClaimIds(scenario!) }
+    : { keyClaimIds: keyClaimIds(baseB) }), [showScenario, sc, scenario, baseB]);
   const name = (id: string) => shown.graph.nodes.find((n) => n.id === id)?.statement ?? id;
   const challenged = sc ? Object.entries(sc.assessment).filter(([, s]) => s === 'challenged').map(([id]) => id) : [];
 
@@ -67,49 +67,51 @@ export default function Scenario({ versions, base, scenario, viewing, busy, sele
       {sc && (
         <div className="fork-form">
           <div className="toggle">
-            <button className={!showScenario ? 'on' : ''} onClick={() => onToggle('base')}>基线 {sc.base_version}</button>
-            <button className={showScenario ? 'on' : ''} onClick={() => onToggle('scenario')}>情景 {sc.version}</button>
+            <button className={!showScenario ? 'on' : ''} onClick={() => onToggle('base')}>{T.scenario.base(sc.base_version)}</button>
+            <button className={showScenario ? 'on' : ''} onClick={() => onToggle('scenario')}>{T.scenario.scenario(sc.version)}</button>
           </div>
-          <span className="small">{sc.ops.map((o) => `假如「${String(o.value)}」`).join('；')}</span>
-          <span className="badge" style={{ color: ROLE.shock.color, borderColor: ROLE.shock.color }}>假设，未观测</span>
+          <span className="small">{T.scenario.opsLine(sc.ops.map((o) => String(o.value)))}</span>
+          <span className="badge" style={{ color: ROLE.shock.color, borderColor: ROLE.shock.color }}>{T.scenario.notObserved}</span>
         </div>
       )}
       <div className="split">
         <GraphCanvas bundle={shown} opts={opts} selectedNodeId={selectedNodeId} onSelect={onSelect} />
         {selectedNodeId && shown.graph.nodes.some((n) => n.id === selectedNodeId) ? (
           <div className="panel" style={{ padding: 0 }}>
-            <div style={{ padding: '8px 16px' }}><button className="link" onClick={() => onSelect(null)}>← 返回情景摘要</button></div>
+            <div style={{ padding: '8px 16px' }}><button className="link" onClick={() => onSelect(null)}>{T.scenario.backToSummary}</button></div>
             <NodePanel bundle={shown} nodeId={selectedNodeId} assessment={showScenario ? sc!.assessment[selectedNodeId] : undefined}
               reason={showScenario ? sc!.assessment_reason[selectedNodeId] : undefined} />
           </div>
         ) : (
           <aside className={`panel${showScenario ? '' : ' dim'}`}>
-            {!sc && <p className="muted">选一个节点、写下新的假设值，点 Fork。</p>}
+            {!sc && <p className="muted">{T.scenario.emptyHint}</p>}
             {sc && (
               <>
                 <div className="diff-block">
-                  <h3>受挑战的前提 <Badge look={ASSESSMENT.challenged} /></h3>
-                  {challenged.length === 0 && <p className="small muted">没有前提受挑战。</p>}
+                  <h3>{T.scenario.challengedTitle} <Badge look={ASSESSMENT.challenged} /></h3>
+                  {challenged.length === 0 && <p className="small muted">{T.scenario.noneChallenged}</p>}
                   {challenged.map((id) => (
                     <div key={id} className="challenged-item">
                       <div>{name(id)}</div>
-                      <div className="small muted">{sc.assessment_reason[id] ?? '（没有理由）'}</div>
+                      <div className="small muted">{sc.assessment_reason[id] ?? T.scenario.noReason}</div>
                     </div>
                   ))}
                 </div>
                 <div className="diff-block">
-                  <h3>下一步查什么</h3>
-                  {(scenario!.proposal?.scenario_ref?.next_checks ?? []).map((c) => <p key={c}>{c}</p>)}
-                  {!scenario!.proposal?.scenario_ref?.next_checks.length && <p className="small muted">后端没有给出下一步。</p>}
+                  <h3>{T.scenario.nextChecks}</h3>
+                  {(scenario!.proposals[0]?.scenario_ref?.next_checks ?? []).map((c) => <p key={c}>{c}</p>)}
+                  {!scenario!.proposals[0]?.scenario_ref?.next_checks.length && <p className="small muted">{T.scenario.noNextChecks}</p>}
                 </div>
                 <div className="diff-block">
-                  <h3>提案 {sc.base_version} → {sc.version}</h3>
-                  {baseB.proposal && scenario!.proposal
-                    ? <ProposalCompare a={baseB.proposal} b={scenario!.proposal} av={sc.base_version} bv={sc.version} />
-                    : <p className="small muted">缺少提案。</p>}
+                  <h3>{T.b3.plans(sc.base_version, sc.version)}</h3>
+                  {scenario!.proposals.length === 0 && <p className="small muted">{T.scenario.noProposal}</p>}
+                  {scenario!.proposals.map((p) => (
+                    <PlanRow key={p.terminal_id} title={nodeLabel(scenario!.graph.nodes.find((n) => n.id === p.terminal_id)!)}
+                      a={planOf(baseB, p.terminal_id)} b={p} />
+                  ))}
+                  {scenario!.proposals.length > 0 && <button className="secondary" onClick={onReapproveHere}>{T.b3.reapproveHere}</button>}
                   <p className="small">
-                    追溯：改动 {changedTargets(sc).map(name).join('、')}；
-                    受影响的 claim（后端 diff）：{(scenario!.diff?.changed_claim_ids ?? []).map(name).join('；')}
+                    {T.scenario.trace(changedTargets(sc).map(name), (scenario!.diff?.changed_claim_ids ?? []).map(name))}
                   </p>
                 </div>
               </>

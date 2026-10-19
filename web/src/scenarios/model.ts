@@ -1,6 +1,8 @@
 // 多情景 playground 的只读辅助：版本链、演示名、两种着色。不做判断：累计结果是后端给的，「这一层新增」只做集合差。
 import { changedTargets } from '../lookup';
 import type { AssessmentStatus, VersionBundle } from '../types';
+import { DEMO_NAMES } from './demoNames';
+import { T } from '../strings';
 
 export type Versions = Record<string, VersionBundle>;
 
@@ -27,17 +29,16 @@ export function childrenOf(versions: Versions, v: string): string[] {
 }
 
 // 演示名：后端的 Scenario 还没有 name 字段。正式版应由用户起名，默认取用户原话。
-const DEMO_NAMES: Record<string, string> = { 'c1-v2': '改用集成激光', 'c1-v3': '代工厂停产一季', 'c1-v4': '+ 停产' };
 
 export function scenarioName(versions: Versions, v: string): string {
-  if (!versions[v]?.scenario) return '基线';
+  if (!versions[v]?.scenario) return T.scenarioName.baseline;
   const op = versions[v].scenario!.ops.at(-1); // 叠加时 ops 继承父情景，最后一个是这一层的
   return DEMO_NAMES[v] ?? String(op?.value ?? v).slice(0, 10);
 }
 
 /** 完整名：叠加的情景带上父情景的名字，如「改用集成激光 › + 停产」。 */
 export function fullName(versions: Versions, v: string): string {
-  return chain(versions, v).slice(1).map((x) => scenarioName(versions, x)).join(' › ') || '基线';
+  return chain(versions, v).slice(1).map((x) => scenarioName(versions, x)).join(T.scenarioName.sep) || T.scenarioName.baseline;
 }
 
 export function challenged(b: VersionBundle | undefined): string[] {
@@ -78,7 +79,7 @@ export function layerColoring(versions: Versions, v: string): Coloring {
 
 /** 相对基线（累计）：直接用后端给的 scenario_ref.challenged_claim_ids（叠加后的全部结果）。 */
 export function cumulativeChallenged(b: VersionBundle): string[] {
-  return b.proposal?.scenario_ref?.challenged_claim_ids ?? challenged(b);
+  return b.proposals[0]?.scenario_ref?.challenged_claim_ids ?? challenged(b); // 同一版本几份计划的 scenario_ref 相同
 }
 
 export function cumulativeColoring(versions: Versions, v: string): Coloring {

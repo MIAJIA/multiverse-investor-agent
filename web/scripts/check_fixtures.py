@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 
 from catalyst import schema  # noqa: E402
 from catalyst.diff import diff as graph_diff  # noqa: E402
+from catalyst.branches import dump_views, terminals  # noqa: E402
 from catalyst.schema import Excerpt, Graph, Scenario, TradeProposal  # noqa: E402
 from catalyst.validator import blocking, validate_graph  # noqa: E402
 
@@ -25,6 +26,7 @@ ENUMS = {
     "VERIFICATION_STATUSES": "VerificationStatus", "EVALUATION_STATUSES": "EvaluationStatus",
     "ASSESSMENT_STATUSES": "AssessmentStatus", "GATES": "Gate", "PROPOSAL_STATUSES": "ProposalStatus",
     "SUPPORT_STATUSES": "SupportStatus", "EXIT_LOGICS": "ExitLogic", "SIDES": "Side", "OP_KINDS": "OpKind",
+    "BRANCH_KINDS": "BranchKind",
 }
 # 不是独立 Literal 别名的枚举：从模型字段的注解里取
 FIELD_ENUMS = {"CRITIC_STATUSES": ("CriticReport", "status")}
@@ -77,18 +79,34 @@ def check_fixture(path: Path) -> list[str]:
         if g.version != v:
             errs.append(f"{p} graph.version={g.version}")
         errs += [f"{p} {i}" for i in blocking(validate_graph(g))]
-        if b.get("proposal"):
-            pr = TradeProposal.model_validate(b["proposal"])
-            errs += same_canonical(TradeProposal, b["proposal"], f"{p} proposal")
-            if pr.graph_version != v:
-                errs.append(f"{p} proposal.graph_version={pr.graph_version}")
+        if "proposal" in b:
+            errs.append(f"{p} 还有旧字段 proposal（方案 B 只有 proposals）")
+        # 方案 B：每个 terminal 恰好一份计划；同一版本最多一份已批准
+        plans = [TradeProposal.model_validate(x) for x in b.get("proposals", [])]
+        for x in b.get("proposals", []):
+            errs += same_canonical(TradeProposal, x, f"{p} proposal {x.get('terminal_id')}")
+        if sorted(x.terminal_id for x in plans) != sorted(terminals(g)):
+            errs.append(f"{p} 计划的 terminal 集合 {sorted(x.terminal_id for x in plans)} ≠ 图上的 {sorted(terminals(g))}")
+        if bad := [x.terminal_id for x in plans if x.graph_version != v]:
+            errs.append(f"{p} 计划的 graph_version 不是 {v}：{bad}")
+        if sum(x.user_judgment.confirmed for x in plans) > 1:
+            errs.append(f"{p} 同一版本有不止一份已批准的计划")
+        if len({(x.user_judgment.original_statement, x.user_judgment.clarified_statement) for x in plans}) > 1:
+            errs.append(f"{p} 几份计划的理解确认不一致（应该全版本只有一句）")
         if b.get("scenario"):
             sc = Scenario.model_validate(b["scenario"])
             errs += same_canonical(Scenario, b["scenario"], f"{p} scenario")
-            if sc.version != v or sc.base_version not in versions:
-                errs.append(f"{p} scenario.version / base_version 不对：{sc.version} / {sc.base_version}")
-            elif b.get("diff") is not None and graph_diff(versions[sc.base_version]["graph"], b["graph"]) != b["diff"]:
-                errs.append(f"{p} diff 与 catalyst.diff 复算结果不一致")
+            if sc.version != v:
+                errs.append(f"{p} scenario.version={sc.version}")
+        # 分支与类别表：用后端的 branches.py 复算，必须一致（防止 fixture 被手改）
+        synthetic = {x["excerpt_id"] for x in b.get("excerpts", [])} if fx.get("_source", {}).get("synthetic") else set()
+        views = dump_views(g, b.get("scenario"), synthetic_excerpt_ids=synthetic)
+        for k in ("branches", "node_kinds", "edge_kinds"):
+            if b.get(k) != views[k]:
+                errs.append(f"{p} {k} 与 catalyst.branches 复算结果不一致")
+        parent = g.parent_version
+        if parent in versions and graph_diff(versions[parent]["graph"], b["graph"]) != b.get("diff"):
+            errs.append(f"{p} diff 与 catalyst.diff 复算结果不一致")
         known = {Excerpt.model_validate(x).excerpt_id for x in b.get("excerpts", [])}
         cited = {r.excerpt_id for e in g.edges for r in e.evidence}
         if missing := cited - known:

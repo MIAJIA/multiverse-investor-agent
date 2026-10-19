@@ -1,67 +1,96 @@
-"""离线生成前端 fixture：web/fixtures/c1.json。不调模型，不读 API key。
+"""离线生成前端 fixture（web/fixtures/*.json）。不调模型，不读 API key。
 
   ~/Downloads/multiverse-investor-agent/.venv/bin/python web/scripts/make_fixtures.py
 
-格式与 `python -m catalyst promote` 一致（versions / latest），每个版本另带 diff 与 excerpts，
-即 GET /api/runs/{id}/versions/{v} 的返回值。有了真实录制后，用 promote 生成同格式文件直接替换。
+方案 B：每个版本是一个 VersionBundle（graph、proposals、branches、node_kinds、edge_kinds、scenario、diff、
+excerpts），全部由后端代码给出：运行时把版本写进临时 RunStore，再用 store.bundle(v) 读出来——和
+GET /api/runs/{id}/versions/{v} 走同一段代码。批准走 ep.sign，分叉走 ep.fork。前端 fixture 只是这些结果的快照。
 
-- 基线 c1-v1：golden C1 图 + 代码派生的提案。golden 图的根节点标了 supported，过不了 inspect 的
-  _root_issues，所以这里不走 inspect，直接 derive_proposal；ProposalDraft 是手写的（见 DRAFT）。
-- 情景 c1-v2：ep.fork 在 golden 图上跑 C3 的 change_assumption，reasoner 是 ScriptedReasoner，
-  只把 assessment 的理由换成可读的演示句子。写范围、补丁校验、assessment 默认值、diff、提案都由代码给出。
+唯一手写的是三份计划草稿（DRAFTS，相当于模型输出）和分叉理由的演示句子；有了真实录制后整份替换。
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))  # 保证 import 的是本 worktree 的 catalyst/，不是 venv 里装的那份
 
 from catalyst import entrypoints as ep  # noqa: E402
+from catalyst.conditions import evaluate  # noqa: E402
 from catalyst.evidence import EvidenceProvider  # noqa: E402
 from catalyst.schema import ProposalDraft, parse_graph  # noqa: E402
+from catalyst.store import RunStore  # noqa: E402
 from eval.fakes import ScriptedReasoner  # noqa: E402
-from catalyst.conditions import evaluate  # noqa: E402
 from eval.loader import load_case, load_fixture  # noqa: E402
 
-OUT = ROOT / "web" / "fixtures" / "c1.json"  # 其余 fixture 写在同一目录
+OUT = ROOT / "web" / "fixtures"
 TODAY = "2026-10-18"
 
-# 唯一手写的「模型输出」：基线提案草稿。gate / status / support_status / meta 由 derive_proposal 派生。
-DRAFT = {
-    "direction": {"instrument": "LITE", "side": "long", "horizon_days": 270,
-                  "note": "激光器供应商的数据中心光源营收，随 CPO 出货提前而上修"},
-    "entry_condition_ids": ["cond.c1.cpo_shipments", "cond.c1.els_design_wins"],
-    "exit_condition_ids": ["cond.c1.dsp_guidance"],
-    "exit_logic": "ANY",
-    "key_dependency": {"condition_id": None, "claim_id": "c1.assume.external_laser",
-                       "why": "整条激光器路径都建立在外置光源架构上；资料包里有集成激光的反方片段（sc-005），先查它"},
-    "user_judgment": {
-        "original_statement": "光子芯片采用快于预期",
-        "clarified_statement": "2027-06-30 前，CPO 交换机季度出货量达到用户确认的水平，且激光器供应商正式披露外置光源设计中标",
-        "criteria": None,
-        "deadline": "2027-06-30",
-        "requires_user_confirmation": True,
-    },
+JUDGMENT = {
+    "original_statement": "Photonic chip adoption is faster than expected",
+    "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors "
+                           "formally disclose external-light-source design wins",
+    "criteria": None, "deadline": "2027-06-30", "requires_user_confirmation": True,
 }
 
+# 三份计划草稿：每个 terminal 一份（C1 的三个终点是并列受益，不是竞争）。gate / status / support_status / meta 由代码派生。
+DRAFTS = [
+    {"terminal_id": "c1.term.laser_vendor",
+     "direction": {"instrument": "LITE", "side": "long", "horizon_days": 270,
+                   "note": "Laser vendors' data-center light-source revenue revised up as CPO shipments come forward"},
+     "entry_condition_ids": ["cond.c1.cpo_shipments", "cond.c1.els_design_wins"],
+     "exit_condition_ids": ["cond.c1.dsp_guidance"], "exit_logic": "ANY",
+     "key_dependency": {"condition_id": None, "claim_id": "c1.assume.external_laser",
+                        "why": "The whole laser path rests on the external-light-source architecture; the pack has an "
+                               "integrated-laser counterpoint (sc-005), check it first"},
+     "user_judgment": JUDGMENT},
+    {"terminal_id": "c1.term.foundry",
+     "direction": {"instrument": "TSM", "side": "long", "horizon_days": 270,
+                   "note": "Silicon-photonics foundry revenue share rises with CPO volume"},
+     "entry_condition_ids": ["cond.c1.cpo_shipments", "cond.c1.foundry_utilization"],
+     "exit_condition_ids": [], "exit_logic": "ANY",
+     "key_dependency": {"condition_id": "cond.c1.foundry_utilization", "claim_id": None,
+                        "why": "Utilization is where foundry revenue is decided; it is the first number to move"},
+     "user_judgment": JUDGMENT},
+    {"terminal_id": "c1.term.dsp_vendor",
+     "direction": {"instrument": "MRVL", "side": "short", "horizon_days": 365,
+                   "note": "Pluggable DSP demand is displaced by CPO"},
+     "entry_condition_ids": ["cond.c1.dsp_guidance"],
+     "exit_condition_ids": ["cond.c1.cpo_shipments"], "exit_logic": "ANY",
+     "key_dependency": {"condition_id": None, "claim_id": "c1.pluggable_dsp",
+                        "why": "The substitution link is model inference only; no material supports it"},
+     "user_judgment": JUDGMENT},
+]
+
 DEMO_REASONS = {
-    "c1.assume.external_laser": "这是被改的假设本身：情景下改为集成激光",
-    "c1.laser_demand": "外置光源需求以「每个 CPO 端口需要外置光源」为前提；改用集成激光后这条前提不成立",
-    "c1.term.laser_vendor": "激光器供应商的营收超预期来自外置光源需求；上游前提受挑战，这个终点随之受挑战",
-    "shock.siph_fab_outage": "这是加进来的冲击本身：假设，未观测",
-    "c1.siph_foundry": "主力产线停产一个季度，代工利用率提升这一前提受挑战",
-    "c1.term.foundry": "利用率前提受挑战，硅光代工营收占比上升至少推迟一个季度",
+    "c1.assume.external_laser": "This is the changed assumption itself: integrated lasers in the scenario",
+    "c1.laser_demand": "External light-source demand assumes every CPO port needs an external source; with integrated "
+                       "lasers that premise fails",
+    "c1.term.laser_vendor": "The laser vendors' upside comes from external light-source demand; the upstream premise is "
+                            "challenged, so this conclusion is too",
+    "shock.siph_fab_outage": "This is the added shock itself: assumed, not observed",
+    "c1.siph_foundry": "The main line shuts for a quarter, so the utilization premise is challenged",
+    "c1.term.foundry": "Utilization is challenged; the foundry revenue-share rise slips at least a quarter",
 }
+
+COMMON_NOTES = [
+    "离线生成，不是模型输出：reasoner 是 eval.fakes.ScriptedReasoner（assessment 理由换成演示句子）",
+    "三份计划草稿是脚本里手写的；gate / status / support_status / branches / node_kinds 由后端代码派生",
+    "资料包是合成占位片段（synthetic: true），所以分支都是 model_only，并带 synthetic_evidence",
+]
+
+# BLOCKED 演示：日期放到设计中标条件的窗口之后，并给一份「覆盖整个窗口、但没有记录」的观测（编的），由代码判 not_met。
+BLOCKED_TODAY = "2027-04-15"
+BLOCKED_OBS = [{"source": "company_filings", "coverage": {"start": "2026-10-18", "end": BLOCKED_TODAY}, "records": []}]
 
 
 class DemoReasoner(ScriptedReasoner):
-    """ScriptedReasoner 的 fork 输出原样保留，只把 reason: "scripted" 换成演示句子。
-
-    ScriptedReasoner 靠 user 里有没有 "change_assumption" 判断操作类型；叠加分叉时基线图自己的 op
-    也会出现在 user 里，所以 fork 时只把「操作：」那一行交给它判断。"""
+    """ScriptedReasoner 的 fork 输出原样保留，只把 reason 换成演示句子。叠加分叉时基线图自己的 op 也会出现在 user
+    里，所以只把「操作：」那一行交给它判断操作类型。"""
 
     def complete(self, *, stage, system, user, schema):
         if stage == "fork":
@@ -75,122 +104,102 @@ class DemoReasoner(ScriptedReasoner):
         return c
 
 
-COMMON_NOTES = [
-    "离线生成，不是模型输出：reasoner 是 eval.fakes.ScriptedReasoner（assessment 理由换成演示句子）",
-    "golden C1 图的根节点标了 supported，过不了 inspect 的 _root_issues，所以基线没走 inspect，"
-    "直接 derive_proposal；ProposalDraft 是脚本里手写的，gate / status / support_status 由代码派生",
-    "资料包是合成占位片段（synthetic: true），不能当证据引用",
-]
+class Run:
+    """一次离线运行：版本写进临时 RunStore，bundle 由 store.bundle 读出。"""
 
-# BLOCKED 演示：把日期放到设计中标条件的窗口结束之后，并给一份「覆盖整个窗口、但没有记录」的观测。
-# 条件判定、gate 都由代码按这份观测算出；观测本身是编的，只用来让界面出现 not_met / BLOCKED。
-BLOCKED_TODAY = "2027-04-15"
-BLOCKED_OBS = [{"source": "company_filings", "coverage": {"start": "2026-10-18", "end": BLOCKED_TODAY}, "records": []}]
+    def __init__(self, cfg, ev, pack):
+        self.cfg, self.ev, self.pack = cfg, ev, pack
+        self._tmp = tempfile.TemporaryDirectory()
+        self.store = RunStore(self._tmp.name)
 
+    def baseline(self) -> str:
+        golden = {k: v for k, v in load_fixture("c1_graph_v1.json").items() if not k.startswith("_")}
+        g = parse_graph(golden)
+        now = dt.date.fromisoformat(self.cfg.today)
+        g = g.model_copy(update={"conditions": [
+            c.model_copy(update={"evaluation_status": evaluate(c, self.cfg.observations, now)}) for c in g.conditions]})
+        plans = [ep.derive_proposal(ProposalDraft.model_validate(d), g, model="scripted").dump() for d in DRAFTS]
+        self.store.put_snapshot(g.dump())
+        self.store.put_proposals(g.version, plans)
+        self.store.put_observations(g.version, [x.dump() for x in self.ev.pack(self.pack["pack_id"]).excerpts],
+                                    synthetic=bool(self.pack.get("synthetic")))
+        self.store.log_op(op="inspect", actor="model", input_version=None, output_version=g.version)
+        return g.version
 
-def _write(name: str, fixture: dict) -> None:
-    out = OUT.parent / f"{name}.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(fixture, ensure_ascii=False, indent=2) + "\n")
-    print(f"fixture: {out.relative_to(ROOT)}（版本 {list(fixture['versions'])}）")
+    def fork(self, base: str, op: dict) -> str:
+        b = self.store.bundle(base)
+        res = ep.fork(b["graph"], op, reasoner=DemoReasoner(), evidence=self.ev, config=self.cfg, pack=self.pack,
+                      proposals=b["proposals"], store=self.store)
+        if not res["ok"]:
+            sys.exit(f"fork 失败（{base} + {op['kind']}）：" + "; ".join(res["errors"]))
+        return res["graph"]["version"]
 
+    def sign(self, base: str, terminal_id: str | None, **kw) -> str:
+        b = self.store.bundle(base)
+        res = ep.sign(b["graph"], b["proposals"], terminal_id=terminal_id, config=self.cfg, store=self.store, **kw)
+        if not res["ok"]:
+            sys.exit(f"sign 失败（{base} → {terminal_id}）：" + "; ".join(res["errors"]))
+        return res["version"]
 
-def _with_evaluation(graph, cfg):
-    """按 cfg 的日期和观测重新判定全部条件（与入口里的做法一致，只用公开的 conditions.evaluate）。"""
-    import datetime as dt
-    now = dt.date.fromisoformat(cfg.today)
-    conds = [c.model_copy(update={"evaluation_status": evaluate(c, cfg.observations, now)}) for c in graph.conditions]
-    return graph.model_copy(update={"conditions": conds})
-
-
-def c1_run(name: str, label: str, cfg, ev, pack, notes: list[str]) -> None:
-    golden = {k: v for k, v in load_fixture("c1_graph_v1.json").items() if not k.startswith("_")}
-    fx = load_fixture("c3_change_assumption.json")
-    base = _with_evaluation(parse_graph(golden), cfg)
-    proposal = ep.derive_proposal(ProposalDraft.model_validate(DRAFT), base, model="scripted").dump()
-    res = ep.fork(base.dump(), fx["op"], reasoner=DemoReasoner(), evidence=ev, config=cfg, pack=pack, proposal=proposal)
-    if not res["ok"]:
-        sys.exit("fork 失败：" + "; ".join(res["errors"]))
-    excerpts = [x.dump() for x in ev.pack(pack["pack_id"]).excerpts]
-    v1, v2 = base.version, res["graph"]["version"]
-    _write(name, {
-        "_source": {"script": "web/scripts/make_fixtures.py", "case": "C1 golden + C3 change_assumption",
-                    "today": cfg.today, "packs": [pack["pack_id"]], "notes": COMMON_NOTES + notes},
-        "label": label,
-        "event": "光子芯片采用快于预期",
-        "versions": {
-            v1: {"graph": base.dump(), "proposal": proposal, "scenario": None, "diff": None, "excerpts": excerpts},
-            v2: {"graph": res["graph"], "proposal": res["proposal"], "scenario": res["scenario"], "diff": res["diff"],
-                 "excerpts": excerpts},
-        },
-        "latest": v2,
-    })
-
-
-def multi_run(ev, pack) -> None:
-    """多情景（给 #scenarios playground 用）：基线 v1 上分出 A（改假设）和 B（预定义冲击），
-    再在 A 上叠加 B 的冲击。全部走真实的 ep.fork；版本号由 RunStore 避免重名。"""
-    import tempfile
-    from catalyst.store import RunStore
-    golden = {k: v for k, v in load_fixture("c1_graph_v1.json").items() if not k.startswith("_")}
-    change = load_fixture("c3_change_assumption.json")["op"]
-    shock = load_fixture("c3_add_shock.json")["op"]
-    cfg = ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c1")
-    base = parse_graph(golden)
-    p1 = ep.derive_proposal(ProposalDraft.model_validate(DRAFT), base, model="scripted").dump()
-    excerpts = [x.dump() for x in ev.pack(pack["pack_id"]).excerpts]
-    versions = {base.version: {"graph": base.dump(), "proposal": p1, "scenario": None, "diff": None, "excerpts": excerpts}}
-    with tempfile.TemporaryDirectory() as tmp:
-        store = RunStore(tmp)
-        for parent, op in ((base.version, change), (base.version, shock), ("c1-v2", shock)):
-            b = versions[parent]
-            res = ep.fork(b["graph"], op, reasoner=DemoReasoner(), evidence=ev, config=cfg, pack=pack,
-                          proposal=b["proposal"], store=store)
-            if not res["ok"]:
-                sys.exit(f"多情景 fork 失败（{parent} + {op['kind']}）：" + "; ".join(res["errors"]))
-            versions[res["graph"]["version"]] = {"graph": res["graph"], "proposal": res["proposal"],
-                                                 "scenario": res["scenario"], "diff": res["diff"], "excerpts": excerpts}
-    _write("c1_multi", {
-        "_source": {"script": "web/scripts/make_fixtures.py", "case": "C1 golden + C3 两个分叉 + 一次叠加",
-                    "today": TODAY, "packs": [pack["pack_id"]],
-                    "notes": COMMON_NOTES + ["c1-v2 = 改假设（集成激光），c1-v3 = 预定义冲击（代工停产），"
-                                             "c1-v4 = 在 c1-v2 上再加同一个冲击；每个情景的 assessment 和 diff 都相对它的父版本"]},
-        "label": "C1 多情景（A / B / A+B）",
-        "event": "光子芯片采用快于预期",
-        "versions": versions,
-        "latest": list(versions)[-1],
-    })
-
-
-def abstain_run(ev, pack) -> None:
-    """C4：真实的 discover 入口 + ScriptedReasoner 的弃权输出；没有图、没有提案。"""
-    case = load_case("C4")["input"]
-    cfg = ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c4")
-    res = ep.discover(case["event"], case.get("target"), reasoner=ScriptedReasoner(), evidence=ev, config=cfg)
-    _write("c4_abstain", {
-        "_source": {"script": "web/scripts/make_fixtures.py", "case": "C4 discover 弃权", "today": TODAY,
-                    "packs": [pack["pack_id"]], "notes": ["离线生成：ScriptedReasoner 的 discover 一律弃权"]},
-        "label": "C4 弃权（没有因果链）",
-        "event": case["event"],
-        "run": {"ok": res["ok"], "errors": res["errors"], "version": None,
-                "discover": {k: res[k] for k in ("candidates", "abstained", "abstain_reason")}},
-        "versions": {},
-        "latest": None,
-    })
+    def write(self, name: str, label: str, versions: list[str], notes: list[str]) -> None:
+        fixture = {
+            "_source": {"script": "web/scripts/make_fixtures.py", "today": self.cfg.today, "synthetic": bool(self.pack.get("synthetic")),
+                        "packs": [self.pack["pack_id"]], "notes": COMMON_NOTES + notes},
+            "label": label, "event": JUDGMENT["original_statement"],
+            "versions": {v: self.store.bundle(v) for v in versions}, "latest": versions[-1],
+        }
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / f"{name}.json").write_text(json.dumps(fixture, ensure_ascii=False, indent=2) + "\n")
+        print(f"fixture: web/fixtures/{name}.json（版本 {versions}）")
 
 
 def main() -> None:
     pack = load_fixture("c1_evidence_pack.json")
     ev = EvidenceProvider(ROOT / "packs")
     ev.register(pack)
+    change = load_fixture("c3_change_assumption.json")["op"]
+    shock = load_fixture("c3_add_shock.json")["op"]
     cfg = ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c1")
-    c1_run("c1", "C1 光子芯片（WAIT）", cfg, ev, pack, [])
+
+    r = Run(cfg, ev, pack)
+    v1 = r.baseline()
+    r.write("c1", "C1 光子芯片（WAIT）", [v1, r.fork(v1, change)], ["c1-v2 = 改假设（集成激光）：LITE 分支变成 hypothetical"])
+
     blocked = ep.Config(packs=[pack["pack_id"]], today=BLOCKED_TODAY, run_prefix="c1", observations=BLOCKED_OBS)
-    c1_run("c1_blocked", "C1 到期复查（BLOCKED）", blocked, ev, pack, [
-        f"today={BLOCKED_TODAY}，观测是编的：company_filings 覆盖整个窗口但没有设计中标记录，"
-        "所以 cond.c1.els_design_wins 由代码判为 not_met，gate 由代码判为 BLOCKED"])
-    abstain_run(ev, pack)
-    multi_run(ev, pack)
+    r = Run(blocked, ev, pack)
+    v1 = r.baseline()
+    r.write("c1_blocked", "C1 到期复查（BLOCKED）", [v1, r.fork(v1, change)],
+            [f"today={BLOCKED_TODAY}，观测是编的：company_filings 覆盖整个窗口但没有记录，cond.c1.els_design_wins 由代码判 not_met"])
+
+    r = Run(cfg, ev, pack)
+    v1 = r.baseline()
+    a = r.fork(v1, change)
+    b = r.fork(v1, shock)
+    r.write("c1_multi", "C1 多情景（A / B / A+B）", [v1, a, b, r.fork(a, shock)],
+            ["c1-v2 = 改假设，c1-v3 = 预定义冲击，c1-v4 = 在 c1-v2 上叠加同一个冲击"])
+
+    r = Run(cfg, ev, pack)
+    v1 = r.baseline()
+    lite = r.sign(v1, "c1.term.laser_vendor")
+    lite_fork = r.fork(lite, change)
+    tsm = r.sign(v1, "c1.term.foundry")
+    tsm_fork = r.fork(tsm, change)
+    r.write("c1_approved", "C1 已批准后改假设", [v1, lite, lite_fork, tsm, tsm_fork], [
+        f"{lite} = 批准 LITE；{lite_fork} = 在它上面改假设（LITE 受影响：approval_reset，其余 rival_changed）",
+        f"{tsm} = 批准 TSM；{tsm_fork} = 在它上面改同一个假设（TSM 不受影响，保留批准，标 rival_changed）"])
+
+    case = load_case("C4")["input"]
+    res = ep.discover(case["event"], case.get("target"), reasoner=ScriptedReasoner(), evidence=ev,
+                      config=ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c4"))
+    (OUT / "c4_abstain.json").write_text(json.dumps({
+        "_source": {"script": "web/scripts/make_fixtures.py", "case": "C4 discover 弃权", "today": TODAY,
+                    "packs": [pack["pack_id"]], "notes": ["离线生成：ScriptedReasoner 的 discover 一律弃权"]},
+        "label": "C4 弃权（没有因果链）", "event": case["event"],
+        "run": {"ok": res["ok"], "errors": res["errors"], "version": None,
+                "discover": {k: res[k] for k in ("candidates", "abstained", "abstain_reason")}},
+        "versions": {}, "latest": None,
+    }, ensure_ascii=False, indent=2) + "\n")
+    print("fixture: web/fixtures/c4_abstain.json（版本 []）")
 
 
 if __name__ == "__main__":

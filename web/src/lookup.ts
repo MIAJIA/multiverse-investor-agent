@@ -1,5 +1,5 @@
 // 只读查找：不做判断，只把快照里已有的东西按 id 找出来。
-import type { Condition, EvidenceRef, Excerpt, Graph, Mechanism, Scenario, TradeProposal } from './types';
+import type { Branch, Condition, EvidenceRef, Excerpt, Graph, Mechanism, Scenario, TradeProposal, VersionBundle } from './types';
 
 export interface NodeEvidence {
   inEdges: Mechanism[];
@@ -39,4 +39,39 @@ export function keyClaimId(proposal: TradeProposal | null | undefined, graph: Gr
 /** 情景里被用户改动的目标（change_assumption 的 target）。只用于打角标。 */
 export function changedTargets(scenario: Scenario | null | undefined): string[] {
   return (scenario?.ops ?? []).filter((o) => o.kind === 'change_assumption' && o.target).map((o) => o.target as string);
+}
+
+/** 一个节点的全部祖先（沿入边往上找）。B1 高亮整条分支用：分支 = 独有部分 + 它的祖先。只按边查找，不做判断。 */
+export function ancestors(graph: Graph, id: string): Set<string> {
+  const parents = new Map<string, string[]>();
+  for (const e of graph.edges) parents.set(e.to, [...(parents.get(e.to) ?? []), e.from]);
+  const seen = new Set<string>();
+  const todo = [...(parents.get(id) ?? [])];
+  while (todo.length) {
+    const p = todo.pop()!;
+    if (!seen.has(p)) {
+      seen.add(p);
+      todo.push(...(parents.get(p) ?? []));
+    }
+  }
+  return seen;
+}
+
+/** 方案 B：按 terminal 找这一版本的计划和分支（按 terminal_id 关联，不依赖数组顺序）。 */
+export function planOf(bundle: Pick<VersionBundle, 'proposals'>, terminalId: string | null | undefined): TradeProposal | null {
+  return bundle.proposals.find((p) => p.terminal_id === terminalId) ?? null;
+}
+
+export function branchOf(bundle: Pick<VersionBundle, 'branches'>, terminalId: string | null | undefined): Branch | null {
+  return bundle.branches.find((b) => b.terminal_id === terminalId) ?? null;
+}
+
+/** 几份计划各自的关键依赖落在哪个 claim 上（去重）。 */
+export function keyClaimIds(bundle: Pick<VersionBundle, 'proposals' | 'graph'>): string[] {
+  return [...new Set(bundle.proposals.map((p) => keyClaimId(p, bundle.graph)).filter((x): x is string => !!x))];
+}
+
+/** 这一版本已批准的那份计划（同一版本最多一份）。 */
+export function approvedPlan(bundle: Pick<VersionBundle, 'proposals'>): TradeProposal | null {
+  return bundle.proposals.find((p) => p.user_judgment.confirmed) ?? null;
 }

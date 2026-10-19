@@ -1,0 +1,89 @@
+.ap-page {
+  flex: 1; overflow-y: auto; padding: 28px 24px 120px; display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif; color: #1c1f24;
+}
+.ap-muted { color: #8a919c; font-size: 12px; }
+.ap-link { background: none; border: 0; color: #007aff; padding: 0; font-size: 13px; cursor: pointer; }
+
+/* 你的想法：一颗胶囊 */
+.ap-idea { display: flex; align-items: center; gap: 10px; background: #f5f5f7; border-radius: 999px; padding: 8px 8px 8px 16px; font-size: 13px; }
+.ap-idea.ok { background: #f0f8f3; }
+.ap-idea.open { border-radius: 18px; background: #fff; box-shadow: 0 0 0 1px #e3e6ea, 0 6px 20px rgba(0, 0, 0, 0.06); }
+.ap-idea-lead { color: #8a919c; white-space: nowrap; }
+.ap-idea-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-idea-input { flex: 1; border: 0; font: inherit; outline: none; padding: 4px 0; }
+.ap-check { color: #34c759; font-weight: 700; }
+.ap-chip-btn { border: 0; background: #fff; border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.ap-chip-btn.primary { background: #1c1f24; color: #fff; }
+
+/* Robinhood：大标题 */
+.ap-headline { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; margin: 28px 0 4px; }
+.ap-sub { color: #8a919c; font-size: 13px; margin: 0 0 18px; }
+
+/* A：一行一个结论 */
+.ap-rows { display: flex; flex-direction: column; }
+.ap-row-wrap { border-bottom: 1px solid #eef0f2; }
+.ap-row-wrap.hypo { background-image: repeating-linear-gradient(45deg, #f6f3fa 0 2px, transparent 2px 10px); }
+.ap-row { display: flex; align-items: center; gap: 14px; width: 100%; background: none; border: 0; padding: 16px 4px; text-align: left; cursor: pointer; }
+.ap-row-main { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ap-row-title { font-size: 17px; font-weight: 600; }
+.ap-row-sub { font-size: 12px; color: #8a919c; display: flex; gap: 8px; align-items: center; font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.ap-row-note { font-size: 12px; color: #8a919c; padding: 0 4px 10px 24px; }
+.ap-gate { font-size: 12px; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.ap-state { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.ap-state.ok { color: #34c759; }
+.ap-state.warn { color: #ff9500; }
+
+/* 计划详情：OpenEvidence 式 */
+.ap-detail { padding: 4px 4px 18px 24px; display: flex; flex-direction: column; gap: 8px; }
+.ap-hypo { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #4b3f72; }
+.ap-section { font-size: 11px; letter-spacing: 0.6px; color: #8a919c; margin-top: 8px; }
+.ap-premises { display: flex; flex-wrap: wrap; gap: 8px; }
+.ap-premise { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #e3e6ea; background: #fff; border-radius: 999px; padding: 5px 10px 5px 6px; font-size: 13px; cursor: pointer; }
+.ap-premise.on { border-color: #1c1f24; }
+.ap-cite { font-size: 10px; color: #007aff; font-weight: 600; }
+.ap-cite.none { color: #8a919c; font-weight: 400; }
+.ap-sources { margin: 2px 0 4px; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.ap-source { font-size: 13px; }
+.ap-source::marker { color: #007aff; font-weight: 600; }
+.ap-source.contradicts::marker { color: #ff3b30; }
+.ap-quote { line-height: 1.5; }
+.ap-signals { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ap-signal { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: 13px; line-height: 1.45; }
+.ap-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; transform: translateY(-1px); }
+.ap-signal-tag { font-size: 11px; color: #8a919c; width: 26px; flex-shrink: 0; }
+.ap-signal-text { flex: 1; min-width: 220px; }
+.ap-signal-date { font-size: 11px; color: #8a919c; font-variant-numeric: tabular-nums; }
+.ap-need { margin-left: 41px; border: 0; background: #fff4d6; color: #8a5a00; border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.ap-threshold { margin-left: 41px; display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: #8a919c; }
+.ap-threshold input { width: 110px; border: 1px solid #e3e6ea; border-radius: 8px; padding: 4px 8px; font: inherit; }
+.ap-more { border-top: 1px dashed #e3e6ea; padding-top: 10px; }
+.ap-check-row { display: block; font-size: 13px; margin: 4px 0; }
+
+/* B：答案卡 */
+.ap-seg { display: flex; gap: 4px; background: #f5f5f7; border-radius: 999px; padding: 4px; margin: 24px 0 16px; overflow-x: auto; }
+.ap-seg button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; border-radius: 999px; padding: 7px 14px; font-size: 13px; color: #6b7280; cursor: pointer; white-space: nowrap; }
+.ap-seg button.on { background: #fff; color: #1c1f24; font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+.ap-seg-dot { display: inline-block; width: 8px; height: 12px; border-radius: 2px; border-width: 1.5px; }
+.ap-warn-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff9500; }
+.ap-card { background: #fff; border: 1px solid #eef0f2; border-radius: 20px; padding: 22px 22px 8px; }
+.ap-card.hypo { background-image: repeating-linear-gradient(45deg, #f8f6fb 0 2px, transparent 2px 10px); border-color: #d9d2ea; }
+.ap-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ap-card-big { font-size: 34px; font-weight: 700; letter-spacing: -0.8px; }
+.ap-thesis { font-family: 'New York', 'Songti SC', Georgia, serif; font-size: 16px; line-height: 1.55; margin: 12px 0 4px; color: #2b2f36; }
+.ap-card .ap-detail { padding-left: 0; }
+
+/* 灵动岛：底部胶囊 */
+.ap-island { position: sticky; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 28px -24px -120px; padding: 36px 24px 22px; z-index: 5;
+  background: linear-gradient(rgba(246, 247, 249, 0), #f6f7f9 45%); }
+.ap-pill { background: #000; color: #fff; border: 0; border-radius: 999px; padding: 13px 22px; font-size: 15px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
+.ap-pill.muted { background: #3a3a3c; color: #9a9aa0; cursor: default; }
+.ap-pill.done { background: #0f2b19; color: #8ff0b0; cursor: default; }
+.ap-pill-btn { background: #2c2c2e; color: #fff; border: 0; border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+.ap-pill-btn.go { background: #34c759; color: #000; font-weight: 700; }
+.ap-island-hint { font-size: 12px; color: #8a919c; }
+.ap-pill-open { background: #000; color: #fff; border-radius: 28px; padding: 16px 18px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3); }
+.ap-pill-title { font-weight: 600; font-size: 15px; }
+.ap-pill-hint { font-size: 12px; color: #9a9aa0; flex: 1; }
+.ap-pill-input { background: #1c1c1e; color: #fff; border: 0; border-radius: 12px; padding: 9px 12px; font: inherit; font-size: 13px; }
+.ap-pill-row { display: flex; align-items: center; gap: 8px; }

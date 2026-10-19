@@ -1,6 +1,7 @@
 // 快照 → React Flow 的 nodes / edges。纯函数：不改输入，不存状态；坐标按节点深度算（不做自动布局）。
 import type { Edge, Node } from '@xyflow/react';
 import type { AssessmentStatus, Claim, Graph, Mechanism } from './types';
+import { T } from './strings';
 
 export interface ClaimNodeData extends Record<string, unknown> {
   claim: Claim;
@@ -17,6 +18,7 @@ export interface MechanismEdgeData extends Record<string, unknown> {
 
 export interface FlowOpts {
   keyClaimId?: string | null;
+  keyClaimIds?: string[]; // 方案 B：几份计划各有关键依赖
   assessment?: Record<string, AssessmentStatus>;
   changedTargets?: string[];
 }
@@ -50,7 +52,7 @@ export function toFlow(graph: Graph, opts: FlowOpts = {}) {
   const ids = new Set(graph.nodes.map((n) => n.id));
   const warnings = graph.edges
     .filter((e) => !ids.has(e.from) || !ids.has(e.to))
-    .map((e) => `[${e.id}] 边的端点不在图里：${e.from} → ${e.to}`);
+    .map((e) => T.graph.danglingEdge(e.id, e.from, e.to));
   const validEdges = graph.edges.filter((e) => ids.has(e.from) && ids.has(e.to));
   const d = depths(graph);
 
@@ -72,7 +74,7 @@ export function toFlow(graph: Graph, opts: FlowOpts = {}) {
       data: {
         claim,
         evidenceCount: evidenceCount.get(claim.id) ?? 0,
-        isKey: opts.keyClaimId === claim.id,
+        isKey: opts.keyClaimId === claim.id || (opts.keyClaimIds ?? []).includes(claim.id),
         isChangedTarget: (opts.changedTargets ?? []).includes(claim.id),
         assessment: opts.assessment?.[claim.id],
       },

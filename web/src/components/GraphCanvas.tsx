@@ -7,14 +7,25 @@ import DesignNode, { type DesignData, type Look } from '../node/DesignNode';
 import { nodeLabel } from '../node/labels';
 import { strength } from '../node/strength';
 import { toFlow, type FlowOpts } from '../toFlow';
-import type { VersionBundle } from '../types';
+import { BRANCH_KIND } from '../status';
+import type { BranchKind, Claim, Graph, VersionBundle } from '../types';
+import { T } from '../strings';
 
 export const LOOK: Look = { shape: 'card', strength: 'ring', color: 'role', expand: 'panel', scenario: 'dim' };
 
 const nodeTypes = { design: DesignNode };
 
-export default function GraphCanvas({ bundle, opts, selectedNodeId, onSelect }: {
-  bundle: VersionBundle; opts?: FlowOpts; selectedNodeId: string | null; onSelect: (id: string | null) => void;
+/** 方案 B：分支类别（后端 node_kinds / edge_kinds，只查表）和高亮的那条分支。 */
+export interface BranchView {
+  nodeKinds: Record<string, BranchKind>;
+  edgeKinds: Record<string, BranchKind>;
+  syntheticNodes?: Set<string>; // 「仅推断 · 资料为占位」的节点
+  highlight?: { nodes: Set<string>; edges: Set<string> } | null;
+}
+
+export default function GraphCanvas({ bundle, opts, selectedNodeId, onSelect, branchView, labelOf = nodeLabel }: {
+  bundle: Pick<VersionBundle, 'excerpts'> & { graph: Graph }; opts?: FlowOpts; selectedNodeId: string | null;
+  onSelect: (id: string | null) => void; branchView?: BranchView; labelOf?: (c: Claim) => string;
 }) {
   const { graph, excerpts } = bundle;
   const flow = useMemo(() => toFlow(graph, opts), [graph, opts]);
@@ -27,21 +38,28 @@ export default function GraphCanvas({ bundle, opts, selectedNodeId, onSelect }: 
         id: n.id, type: 'design',
         position: { x: n.position.x * 0.85, y: n.position.y * 0.7 }, // 新卡片比旧的矮，层距收紧
         data: {
-          claim, look: LOOK, label: nodeLabel(claim),
+          claim, look: LOOK, label: labelOf(claim),
           s: strength(graph, claim.id, excerpts), conditions: nodeConditions(graph, claim.id),
           isKey: n.data.isKey, isChanged: n.data.isChangedTarget, assessment: n.data.assessment, expanded: false,
+          kind: branchView?.nodeKinds[claim.id], synthetic: branchView?.syntheticNodes?.has(claim.id),
+          dimmed: !!branchView?.highlight && !branchView.highlight.nodes.has(claim.id),
         },
       };
     });
-    const edges: Edge[] = flow.edges.map((e) => ({
-      id: e.id, source: e.source, target: e.target,
-      style: {
-        stroke: '#b9bfc8', strokeWidth: 1.2, strokeDasharray: e.data?.modelOnly ? '5 4' : undefined,
-        opacity: opts?.assessment && !(lit(e.source) && lit(e.target)) ? 0.25 : 1,
-      },
-    }));
+    const edges: Edge[] = flow.edges.map((e) => {
+      const k = branchView?.edgeKinds[e.id] ? BRANCH_KIND[branchView.edgeKinds[e.id]] : null;
+      const off = (opts?.assessment && !(lit(e.source) && lit(e.target))) || (branchView?.highlight && !branchView.highlight.edges.has(e.id));
+      return {
+        id: e.id, source: e.source, target: e.target,
+        style: {
+          stroke: k ? k.edge : '#b9bfc8', strokeWidth: k?.line === 'dotted' ? 1.6 : 1.2,
+          strokeDasharray: k ? k.dash : e.data?.modelOnly ? '5 4' : undefined,
+          opacity: off ? 0.2 : 1,
+        },
+      };
+    });
     return { nodes, edges };
-  }, [flow, graph, excerpts, opts]);
+  }, [flow, graph, excerpts, opts, branchView, labelOf]);
 
   return (
     <div className="canvas">
@@ -56,7 +74,7 @@ export default function GraphCanvas({ bundle, opts, selectedNodeId, onSelect }: 
         <Background gap={24} />
         <Controls showInteractive={false} />
       </ReactFlow>
-      {flow.warnings.length > 0 && <div className="banner error">{flow.warnings.join('；')}</div>}
+      {flow.warnings.length > 0 && <div className="banner error">{flow.warnings.join(T.graph.warningSep)}</div>}
     </div>
   );
 }

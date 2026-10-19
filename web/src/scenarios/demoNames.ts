@@ -1,0 +1,2 @@
+// 演示名：后端的 Scenario 还没有 name 字段。正式版应由用户起名，默认取用户原话。这是演示数据，不是界面文字。
+export const DEMO_NAMES: Record<string, string> = { 'c1-v2': '改用集成激光', 'c1-v3': '代工厂停产一季', 'c1-v4': '+ 停产' };

@@ -14,6 +14,7 @@ const DEMO_LABELS: Record<string, string> = {
   'c1.term.laser_vendor': '光源营收超预期',
   'c1.term.foundry': '硅光代工营收占比升',
   'c1.term.dsp_vendor': 'DSP 业务承压',
+  'shock.siph_fab_outage': '代工厂停产一季',
 };
 
 export function demoLabel(claim: Claim, changed = false): string {

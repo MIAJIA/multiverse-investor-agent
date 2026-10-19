@@ -1,0 +1,4318 @@
+{
+  "_source": {
+    "script": "web/scripts/make_fixtures.py",
+    "today": "2026-10-18",
+    "synthetic": true,
+    "packs": [
+      "semiconductor"
+    ],
+    "notes": [
+      "离线生成，不是模型输出：reasoner 是 eval.fakes.ScriptedReasoner（assessment 理由换成演示句子）",
+      "三份计划草稿是脚本里手写的；gate / status / support_status / branches / node_kinds 由后端代码派生",
+      "资料包是合成占位片段（synthetic: true），所以分支都是 model_only，并带 synthetic_evidence",
+      "c1-v2 = 批准 LITE；c1-v3 = 在它上面改假设（LITE 受影响：approval_reset，其余 rival_changed）",
+      "c1-v4 = 批准 TSM；c1-v5 = 在它上面改同一个假设（TSM 不受影响，保留批准，标 rival_changed）"
+    ]
+  },
+  "label": "C1 已批准后改假设",
+  "event": "Photonic chip adoption is faster than expected",
+  "versions": {
+    "c1-v1": {
+      "graph": {
+        "version": "c1-v1",
+        "parent_version": null,
+        "op": {
+          "kind": "generate",
+          "target": null,
+          "value": "Photonic chips are being adopted faster than expected",
+          "impacts": [],
+          "new_nodes": [],
+          "new_edges": []
+        },
+        "nodes": [
+          {
+            "id": "c1.event",
+            "role": "event",
+            "statement": "Photonic chips (silicon photonics / CPO) are being adopted in AI data centers faster than expected",
+            "label": null,
+            "original_statement": "Photonic chips are being adopted faster than expected",
+            "evidence_status": "supported",
+            "time_bucket": "2026H2-2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.capex",
+            "role": "assumption",
+            "statement": "Hyperscalers do not cut 2027 AI capex",
+            "label": null,
+            "original_statement": "Hyperscalers do not cut 2027 AI capex",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.external_laser",
+            "role": "assumption",
+            "statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "label": null,
+            "original_statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.cpo_ramp",
+            "role": "intermediate",
+            "statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "label": null,
+            "original_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.laser_demand",
+            "role": "intermediate",
+            "statement": "Demand for external CW laser sources rises with CPO port count",
+            "label": null,
+            "original_statement": "Demand for external CW laser sources rises with CPO port count",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.siph_foundry",
+            "role": "intermediate",
+            "statement": "Silicon-photonics foundry utilization rises",
+            "label": null,
+            "original_statement": "Silicon-photonics foundry utilization rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.pluggable_dsp",
+            "role": "intermediate",
+            "statement": "Growth in pluggable-module DSP demand slows",
+            "label": null,
+            "original_statement": "Growth in pluggable-module DSP demand slows",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": []
+          },
+          {
+            "id": "c1.term.laser_vendor",
+            "role": "terminal",
+            "statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "label": null,
+            "original_statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "LITE"
+            ]
+          },
+          {
+            "id": "c1.term.foundry",
+            "role": "terminal",
+            "statement": "Silicon-photonics share of foundry revenue rises",
+            "label": null,
+            "original_statement": "Silicon-photonics share of foundry revenue rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "TSM"
+            ]
+          },
+          {
+            "id": "c1.term.dsp_vendor",
+            "role": "terminal",
+            "statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "label": null,
+            "original_statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": [
+              "MRVL"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "c1.e1",
+            "from": "c1.event",
+            "to": "c1.cpo_ramp",
+            "channel": "adoption",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Faster adoption shows up directly as an earlier CPO switch deployment schedule",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-001",
+                "stance": "supports",
+                "supports": "deployment pulled forward",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e2",
+            "from": "c1.assume.capex",
+            "to": "c1.cpo_ramp",
+            "channel": "capex",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Unchanged capex is the budget precondition for earlier deployment",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-002",
+                "stance": "supports",
+                "supports": "capex guidance maintained",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e3",
+            "from": "c1.cpo_ramp",
+            "to": "c1.laser_demand",
+            "channel": "demand",
+            "sign": "+",
+            "lag_days": 60,
+            "mechanism": "Every CPO port needs an external light source, so earlier shipments lift light-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-003",
+                "stance": "supports",
+                "supports": "light-source demand tracks port count",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e4",
+            "from": "c1.assume.external_laser",
+            "to": "c1.laser_demand",
+            "channel": "technology",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Only with an external-laser architecture do CPO shipments turn into standalone laser-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-004",
+                "stance": "supports",
+                "supports": "external light source is mainstream today",
+                "rebuttal": null
+              },
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-005",
+                "stance": "contradicts",
+                "supports": "integrated lasers may replace external light sources",
+                "rebuttal": "The excerpt describes a route still in development with no 2027 production date, so it does not rebut the 2H27 view; listed as one to watch"
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e5",
+            "from": "c1.cpo_ramp",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "CPO optical engines depend on silicon-photonics foundries, so earlier shipments raise foundry utilization",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-006",
+                "stance": "supports",
+                "supports": "utilization expected to exceed 85%",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e6",
+            "from": "c1.cpo_ramp",
+            "to": "c1.pluggable_dsp",
+            "channel": "substitution",
+            "sign": "-",
+            "lag_days": 180,
+            "mechanism": "CPO removes the DSP in pluggable modules; the substitution slows DSP demand growth",
+            "evidence": [],
+            "model_only": true
+          },
+          {
+            "id": "c1.e7",
+            "from": "c1.laser_demand",
+            "to": "c1.term.laser_vendor",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Rising light-source demand turns into laser vendors' data-center revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-007",
+                "stance": "supports",
+                "supports": "order visibility extended",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e8",
+            "from": "c1.siph_foundry",
+            "to": "c1.term.foundry",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Higher utilization turns into a rising silicon-photonics share of foundry revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-008",
+                "stance": "supports",
+                "supports": "revenue share rising quarter by quarter",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e9",
+            "from": "c1.pluggable_dsp",
+            "to": "c1.term.dsp_vendor",
+            "channel": "revenue",
+            "sign": "-",
+            "lag_days": 90,
+            "mechanism": "Slower DSP demand growth weighs on related vendors' revenue growth",
+            "evidence": [],
+            "model_only": true
+          }
+        ],
+        "conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Document condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "Met when a laser vendor confirms a CPO external-light-source design win in a formal filing",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.foundry_utilization",
+            "claim_id": "c1.siph_foundry",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.siph_foundry_utilization",
+            "source": null,
+            "comparator": ">=",
+            "threshold": 0.85,
+            "threshold_note": "Threshold taken from sc-006",
+            "anchor": "2026-10-18",
+            "deadline": "2027-09-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-09-30"
+            },
+            "rule": "Met when quarterly utilization reads >= 0.85",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Event condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "model_output_ref": "fixture://c1/model_output_v1",
+        "observations_ref": "fixture://c1/observations_v1"
+      },
+      "proposals": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "LITE",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Laser vendors' data-center light-source revenue revised up as CPO shipments come forward"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.els_design_wins",
+              "claim_id": "c1.laser_demand",
+              "kind": "document",
+              "predicate": "observed_by",
+              "series": null,
+              "source": "company_filings",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Document condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "Met when a laser vendor confirms a CPO external-light-source design win in a formal filing",
+              "verification_status": "verifiable",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.assume.external_laser",
+            "why": "The whole laser path rests on the external-light-source architecture; the pack has an integrated-laser counterpoint (sc-005), check it first"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "supported",
+          "graph_version": "c1-v1",
+          "meta": {
+            "proposal_version": "c1-v1.c1.term.laser_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "TSM",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Silicon-photonics foundry revenue share rises with CPO volume"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.foundry_utilization",
+              "claim_id": "c1.siph_foundry",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.siph_foundry_utilization",
+              "source": null,
+              "comparator": ">=",
+              "threshold": 0.85,
+              "threshold_note": "Threshold taken from sc-006",
+              "anchor": "2026-10-18",
+              "deadline": "2027-09-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-09-30"
+              },
+              "rule": "Met when quarterly utilization reads >= 0.85",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": "cond.c1.foundry_utilization",
+            "claim_id": null,
+            "why": "Utilization is where foundry revenue is decided; it is the first number to move"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "supported",
+          "graph_version": "c1-v1",
+          "meta": {
+            "proposal_version": "c1-v1.c1.term.foundry",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "MRVL",
+            "side": "short",
+            "horizon_days": 365,
+            "note": "Pluggable DSP demand is displaced by CPO"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.pluggable_dsp",
+            "why": "The substitution link is model inference only; no material supports it"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "unknown",
+          "graph_version": "c1-v1",
+          "meta": {
+            "proposal_version": "c1-v1.c1.term.dsp_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        }
+      ],
+      "branches": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.assume.external_laser",
+            "c1.laser_demand",
+            "c1.term.laser_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e3",
+            "c1.e4",
+            "c1.e7"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.siph_foundry",
+            "c1.term.foundry"
+          ],
+          "own_edge_ids": [
+            "c1.e5",
+            "c1.e8"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.pluggable_dsp",
+            "c1.term.dsp_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e6",
+            "c1.e9"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": false
+        }
+      ],
+      "node_kinds": {
+        "c1.event": "model_only",
+        "c1.assume.capex": "model_only",
+        "c1.assume.external_laser": "model_only",
+        "c1.cpo_ramp": "model_only",
+        "c1.laser_demand": "model_only",
+        "c1.siph_foundry": "model_only",
+        "c1.pluggable_dsp": "model_only",
+        "c1.term.laser_vendor": "model_only",
+        "c1.term.foundry": "model_only",
+        "c1.term.dsp_vendor": "model_only"
+      },
+      "edge_kinds": {
+        "c1.e1": "model_only",
+        "c1.e2": "model_only",
+        "c1.e3": "model_only",
+        "c1.e4": "model_only",
+        "c1.e5": "model_only",
+        "c1.e6": "model_only",
+        "c1.e7": "model_only",
+        "c1.e8": "model_only",
+        "c1.e9": "model_only"
+      },
+      "scenario": null,
+      "diff": null,
+      "excerpts": [
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-001",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: several cloud providers moved CPO switch deployment from 2028 to 2H27.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-002",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: major cloud providers kept their 2027 AI capex guidance in the latest quarter.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-003",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: each CPO switch needs several external light-source modules, so light-source demand grows with CPO port count.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-004",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: CPO designs in volume production today mainly use external light sources (ELS), which are easier to service and cool.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-005",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder (counter-evidence): some vendors are developing integrated-laser designs that, if mature, would reduce demand for external light sources.",
+          "stance": "contradicts",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-006",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder: silicon-photonics foundry lines are expected to exceed 85% utilization on CPO orders.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-007",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: laser vendors say visibility on data-center light-source orders now extends four quarters.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-008",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: silicon-photonics share of foundry revenue rises quarter by quarter as CPO ramps.",
+          "stance": "supports",
+          "url": null
+        }
+      ]
+    },
+    "c1-v2": {
+      "graph": {
+        "version": "c1-v2",
+        "parent_version": "c1-v1",
+        "op": {
+          "kind": "sign",
+          "target": "c1.term.laser_vendor",
+          "value": {
+            "terminal_id": "c1.term.laser_vendor",
+            "confirmed_claim_ids": [],
+            "condition_overrides": {}
+          },
+          "impacts": [],
+          "new_nodes": [],
+          "new_edges": []
+        },
+        "nodes": [
+          {
+            "id": "c1.event",
+            "role": "event",
+            "statement": "Photonic chips (silicon photonics / CPO) are being adopted in AI data centers faster than expected",
+            "label": null,
+            "original_statement": "Photonic chips are being adopted faster than expected",
+            "evidence_status": "supported",
+            "time_bucket": "2026H2-2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.capex",
+            "role": "assumption",
+            "statement": "Hyperscalers do not cut 2027 AI capex",
+            "label": null,
+            "original_statement": "Hyperscalers do not cut 2027 AI capex",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.external_laser",
+            "role": "assumption",
+            "statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "label": null,
+            "original_statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.cpo_ramp",
+            "role": "intermediate",
+            "statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "label": null,
+            "original_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.laser_demand",
+            "role": "intermediate",
+            "statement": "Demand for external CW laser sources rises with CPO port count",
+            "label": null,
+            "original_statement": "Demand for external CW laser sources rises with CPO port count",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.siph_foundry",
+            "role": "intermediate",
+            "statement": "Silicon-photonics foundry utilization rises",
+            "label": null,
+            "original_statement": "Silicon-photonics foundry utilization rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.pluggable_dsp",
+            "role": "intermediate",
+            "statement": "Growth in pluggable-module DSP demand slows",
+            "label": null,
+            "original_statement": "Growth in pluggable-module DSP demand slows",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": []
+          },
+          {
+            "id": "c1.term.laser_vendor",
+            "role": "terminal",
+            "statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "label": null,
+            "original_statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "LITE"
+            ]
+          },
+          {
+            "id": "c1.term.foundry",
+            "role": "terminal",
+            "statement": "Silicon-photonics share of foundry revenue rises",
+            "label": null,
+            "original_statement": "Silicon-photonics share of foundry revenue rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "TSM"
+            ]
+          },
+          {
+            "id": "c1.term.dsp_vendor",
+            "role": "terminal",
+            "statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "label": null,
+            "original_statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": [
+              "MRVL"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "c1.e1",
+            "from": "c1.event",
+            "to": "c1.cpo_ramp",
+            "channel": "adoption",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Faster adoption shows up directly as an earlier CPO switch deployment schedule",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-001",
+                "stance": "supports",
+                "supports": "deployment pulled forward",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e2",
+            "from": "c1.assume.capex",
+            "to": "c1.cpo_ramp",
+            "channel": "capex",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Unchanged capex is the budget precondition for earlier deployment",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-002",
+                "stance": "supports",
+                "supports": "capex guidance maintained",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e3",
+            "from": "c1.cpo_ramp",
+            "to": "c1.laser_demand",
+            "channel": "demand",
+            "sign": "+",
+            "lag_days": 60,
+            "mechanism": "Every CPO port needs an external light source, so earlier shipments lift light-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-003",
+                "stance": "supports",
+                "supports": "light-source demand tracks port count",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e4",
+            "from": "c1.assume.external_laser",
+            "to": "c1.laser_demand",
+            "channel": "technology",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Only with an external-laser architecture do CPO shipments turn into standalone laser-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-004",
+                "stance": "supports",
+                "supports": "external light source is mainstream today",
+                "rebuttal": null
+              },
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-005",
+                "stance": "contradicts",
+                "supports": "integrated lasers may replace external light sources",
+                "rebuttal": "The excerpt describes a route still in development with no 2027 production date, so it does not rebut the 2H27 view; listed as one to watch"
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e5",
+            "from": "c1.cpo_ramp",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "CPO optical engines depend on silicon-photonics foundries, so earlier shipments raise foundry utilization",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-006",
+                "stance": "supports",
+                "supports": "utilization expected to exceed 85%",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e6",
+            "from": "c1.cpo_ramp",
+            "to": "c1.pluggable_dsp",
+            "channel": "substitution",
+            "sign": "-",
+            "lag_days": 180,
+            "mechanism": "CPO removes the DSP in pluggable modules; the substitution slows DSP demand growth",
+            "evidence": [],
+            "model_only": true
+          },
+          {
+            "id": "c1.e7",
+            "from": "c1.laser_demand",
+            "to": "c1.term.laser_vendor",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Rising light-source demand turns into laser vendors' data-center revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-007",
+                "stance": "supports",
+                "supports": "order visibility extended",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e8",
+            "from": "c1.siph_foundry",
+            "to": "c1.term.foundry",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Higher utilization turns into a rising silicon-photonics share of foundry revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-008",
+                "stance": "supports",
+                "supports": "revenue share rising quarter by quarter",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e9",
+            "from": "c1.pluggable_dsp",
+            "to": "c1.term.dsp_vendor",
+            "channel": "revenue",
+            "sign": "-",
+            "lag_days": 90,
+            "mechanism": "Slower DSP demand growth weighs on related vendors' revenue growth",
+            "evidence": [],
+            "model_only": true
+          }
+        ],
+        "conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Document condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "Met when a laser vendor confirms a CPO external-light-source design win in a formal filing",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.foundry_utilization",
+            "claim_id": "c1.siph_foundry",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.siph_foundry_utilization",
+            "source": null,
+            "comparator": ">=",
+            "threshold": 0.85,
+            "threshold_note": "Threshold taken from sc-006",
+            "anchor": "2026-10-18",
+            "deadline": "2027-09-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-09-30"
+            },
+            "rule": "Met when quarterly utilization reads >= 0.85",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Event condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "model_output_ref": "fixture://c1/model_output_v1",
+        "observations_ref": "fixture://c1/observations_v1"
+      },
+      "proposals": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "LITE",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Laser vendors' data-center light-source revenue revised up as CPO shipments come forward"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.els_design_wins",
+              "claim_id": "c1.laser_demand",
+              "kind": "document",
+              "predicate": "observed_by",
+              "series": null,
+              "source": "company_filings",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Document condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "Met when a laser vendor confirms a CPO external-light-source design win in a formal filing",
+              "verification_status": "verifiable",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.assume.external_laser",
+            "why": "The whole laser path rests on the external-light-source architecture; the pack has an integrated-laser counterpoint (sc-005), check it first"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": true,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "supported",
+          "graph_version": "c1-v2",
+          "meta": {
+            "proposal_version": "c1-v2.c1.term.laser_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "TSM",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Silicon-photonics foundry revenue share rises with CPO volume"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.foundry_utilization",
+              "claim_id": "c1.siph_foundry",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.siph_foundry_utilization",
+              "source": null,
+              "comparator": ">=",
+              "threshold": 0.85,
+              "threshold_note": "Threshold taken from sc-006",
+              "anchor": "2026-10-18",
+              "deadline": "2027-09-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-09-30"
+              },
+              "rule": "Met when quarterly utilization reads >= 0.85",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": "cond.c1.foundry_utilization",
+            "claim_id": null,
+            "why": "Utilization is where foundry revenue is decided; it is the first number to move"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "supported",
+          "graph_version": "c1-v2",
+          "meta": {
+            "proposal_version": "c1-v2.c1.term.foundry",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "MRVL",
+            "side": "short",
+            "horizon_days": 365,
+            "note": "Pluggable DSP demand is displaced by CPO"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.pluggable_dsp",
+            "why": "The substitution link is model inference only; no material supports it"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "unknown",
+          "graph_version": "c1-v2",
+          "meta": {
+            "proposal_version": "c1-v2.c1.term.dsp_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        }
+      ],
+      "branches": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.assume.external_laser",
+            "c1.laser_demand",
+            "c1.term.laser_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e3",
+            "c1.e4",
+            "c1.e7"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.siph_foundry",
+            "c1.term.foundry"
+          ],
+          "own_edge_ids": [
+            "c1.e5",
+            "c1.e8"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.pluggable_dsp",
+            "c1.term.dsp_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e6",
+            "c1.e9"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": false
+        }
+      ],
+      "node_kinds": {
+        "c1.event": "model_only",
+        "c1.assume.capex": "model_only",
+        "c1.assume.external_laser": "model_only",
+        "c1.cpo_ramp": "model_only",
+        "c1.laser_demand": "model_only",
+        "c1.siph_foundry": "model_only",
+        "c1.pluggable_dsp": "model_only",
+        "c1.term.laser_vendor": "model_only",
+        "c1.term.foundry": "model_only",
+        "c1.term.dsp_vendor": "model_only"
+      },
+      "edge_kinds": {
+        "c1.e1": "model_only",
+        "c1.e2": "model_only",
+        "c1.e3": "model_only",
+        "c1.e4": "model_only",
+        "c1.e5": "model_only",
+        "c1.e6": "model_only",
+        "c1.e7": "model_only",
+        "c1.e8": "model_only",
+        "c1.e9": "model_only"
+      },
+      "scenario": null,
+      "diff": {
+        "nodes_changed": [],
+        "nodes_added": [],
+        "nodes_removed": [],
+        "edges_changed": [],
+        "edges_added": [],
+        "edges_removed": [],
+        "conditions_changed": [],
+        "conditions_added": [],
+        "conditions_removed": [],
+        "changed_claim_ids": []
+      },
+      "excerpts": [
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-001",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: several cloud providers moved CPO switch deployment from 2028 to 2H27.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-002",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: major cloud providers kept their 2027 AI capex guidance in the latest quarter.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-003",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: each CPO switch needs several external light-source modules, so light-source demand grows with CPO port count.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-004",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: CPO designs in volume production today mainly use external light sources (ELS), which are easier to service and cool.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-005",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder (counter-evidence): some vendors are developing integrated-laser designs that, if mature, would reduce demand for external light sources.",
+          "stance": "contradicts",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-006",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder: silicon-photonics foundry lines are expected to exceed 85% utilization on CPO orders.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-007",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: laser vendors say visibility on data-center light-source orders now extends four quarters.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-008",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: silicon-photonics share of foundry revenue rises quarter by quarter as CPO ramps.",
+          "stance": "supports",
+          "url": null
+        }
+      ]
+    },
+    "c1-v3": {
+      "graph": {
+        "version": "c1-v3",
+        "parent_version": "c1-v2",
+        "op": {
+          "kind": "change_assumption",
+          "target": "c1.assume.external_laser",
+          "value": "Mainstream CPO designs switch to integrated lasers and no longer need an external light source",
+          "impacts": [],
+          "new_nodes": [],
+          "new_edges": []
+        },
+        "nodes": [
+          {
+            "id": "c1.event",
+            "role": "event",
+            "statement": "Photonic chips (silicon photonics / CPO) are being adopted in AI data centers faster than expected",
+            "label": null,
+            "original_statement": "Photonic chips are being adopted faster than expected",
+            "evidence_status": "supported",
+            "time_bucket": "2026H2-2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.capex",
+            "role": "assumption",
+            "statement": "Hyperscalers do not cut 2027 AI capex",
+            "label": null,
+            "original_statement": "Hyperscalers do not cut 2027 AI capex",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.external_laser",
+            "role": "assumption",
+            "statement": "Scenario assumption: mainstream CPO designs switch to integrated lasers and no longer need an external light source",
+            "label": null,
+            "original_statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.cpo_ramp",
+            "role": "intermediate",
+            "statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "label": null,
+            "original_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.laser_demand",
+            "role": "intermediate",
+            "statement": "Demand for external CW laser sources rises with CPO port count",
+            "label": null,
+            "original_statement": "Demand for external CW laser sources rises with CPO port count",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.siph_foundry",
+            "role": "intermediate",
+            "statement": "Silicon-photonics foundry utilization rises",
+            "label": null,
+            "original_statement": "Silicon-photonics foundry utilization rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.pluggable_dsp",
+            "role": "intermediate",
+            "statement": "Growth in pluggable-module DSP demand slows",
+            "label": null,
+            "original_statement": "Growth in pluggable-module DSP demand slows",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": []
+          },
+          {
+            "id": "c1.term.laser_vendor",
+            "role": "terminal",
+            "statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "label": null,
+            "original_statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "LITE"
+            ]
+          },
+          {
+            "id": "c1.term.foundry",
+            "role": "terminal",
+            "statement": "Silicon-photonics share of foundry revenue rises",
+            "label": null,
+            "original_statement": "Silicon-photonics share of foundry revenue rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "TSM"
+            ]
+          },
+          {
+            "id": "c1.term.dsp_vendor",
+            "role": "terminal",
+            "statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "label": null,
+            "original_statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": [
+              "MRVL"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "c1.e1",
+            "from": "c1.event",
+            "to": "c1.cpo_ramp",
+            "channel": "adoption",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Faster adoption shows up directly as an earlier CPO switch deployment schedule",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-001",
+                "stance": "supports",
+                "supports": "deployment pulled forward",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e2",
+            "from": "c1.assume.capex",
+            "to": "c1.cpo_ramp",
+            "channel": "capex",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Unchanged capex is the budget precondition for earlier deployment",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-002",
+                "stance": "supports",
+                "supports": "capex guidance maintained",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e3",
+            "from": "c1.cpo_ramp",
+            "to": "c1.laser_demand",
+            "channel": "demand",
+            "sign": "+",
+            "lag_days": 60,
+            "mechanism": "Every CPO port needs an external light source, so earlier shipments lift light-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-003",
+                "stance": "supports",
+                "supports": "light-source demand tracks port count",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e4",
+            "from": "c1.assume.external_laser",
+            "to": "c1.laser_demand",
+            "channel": "technology",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Under the scenario the external-laser architecture does not hold, so CPO shipments no longer create standalone external light-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-004",
+                "stance": "supports",
+                "supports": "external light source is mainstream today",
+                "rebuttal": null
+              },
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-005",
+                "stance": "contradicts",
+                "supports": "integrated lasers may replace external light sources",
+                "rebuttal": "The excerpt describes a route still in development with no 2027 production date, so it does not rebut the 2H27 view; listed as one to watch"
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e5",
+            "from": "c1.cpo_ramp",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "CPO optical engines depend on silicon-photonics foundries, so earlier shipments raise foundry utilization",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-006",
+                "stance": "supports",
+                "supports": "utilization expected to exceed 85%",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e6",
+            "from": "c1.cpo_ramp",
+            "to": "c1.pluggable_dsp",
+            "channel": "substitution",
+            "sign": "-",
+            "lag_days": 180,
+            "mechanism": "CPO removes the DSP in pluggable modules; the substitution slows DSP demand growth",
+            "evidence": [],
+            "model_only": true
+          },
+          {
+            "id": "c1.e7",
+            "from": "c1.laser_demand",
+            "to": "c1.term.laser_vendor",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Under the scenario the rising light-source demand premise is challenged, so laser vendors lose the main source of an earnings beat",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-007",
+                "stance": "supports",
+                "supports": "order visibility extended",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e8",
+            "from": "c1.siph_foundry",
+            "to": "c1.term.foundry",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Higher utilization turns into a rising silicon-photonics share of foundry revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-008",
+                "stance": "supports",
+                "supports": "revenue share rising quarter by quarter",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e9",
+            "from": "c1.pluggable_dsp",
+            "to": "c1.term.dsp_vendor",
+            "channel": "revenue",
+            "sign": "-",
+            "lag_days": 90,
+            "mechanism": "Slower DSP demand growth weighs on related vendors' revenue growth",
+            "evidence": [],
+            "model_only": true
+          }
+        ],
+        "conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Document condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "Under the scenario: met when mainstream production CPO is confirmed to use integrated lasers (formal disclosure)",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.foundry_utilization",
+            "claim_id": "c1.siph_foundry",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.siph_foundry_utilization",
+            "source": null,
+            "comparator": ">=",
+            "threshold": 0.85,
+            "threshold_note": "Threshold taken from sc-006",
+            "anchor": "2026-10-18",
+            "deadline": "2027-09-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-09-30"
+            },
+            "rule": "Met when quarterly utilization reads >= 0.85",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Event condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "model_output_ref": "fixture://c1/model_output_v1",
+        "observations_ref": "fixture://c1/observations_v1"
+      },
+      "proposals": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "LITE",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Laser vendors' data-center light-source revenue revised up as CPO shipments come forward"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.els_design_wins",
+              "claim_id": "c1.laser_demand",
+              "kind": "document",
+              "predicate": "observed_by",
+              "series": null,
+              "source": "company_filings",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Document condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "Under the scenario: met when mainstream production CPO is confirmed to use integrated lasers (formal disclosure)",
+              "verification_status": "verifiable",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.assume.external_laser",
+            "why": "The whole laser path rests on the external-light-source architecture; the pack has an integrated-laser counterpoint (sc-005), check it first"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": {
+            "base_version": "c1-v2",
+            "challenged_claim_ids": [
+              "c1.laser_demand",
+              "c1.term.laser_vendor"
+            ],
+            "next_checks": [
+              "Next check: whether major vendors' 2027 production CPO actually uses integrated lasers (formal disclosures), not a route still in development"
+            ],
+            "root_version": "c1-v2"
+          },
+          "support_status": "challenged",
+          "graph_version": "c1-v3",
+          "meta": {
+            "proposal_version": "c1-v3.c1.term.laser_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": true,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "TSM",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Silicon-photonics foundry revenue share rises with CPO volume"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.foundry_utilization",
+              "claim_id": "c1.siph_foundry",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.siph_foundry_utilization",
+              "source": null,
+              "comparator": ">=",
+              "threshold": 0.85,
+              "threshold_note": "Threshold taken from sc-006",
+              "anchor": "2026-10-18",
+              "deadline": "2027-09-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-09-30"
+              },
+              "rule": "Met when quarterly utilization reads >= 0.85",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": "cond.c1.foundry_utilization",
+            "claim_id": null,
+            "why": "Utilization is where foundry revenue is decided; it is the first number to move"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": {
+            "base_version": "c1-v2",
+            "challenged_claim_ids": [
+              "c1.laser_demand",
+              "c1.term.laser_vendor"
+            ],
+            "next_checks": [
+              "Next check: whether major vendors' 2027 production CPO actually uses integrated lasers (formal disclosures), not a route still in development"
+            ],
+            "root_version": "c1-v2"
+          },
+          "support_status": "supported",
+          "graph_version": "c1-v3",
+          "meta": {
+            "proposal_version": "c1-v3.c1.term.foundry",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": true
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "MRVL",
+            "side": "short",
+            "horizon_days": 365,
+            "note": "Pluggable DSP demand is displaced by CPO"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.pluggable_dsp",
+            "why": "The substitution link is model inference only; no material supports it"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": {
+            "base_version": "c1-v2",
+            "challenged_claim_ids": [
+              "c1.laser_demand",
+              "c1.term.laser_vendor"
+            ],
+            "next_checks": [
+              "Next check: whether major vendors' 2027 production CPO actually uses integrated lasers (formal disclosures), not a route still in development"
+            ],
+            "root_version": "c1-v2"
+          },
+          "support_status": "unknown",
+          "graph_version": "c1-v3",
+          "meta": {
+            "proposal_version": "c1-v3.c1.term.dsp_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": true
+        }
+      ],
+      "branches": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.assume.external_laser",
+            "c1.laser_demand",
+            "c1.term.laser_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e3",
+            "c1.e4",
+            "c1.e7"
+          ],
+          "kind": "hypothetical",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.siph_foundry",
+            "c1.term.foundry"
+          ],
+          "own_edge_ids": [
+            "c1.e5",
+            "c1.e8"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.pluggable_dsp",
+            "c1.term.dsp_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e6",
+            "c1.e9"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": false
+        }
+      ],
+      "node_kinds": {
+        "c1.event": "model_only",
+        "c1.assume.capex": "model_only",
+        "c1.assume.external_laser": "hypothetical",
+        "c1.cpo_ramp": "model_only",
+        "c1.laser_demand": "hypothetical",
+        "c1.siph_foundry": "model_only",
+        "c1.pluggable_dsp": "model_only",
+        "c1.term.laser_vendor": "hypothetical",
+        "c1.term.foundry": "model_only",
+        "c1.term.dsp_vendor": "model_only"
+      },
+      "edge_kinds": {
+        "c1.e1": "model_only",
+        "c1.e2": "model_only",
+        "c1.e3": "hypothetical",
+        "c1.e4": "hypothetical",
+        "c1.e5": "model_only",
+        "c1.e6": "model_only",
+        "c1.e7": "hypothetical",
+        "c1.e8": "model_only",
+        "c1.e9": "model_only"
+      },
+      "scenario": {
+        "version": "c1-v3",
+        "base_version": "c1-v2",
+        "ops": [
+          {
+            "kind": "change_assumption",
+            "target": "c1.assume.external_laser",
+            "value": "Mainstream CPO designs switch to integrated lasers and no longer need an external light source",
+            "impacts": [],
+            "new_nodes": [],
+            "new_edges": []
+          }
+        ],
+        "assessment": {
+          "c1.event": "unaffected",
+          "c1.assume.capex": "unaffected",
+          "c1.assume.external_laser": "unaffected",
+          "c1.cpo_ramp": "unaffected",
+          "c1.laser_demand": "challenged",
+          "c1.siph_foundry": "unaffected",
+          "c1.pluggable_dsp": "unaffected",
+          "c1.term.laser_vendor": "challenged",
+          "c1.term.foundry": "unaffected",
+          "c1.term.dsp_vendor": "unaffected"
+        },
+        "assessment_reason": {
+          "c1.assume.external_laser": "This is the changed assumption itself: integrated lasers in the scenario",
+          "c1.laser_demand": "External light-source demand assumes every CPO port needs an external source; with integrated lasers that premise fails",
+          "c1.term.laser_vendor": "The laser vendors' upside comes from external light-source demand; the upstream premise is challenged, so this conclusion is too"
+        },
+        "root_version": "c1-v2"
+      },
+      "diff": {
+        "nodes_changed": [
+          "c1.assume.external_laser"
+        ],
+        "nodes_added": [],
+        "nodes_removed": [],
+        "edges_changed": [
+          "c1.e4",
+          "c1.e7"
+        ],
+        "edges_added": [],
+        "edges_removed": [],
+        "conditions_changed": [
+          "cond.c1.els_design_wins"
+        ],
+        "conditions_added": [],
+        "conditions_removed": [],
+        "changed_claim_ids": [
+          "c1.assume.external_laser",
+          "c1.laser_demand",
+          "c1.term.laser_vendor"
+        ]
+      },
+      "excerpts": [
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-001",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: several cloud providers moved CPO switch deployment from 2028 to 2H27.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-002",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: major cloud providers kept their 2027 AI capex guidance in the latest quarter.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-003",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: each CPO switch needs several external light-source modules, so light-source demand grows with CPO port count.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-004",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: CPO designs in volume production today mainly use external light sources (ELS), which are easier to service and cool.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-005",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder (counter-evidence): some vendors are developing integrated-laser designs that, if mature, would reduce demand for external light sources.",
+          "stance": "contradicts",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-006",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder: silicon-photonics foundry lines are expected to exceed 85% utilization on CPO orders.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-007",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: laser vendors say visibility on data-center light-source orders now extends four quarters.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-008",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: silicon-photonics share of foundry revenue rises quarter by quarter as CPO ramps.",
+          "stance": "supports",
+          "url": null
+        }
+      ]
+    },
+    "c1-v4": {
+      "graph": {
+        "version": "c1-v4",
+        "parent_version": "c1-v1",
+        "op": {
+          "kind": "sign",
+          "target": "c1.term.foundry",
+          "value": {
+            "terminal_id": "c1.term.foundry",
+            "confirmed_claim_ids": [],
+            "condition_overrides": {}
+          },
+          "impacts": [],
+          "new_nodes": [],
+          "new_edges": []
+        },
+        "nodes": [
+          {
+            "id": "c1.event",
+            "role": "event",
+            "statement": "Photonic chips (silicon photonics / CPO) are being adopted in AI data centers faster than expected",
+            "label": null,
+            "original_statement": "Photonic chips are being adopted faster than expected",
+            "evidence_status": "supported",
+            "time_bucket": "2026H2-2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.capex",
+            "role": "assumption",
+            "statement": "Hyperscalers do not cut 2027 AI capex",
+            "label": null,
+            "original_statement": "Hyperscalers do not cut 2027 AI capex",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.external_laser",
+            "role": "assumption",
+            "statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "label": null,
+            "original_statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.cpo_ramp",
+            "role": "intermediate",
+            "statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "label": null,
+            "original_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.laser_demand",
+            "role": "intermediate",
+            "statement": "Demand for external CW laser sources rises with CPO port count",
+            "label": null,
+            "original_statement": "Demand for external CW laser sources rises with CPO port count",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.siph_foundry",
+            "role": "intermediate",
+            "statement": "Silicon-photonics foundry utilization rises",
+            "label": null,
+            "original_statement": "Silicon-photonics foundry utilization rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.pluggable_dsp",
+            "role": "intermediate",
+            "statement": "Growth in pluggable-module DSP demand slows",
+            "label": null,
+            "original_statement": "Growth in pluggable-module DSP demand slows",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": []
+          },
+          {
+            "id": "c1.term.laser_vendor",
+            "role": "terminal",
+            "statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "label": null,
+            "original_statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "LITE"
+            ]
+          },
+          {
+            "id": "c1.term.foundry",
+            "role": "terminal",
+            "statement": "Silicon-photonics share of foundry revenue rises",
+            "label": null,
+            "original_statement": "Silicon-photonics share of foundry revenue rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "TSM"
+            ]
+          },
+          {
+            "id": "c1.term.dsp_vendor",
+            "role": "terminal",
+            "statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "label": null,
+            "original_statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": [
+              "MRVL"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "c1.e1",
+            "from": "c1.event",
+            "to": "c1.cpo_ramp",
+            "channel": "adoption",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Faster adoption shows up directly as an earlier CPO switch deployment schedule",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-001",
+                "stance": "supports",
+                "supports": "deployment pulled forward",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e2",
+            "from": "c1.assume.capex",
+            "to": "c1.cpo_ramp",
+            "channel": "capex",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Unchanged capex is the budget precondition for earlier deployment",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-002",
+                "stance": "supports",
+                "supports": "capex guidance maintained",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e3",
+            "from": "c1.cpo_ramp",
+            "to": "c1.laser_demand",
+            "channel": "demand",
+            "sign": "+",
+            "lag_days": 60,
+            "mechanism": "Every CPO port needs an external light source, so earlier shipments lift light-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-003",
+                "stance": "supports",
+                "supports": "light-source demand tracks port count",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e4",
+            "from": "c1.assume.external_laser",
+            "to": "c1.laser_demand",
+            "channel": "technology",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Only with an external-laser architecture do CPO shipments turn into standalone laser-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-004",
+                "stance": "supports",
+                "supports": "external light source is mainstream today",
+                "rebuttal": null
+              },
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-005",
+                "stance": "contradicts",
+                "supports": "integrated lasers may replace external light sources",
+                "rebuttal": "The excerpt describes a route still in development with no 2027 production date, so it does not rebut the 2H27 view; listed as one to watch"
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e5",
+            "from": "c1.cpo_ramp",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "CPO optical engines depend on silicon-photonics foundries, so earlier shipments raise foundry utilization",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-006",
+                "stance": "supports",
+                "supports": "utilization expected to exceed 85%",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e6",
+            "from": "c1.cpo_ramp",
+            "to": "c1.pluggable_dsp",
+            "channel": "substitution",
+            "sign": "-",
+            "lag_days": 180,
+            "mechanism": "CPO removes the DSP in pluggable modules; the substitution slows DSP demand growth",
+            "evidence": [],
+            "model_only": true
+          },
+          {
+            "id": "c1.e7",
+            "from": "c1.laser_demand",
+            "to": "c1.term.laser_vendor",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Rising light-source demand turns into laser vendors' data-center revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-007",
+                "stance": "supports",
+                "supports": "order visibility extended",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e8",
+            "from": "c1.siph_foundry",
+            "to": "c1.term.foundry",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Higher utilization turns into a rising silicon-photonics share of foundry revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-008",
+                "stance": "supports",
+                "supports": "revenue share rising quarter by quarter",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e9",
+            "from": "c1.pluggable_dsp",
+            "to": "c1.term.dsp_vendor",
+            "channel": "revenue",
+            "sign": "-",
+            "lag_days": 90,
+            "mechanism": "Slower DSP demand growth weighs on related vendors' revenue growth",
+            "evidence": [],
+            "model_only": true
+          }
+        ],
+        "conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Document condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "Met when a laser vendor confirms a CPO external-light-source design win in a formal filing",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.foundry_utilization",
+            "claim_id": "c1.siph_foundry",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.siph_foundry_utilization",
+            "source": null,
+            "comparator": ">=",
+            "threshold": 0.85,
+            "threshold_note": "Threshold taken from sc-006",
+            "anchor": "2026-10-18",
+            "deadline": "2027-09-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-09-30"
+            },
+            "rule": "Met when quarterly utilization reads >= 0.85",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Event condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "model_output_ref": "fixture://c1/model_output_v1",
+        "observations_ref": "fixture://c1/observations_v1"
+      },
+      "proposals": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "LITE",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Laser vendors' data-center light-source revenue revised up as CPO shipments come forward"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.els_design_wins",
+              "claim_id": "c1.laser_demand",
+              "kind": "document",
+              "predicate": "observed_by",
+              "series": null,
+              "source": "company_filings",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Document condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "Met when a laser vendor confirms a CPO external-light-source design win in a formal filing",
+              "verification_status": "verifiable",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.assume.external_laser",
+            "why": "The whole laser path rests on the external-light-source architecture; the pack has an integrated-laser counterpoint (sc-005), check it first"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "supported",
+          "graph_version": "c1-v4",
+          "meta": {
+            "proposal_version": "c1-v4.c1.term.laser_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "TSM",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Silicon-photonics foundry revenue share rises with CPO volume"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.foundry_utilization",
+              "claim_id": "c1.siph_foundry",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.siph_foundry_utilization",
+              "source": null,
+              "comparator": ">=",
+              "threshold": 0.85,
+              "threshold_note": "Threshold taken from sc-006",
+              "anchor": "2026-10-18",
+              "deadline": "2027-09-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-09-30"
+              },
+              "rule": "Met when quarterly utilization reads >= 0.85",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": "cond.c1.foundry_utilization",
+            "claim_id": null,
+            "why": "Utilization is where foundry revenue is decided; it is the first number to move"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": true,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "supported",
+          "graph_version": "c1-v4",
+          "meta": {
+            "proposal_version": "c1-v4.c1.term.foundry",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "MRVL",
+            "side": "short",
+            "horizon_days": 365,
+            "note": "Pluggable DSP demand is displaced by CPO"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.pluggable_dsp",
+            "why": "The substitution link is model inference only; no material supports it"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": null,
+          "support_status": "unknown",
+          "graph_version": "c1-v4",
+          "meta": {
+            "proposal_version": "c1-v4.c1.term.dsp_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        }
+      ],
+      "branches": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.assume.external_laser",
+            "c1.laser_demand",
+            "c1.term.laser_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e3",
+            "c1.e4",
+            "c1.e7"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.siph_foundry",
+            "c1.term.foundry"
+          ],
+          "own_edge_ids": [
+            "c1.e5",
+            "c1.e8"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.pluggable_dsp",
+            "c1.term.dsp_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e6",
+            "c1.e9"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": false
+        }
+      ],
+      "node_kinds": {
+        "c1.event": "model_only",
+        "c1.assume.capex": "model_only",
+        "c1.assume.external_laser": "model_only",
+        "c1.cpo_ramp": "model_only",
+        "c1.laser_demand": "model_only",
+        "c1.siph_foundry": "model_only",
+        "c1.pluggable_dsp": "model_only",
+        "c1.term.laser_vendor": "model_only",
+        "c1.term.foundry": "model_only",
+        "c1.term.dsp_vendor": "model_only"
+      },
+      "edge_kinds": {
+        "c1.e1": "model_only",
+        "c1.e2": "model_only",
+        "c1.e3": "model_only",
+        "c1.e4": "model_only",
+        "c1.e5": "model_only",
+        "c1.e6": "model_only",
+        "c1.e7": "model_only",
+        "c1.e8": "model_only",
+        "c1.e9": "model_only"
+      },
+      "scenario": null,
+      "diff": {
+        "nodes_changed": [],
+        "nodes_added": [],
+        "nodes_removed": [],
+        "edges_changed": [],
+        "edges_added": [],
+        "edges_removed": [],
+        "conditions_changed": [],
+        "conditions_added": [],
+        "conditions_removed": [],
+        "changed_claim_ids": []
+      },
+      "excerpts": [
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-001",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: several cloud providers moved CPO switch deployment from 2028 to 2H27.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-002",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: major cloud providers kept their 2027 AI capex guidance in the latest quarter.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-003",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: each CPO switch needs several external light-source modules, so light-source demand grows with CPO port count.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-004",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: CPO designs in volume production today mainly use external light sources (ELS), which are easier to service and cool.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-005",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder (counter-evidence): some vendors are developing integrated-laser designs that, if mature, would reduce demand for external light sources.",
+          "stance": "contradicts",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-006",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder: silicon-photonics foundry lines are expected to exceed 85% utilization on CPO orders.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-007",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: laser vendors say visibility on data-center light-source orders now extends four quarters.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-008",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: silicon-photonics share of foundry revenue rises quarter by quarter as CPO ramps.",
+          "stance": "supports",
+          "url": null
+        }
+      ]
+    },
+    "c1-v5": {
+      "graph": {
+        "version": "c1-v5",
+        "parent_version": "c1-v4",
+        "op": {
+          "kind": "change_assumption",
+          "target": "c1.assume.external_laser",
+          "value": "Mainstream CPO designs switch to integrated lasers and no longer need an external light source",
+          "impacts": [],
+          "new_nodes": [],
+          "new_edges": []
+        },
+        "nodes": [
+          {
+            "id": "c1.event",
+            "role": "event",
+            "statement": "Photonic chips (silicon photonics / CPO) are being adopted in AI data centers faster than expected",
+            "label": null,
+            "original_statement": "Photonic chips are being adopted faster than expected",
+            "evidence_status": "supported",
+            "time_bucket": "2026H2-2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.capex",
+            "role": "assumption",
+            "statement": "Hyperscalers do not cut 2027 AI capex",
+            "label": null,
+            "original_statement": "Hyperscalers do not cut 2027 AI capex",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.external_laser",
+            "role": "assumption",
+            "statement": "Scenario assumption: mainstream CPO designs switch to integrated lasers and no longer need an external light source",
+            "label": null,
+            "original_statement": "Mainstream CPO designs use an external CW laser source (ELS)",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.cpo_ramp",
+            "role": "intermediate",
+            "statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "label": null,
+            "original_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.laser_demand",
+            "role": "intermediate",
+            "statement": "Demand for external CW laser sources rises with CPO port count",
+            "label": null,
+            "original_statement": "Demand for external CW laser sources rises with CPO port count",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.siph_foundry",
+            "role": "intermediate",
+            "statement": "Silicon-photonics foundry utilization rises",
+            "label": null,
+            "original_statement": "Silicon-photonics foundry utilization rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.pluggable_dsp",
+            "role": "intermediate",
+            "statement": "Growth in pluggable-module DSP demand slows",
+            "label": null,
+            "original_statement": "Growth in pluggable-module DSP demand slows",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": []
+          },
+          {
+            "id": "c1.term.laser_vendor",
+            "role": "terminal",
+            "statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "label": null,
+            "original_statement": "Laser vendors' data-center light-source revenue beats expectations",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "LITE"
+            ]
+          },
+          {
+            "id": "c1.term.foundry",
+            "role": "terminal",
+            "statement": "Silicon-photonics share of foundry revenue rises",
+            "label": null,
+            "original_statement": "Silicon-photonics share of foundry revenue rises",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "TSM"
+            ]
+          },
+          {
+            "id": "c1.term.dsp_vendor",
+            "role": "terminal",
+            "statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "label": null,
+            "original_statement": "Pluggable DSP vendors' related revenue growth comes under pressure",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": [
+              "MRVL"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "c1.e1",
+            "from": "c1.event",
+            "to": "c1.cpo_ramp",
+            "channel": "adoption",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Faster adoption shows up directly as an earlier CPO switch deployment schedule",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-001",
+                "stance": "supports",
+                "supports": "deployment pulled forward",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e2",
+            "from": "c1.assume.capex",
+            "to": "c1.cpo_ramp",
+            "channel": "capex",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Unchanged capex is the budget precondition for earlier deployment",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-002",
+                "stance": "supports",
+                "supports": "capex guidance maintained",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e3",
+            "from": "c1.cpo_ramp",
+            "to": "c1.laser_demand",
+            "channel": "demand",
+            "sign": "+",
+            "lag_days": 60,
+            "mechanism": "Every CPO port needs an external light source, so earlier shipments lift light-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-003",
+                "stance": "supports",
+                "supports": "light-source demand tracks port count",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e4",
+            "from": "c1.assume.external_laser",
+            "to": "c1.laser_demand",
+            "channel": "technology",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "Under the scenario the external-laser architecture does not hold, so CPO shipments no longer create standalone external light-source demand",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-004",
+                "stance": "supports",
+                "supports": "external light source is mainstream today",
+                "rebuttal": null
+              },
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-005",
+                "stance": "contradicts",
+                "supports": "integrated lasers may replace external light sources",
+                "rebuttal": "The excerpt describes a route still in development with no 2027 production date, so it does not rebut the 2H27 view; listed as one to watch"
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e5",
+            "from": "c1.cpo_ramp",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "CPO optical engines depend on silicon-photonics foundries, so earlier shipments raise foundry utilization",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-006",
+                "stance": "supports",
+                "supports": "utilization expected to exceed 85%",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e6",
+            "from": "c1.cpo_ramp",
+            "to": "c1.pluggable_dsp",
+            "channel": "substitution",
+            "sign": "-",
+            "lag_days": 180,
+            "mechanism": "CPO removes the DSP in pluggable modules; the substitution slows DSP demand growth",
+            "evidence": [],
+            "model_only": true
+          },
+          {
+            "id": "c1.e7",
+            "from": "c1.laser_demand",
+            "to": "c1.term.laser_vendor",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Under the scenario the rising light-source demand premise is challenged, so laser vendors lose the main source of an earnings beat",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-007",
+                "stance": "supports",
+                "supports": "order visibility extended",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e8",
+            "from": "c1.siph_foundry",
+            "to": "c1.term.foundry",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "Higher utilization turns into a rising silicon-photonics share of foundry revenue",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-008",
+                "stance": "supports",
+                "supports": "revenue share rising quarter by quarter",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e9",
+            "from": "c1.pluggable_dsp",
+            "to": "c1.term.dsp_vendor",
+            "channel": "revenue",
+            "sign": "-",
+            "lag_days": 90,
+            "mechanism": "Slower DSP demand growth weighs on related vendors' revenue growth",
+            "evidence": [],
+            "model_only": true
+          }
+        ],
+        "conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Document condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "Under the scenario: met when mainstream production CPO is confirmed to use integrated lasers (formal disclosure)",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.foundry_utilization",
+            "claim_id": "c1.siph_foundry",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.siph_foundry_utilization",
+            "source": null,
+            "comparator": ">=",
+            "threshold": 0.85,
+            "threshold_note": "Threshold taken from sc-006",
+            "anchor": "2026-10-18",
+            "deadline": "2027-09-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-09-30"
+            },
+            "rule": "Met when quarterly utilization reads >= 0.85",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "Event condition, no numeric threshold",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "model_output_ref": "fixture://c1/model_output_v1",
+        "observations_ref": "fixture://c1/observations_v1"
+      },
+      "proposals": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "LITE",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Laser vendors' data-center light-source revenue revised up as CPO shipments come forward"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.els_design_wins",
+              "claim_id": "c1.laser_demand",
+              "kind": "document",
+              "predicate": "observed_by",
+              "series": null,
+              "source": "company_filings",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Document condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "Under the scenario: met when mainstream production CPO is confirmed to use integrated lasers (formal disclosure)",
+              "verification_status": "verifiable",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.assume.external_laser",
+            "why": "The whole laser path rests on the external-light-source architecture; the pack has an integrated-laser counterpoint (sc-005), check it first"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": {
+            "base_version": "c1-v4",
+            "challenged_claim_ids": [
+              "c1.laser_demand",
+              "c1.term.laser_vendor"
+            ],
+            "next_checks": [
+              "Next check: whether major vendors' 2027 production CPO actually uses integrated lasers (formal disclosures), not a route still in development"
+            ],
+            "root_version": "c1-v4"
+          },
+          "support_status": "challenged",
+          "graph_version": "c1-v5",
+          "meta": {
+            "proposal_version": "c1-v5.c1.term.laser_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": false
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "TSM",
+            "side": "long",
+            "horizon_days": 270,
+            "note": "Silicon-photonics foundry revenue share rises with CPO volume"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            },
+            {
+              "id": "cond.c1.foundry_utilization",
+              "claim_id": "c1.siph_foundry",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.siph_foundry_utilization",
+              "source": null,
+              "comparator": ">=",
+              "threshold": 0.85,
+              "threshold_note": "Threshold taken from sc-006",
+              "anchor": "2026-10-18",
+              "deadline": "2027-09-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-09-30"
+              },
+              "rule": "Met when quarterly utilization reads >= 0.85",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": "cond.c1.foundry_utilization",
+            "claim_id": null,
+            "why": "Utilization is where foundry revenue is decided; it is the first number to move"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": true,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": {
+            "base_version": "c1-v4",
+            "challenged_claim_ids": [
+              "c1.laser_demand",
+              "c1.term.laser_vendor"
+            ],
+            "next_checks": [
+              "Next check: whether major vendors' 2027 production CPO actually uses integrated lasers (formal disclosures), not a route still in development"
+            ],
+            "root_version": "c1-v4"
+          },
+          "support_status": "supported",
+          "graph_version": "c1-v5",
+          "meta": {
+            "proposal_version": "c1-v5.c1.term.foundry",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": true
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "status": "draft",
+          "gate": "WAIT",
+          "direction": {
+            "instrument": "MRVL",
+            "side": "short",
+            "horizon_days": 365,
+            "note": "Pluggable DSP demand is displaced by CPO"
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.c1.dsp_guidance",
+              "claim_id": "c1.pluggable_dsp",
+              "kind": "event",
+              "predicate": "not_observed_by",
+              "series": null,
+              "source": "earnings_call_transcripts",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": "Event condition, no numeric threshold",
+              "anchor": "2026-10-18",
+              "deadline": "2027-03-31",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-03-31"
+              },
+              "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.c1.cpo_shipments",
+              "claim_id": "c1.cpo_ramp",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": "trendforce.cpo_switch_shipments_quarterly",
+              "source": null,
+              "comparator": ">=",
+              "threshold": null,
+              "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+              "anchor": "2026-10-18",
+              "deadline": "2027-06-30",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2027-06-30"
+              },
+              "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+              "verification_status": "unverified",
+              "evaluation_status": "unknown"
+            }
+          ],
+          "exit_logic": "ANY",
+          "key_dependency": {
+            "condition_id": null,
+            "claim_id": "c1.pluggable_dsp",
+            "why": "The substitution link is model inference only; no material supports it"
+          },
+          "user_judgment": {
+            "original_statement": "Photonic chip adoption is faster than expected",
+            "clarified_statement": "By 2027-06-30, quarterly CPO switch shipments reach a level you confirm, and laser vendors formally disclose external-light-source design wins",
+            "criteria": null,
+            "deadline": "2027-06-30",
+            "probability": null,
+            "requires_user_confirmation": true,
+            "confirmed": false,
+            "confirmed_claim_ids": [],
+            "note": null
+          },
+          "market_reference": null,
+          "scenario_ref": {
+            "base_version": "c1-v4",
+            "challenged_claim_ids": [
+              "c1.laser_demand",
+              "c1.term.laser_vendor"
+            ],
+            "next_checks": [
+              "Next check: whether major vendors' 2027 production CPO actually uses integrated lasers (formal disclosures), not a route still in development"
+            ],
+            "root_version": "c1-v4"
+          },
+          "support_status": "unknown",
+          "graph_version": "c1-v5",
+          "meta": {
+            "proposal_version": "c1-v5.c1.term.dsp_vendor",
+            "prompt_version": "p5",
+            "model": "scripted",
+            "approval_required": true
+          },
+          "critic": {
+            "status": "disabled",
+            "reason": "未启用：不在本期范围",
+            "items": []
+          },
+          "approval_reset": false,
+          "rival_changed": true
+        }
+      ],
+      "branches": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.assume.external_laser",
+            "c1.laser_demand",
+            "c1.term.laser_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e3",
+            "c1.e4",
+            "c1.e7"
+          ],
+          "kind": "hypothetical",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.siph_foundry",
+            "c1.term.foundry"
+          ],
+          "own_edge_ids": [
+            "c1.e5",
+            "c1.e8"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": true
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "divergence_node_ids": [
+            "c1.cpo_ramp"
+          ],
+          "own_node_ids": [
+            "c1.pluggable_dsp",
+            "c1.term.dsp_vendor"
+          ],
+          "own_edge_ids": [
+            "c1.e6",
+            "c1.e9"
+          ],
+          "kind": "model_only",
+          "trunk": "model_only",
+          "synthetic_evidence": false
+        }
+      ],
+      "node_kinds": {
+        "c1.event": "model_only",
+        "c1.assume.capex": "model_only",
+        "c1.assume.external_laser": "hypothetical",
+        "c1.cpo_ramp": "model_only",
+        "c1.laser_demand": "hypothetical",
+        "c1.siph_foundry": "model_only",
+        "c1.pluggable_dsp": "model_only",
+        "c1.term.laser_vendor": "hypothetical",
+        "c1.term.foundry": "model_only",
+        "c1.term.dsp_vendor": "model_only"
+      },
+      "edge_kinds": {
+        "c1.e1": "model_only",
+        "c1.e2": "model_only",
+        "c1.e3": "hypothetical",
+        "c1.e4": "hypothetical",
+        "c1.e5": "model_only",
+        "c1.e6": "model_only",
+        "c1.e7": "hypothetical",
+        "c1.e8": "model_only",
+        "c1.e9": "model_only"
+      },
+      "scenario": {
+        "version": "c1-v5",
+        "base_version": "c1-v4",
+        "ops": [
+          {
+            "kind": "change_assumption",
+            "target": "c1.assume.external_laser",
+            "value": "Mainstream CPO designs switch to integrated lasers and no longer need an external light source",
+            "impacts": [],
+            "new_nodes": [],
+            "new_edges": []
+          }
+        ],
+        "assessment": {
+          "c1.event": "unaffected",
+          "c1.assume.capex": "unaffected",
+          "c1.assume.external_laser": "unaffected",
+          "c1.cpo_ramp": "unaffected",
+          "c1.laser_demand": "challenged",
+          "c1.siph_foundry": "unaffected",
+          "c1.pluggable_dsp": "unaffected",
+          "c1.term.laser_vendor": "challenged",
+          "c1.term.foundry": "unaffected",
+          "c1.term.dsp_vendor": "unaffected"
+        },
+        "assessment_reason": {
+          "c1.assume.external_laser": "This is the changed assumption itself: integrated lasers in the scenario",
+          "c1.laser_demand": "External light-source demand assumes every CPO port needs an external source; with integrated lasers that premise fails",
+          "c1.term.laser_vendor": "The laser vendors' upside comes from external light-source demand; the upstream premise is challenged, so this conclusion is too"
+        },
+        "root_version": "c1-v4"
+      },
+      "diff": {
+        "nodes_changed": [
+          "c1.assume.external_laser"
+        ],
+        "nodes_added": [],
+        "nodes_removed": [],
+        "edges_changed": [
+          "c1.e4",
+          "c1.e7"
+        ],
+        "edges_added": [],
+        "edges_removed": [],
+        "conditions_changed": [
+          "cond.c1.els_design_wins"
+        ],
+        "conditions_added": [],
+        "conditions_removed": [],
+        "changed_claim_ids": [
+          "c1.assume.external_laser",
+          "c1.laser_demand",
+          "c1.term.laser_vendor"
+        ]
+      },
+      "excerpts": [
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-001",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: several cloud providers moved CPO switch deployment from 2028 to 2H27.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-002",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-15",
+          "text": "Placeholder: major cloud providers kept their 2027 AI capex guidance in the latest quarter.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-003",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: each CPO switch needs several external light-source modules, so light-source demand grows with CPO port count.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-004",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-08-20",
+          "text": "Placeholder: CPO designs in volume production today mainly use external light sources (ELS), which are easier to service and cool.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-005",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder (counter-evidence): some vendors are developing integrated-laser designs that, if mature, would reduce demand for external light sources.",
+          "stance": "contradicts",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-006",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-07-30",
+          "text": "Placeholder: silicon-photonics foundry lines are expected to exceed 85% utilization on CPO orders.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-007",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: laser vendors say visibility on data-center light-source orders now extends four quarters.",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-008",
+          "source": "fixture (placeholder, mimics an industry research article)",
+          "date": "2026-09-01",
+          "text": "Placeholder: silicon-photonics share of foundry revenue rises quarter by quarter as CPO ramps.",
+          "stance": "supports",
+          "url": null
+        }
+      ]
+    }
+  },
+  "latest": "c1-v5"
+}

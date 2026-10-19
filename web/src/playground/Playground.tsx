@@ -10,6 +10,7 @@ import { demoLabel } from './demoLabels';
 import { strength } from '../node/strength';
 import { Bars, Ring } from '../node/StrengthGlyph';
 import './playground.css';
+import { T } from '../strings';
 
 type Key = keyof Look;
 type Pick = 'A' | 'B';
@@ -19,29 +20,21 @@ interface Ground { key: Key; title: string; question: string; scenario?: boolean
 
 const GROUNDS: Ground[] = [
   {
-    key: 'shape', title: '节点形态', question: '节点平时长什么样？',
-    A: { value: 'pill', name: '胶囊', desc: '一行短标题 + 证据符号，像灵动岛收起的样子' },
-    B: { value: 'card', name: '小卡片', desc: '两行：短标题，下面一行小字写正方几条、反方几条' },
+    key: 'shape', ...T.pgNode.shape, A: { value: 'pill', ...T.pgNode.shape.A }, B: { value: 'card', ...T.pgNode.shape.B },
   },
   {
-    key: 'strength', title: '证据强弱', question: '怎么一眼看出证据强不强、有没有反方？',
-    A: { value: 'ring', name: '圆环', desc: '3 格圆环，亮几格 = 几条引用，反方是红格（像 Activity 圆环）' },
-    B: { value: 'bars', name: '信号格', desc: '3 根信号格 = 正方引用条数，反方是右上角的红色数字（像手机信号）' },
+    key: 'strength', ...T.pgNode.strength, A: { value: 'ring', ...T.pgNode.strength.A }, B: { value: 'bars', ...T.pgNode.strength.B },
   },
   {
-    key: 'color', title: '颜色', question: '颜色用来表示什么？',
-    A: { value: 'state', name: '只表示状态', desc: '平时全是白底，只有关键依赖、反方、受挑战才有颜色' },
-    B: { value: 'role', name: '类型 + 状态', desc: '事件蓝、假设绿、终点紫的淡底色，状态再叠一层描边' },
+    key: 'color', ...T.pgNode.color, A: { value: 'state', ...T.pgNode.color.A }, B: { value: 'role', ...T.pgNode.color.B },
   },
   {
-    key: 'expand', title: '点开节点', question: '点一个节点，信息出现在哪？', select: 'c1.laser_demand',
-    A: { value: 'inline', name: '原地展开', desc: '节点自己变大，像灵动岛展开；视线不用离开' },
-    B: { value: 'panel', name: '侧边面板', desc: '节点不变，信息出现在右边的面板里（现在的做法）' },
+    key: 'expand', ...T.pgNode.expand, select: 'c1.laser_demand',
+    A: { value: 'inline', ...T.pgNode.expand.A }, B: { value: 'panel', ...T.pgNode.expand.B },
   },
   {
-    key: 'scenario', title: '情景着色（B3）', question: '改了一个假设之后，怎么看出哪里受影响？', scenario: true,
-    A: { value: 'dim', name: '其余退后', desc: '受挑战的亮起来，没受影响的变淡' },
-    B: { value: 'path', name: '标出传导路径', desc: '受挑战的亮起来，传导的连线标橙，其余保持原样' },
+    key: 'scenario', ...T.pgNode.scenario, scenario: true,
+    A: { value: 'dim', ...T.pgNode.scenario.A }, B: { value: 'path', ...T.pgNode.scenario.B },
   },
 ];
 
@@ -70,7 +63,7 @@ function Pane({ bundle, look, scenario, initial }: {
   const [selected, setSelected] = useState<string | null>(initial ?? null);
   const sc = scenario ? bundle.scenario : null;
   const changed = changedTargets(sc);
-  const key = keyClaimId(bundle.proposal, bundle.graph);
+  const key = keyClaimId(bundle.proposals[0], bundle.graph); // 演示页：只标第一份计划的关键依赖
 
   const { nodes, edges } = useMemo(() => {
     const flow = toFlow(bundle.graph);
@@ -121,10 +114,10 @@ function Pane({ bundle, look, scenario, initial }: {
               <div className="pg-row">{look.strength === 'ring' ? <Ring s={s} size={30} /> : <Bars s={s} />}
                 <div className="pg-title">{demoLabel(sel, changed.includes(sel.id))}</div></div>
               <p className="pg-sub">{sel.statement}</p>
-              <p className="pg-sub">{s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断' : `正方 ${s.support} · 反方 ${s.contra}`}</p>
-              {nodeConditions(bundle.graph, sel.id).map((c) => <p key={c.id} className="pg-sub">截止 {c.deadline}</p>)}
+              <p className="pg-sub">{s.noInEdges ? T.node.noInEdges : s.modelOnly ? T.node.modelOnly : T.pgNode.supportContra(s.support, s.contra)}</p>
+              {nodeConditions(bundle.graph, sel.id).map((c) => <p key={c.id} className="pg-sub">{T.node.deadline(c.deadline)}</p>)}
             </>
-          ) : <p className="pg-sub">点一个节点</p>}
+          ) : <p className="pg-sub">{T.pg.clickNode}</p>}
         </aside>
       )}
     </div>
@@ -144,36 +137,37 @@ export default function Playground() {
     try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* 无痕模式等：不记住也能用 */ }
   };
 
-  if (!fx) return <div className="pg">加载 fixture…</div>;
+  if (!fx) return <div className="pg">{T.pg.loading}</div>;
   const g = GROUNDS[active];
   const base = Object.values(fx.versions).find((b) => !b.scenario)!;
   const scen = Object.values(fx.versions).find((b) => b.scenario) ?? base;
   const bundle = g.scenario ? scen : base;
-  const summary = GROUNDS.map((x, i) => `${i + 1}${picks[x.key] ?? '?'} ${x.title}：${picks[x.key] ? x[picks[x.key]!].name : '未选'}`).join('；');
+  const summary = GROUNDS.map((x, i) => T.pg.summaryItem(i + 1, picks[x.key], x.title, picks[x.key] ? x[picks[x.key]!].name : null)).join(T.pg.summarySep);
 
   return (
     <div className="pg">
       <header className="pg-head">
-        <a href="#" className="pg-back">← 回到应用</a>
-        <strong>节点视觉 playground</strong>
+        <a href="#" className="pg-back">{T.pg.back}</a>
+        <a href="#scenarios" className="pg-back">{T.pgNode.linkScenarios}</a>
+        <strong>{T.pgNode.title}</strong>
         <nav className="pg-nav">
           {GROUNDS.map((x, i) => (
             <button key={x.key} className={i === active ? 'on' : ''} onClick={() => setActive(i)}>
-              {i + 1} {x.title}{picks[x.key] ? ` · ${picks[x.key]}` : ''}
+              {T.pg.navItem(i + 1, x.title, picks[x.key])}
             </button>
           ))}
         </nav>
       </header>
       <div className="pg-q">
-        <h2>{active + 1}. {g.question}</h2>
-        <span className="pg-note">每次只变这一项，其余用你已选的（没选的用 A）。短标题是演示用的，正式版需要后端给 label 字段。数据：fixture c1{g.scenario ? '，情景 c1-v2' : ''}。</span>
+        <h2>{T.pg.question(active + 1, g.question)}</h2>
+        <span className="pg-note">{T.pgNode.note(!!g.scenario)}</span>
       </div>
       <div className="pg-ab">
         {(['A', 'B'] as Pick[]).map((p) => (
           <section key={p} className={`pg-option${picks[g.key] === p ? ' picked' : ''}`}>
             <div className="pg-option-head">
-              <div><strong>{p}　{g[p].name}</strong><div className="pg-sub">{g[p].desc}</div></div>
-              <button className="pg-pick" onClick={() => choose(g.key, p)}>{picks[g.key] === p ? '✓ 已选' : '选这个'}</button>
+              <div><strong>{T.pg.optionTitle(p, g[p].name)}</strong><div className="pg-sub">{g[p].desc}</div></div>
+              <button className="pg-pick" onClick={() => choose(g.key, p)}>{picks[g.key] === p ? T.pg.picked : T.pg.pick}</button>
             </div>
             <Pane key={`${g.key}-${p}-${JSON.stringify(picks)}`} bundle={bundle} scenario={!!g.scenario}
               look={lookFor(picks, [g.key, g[p].value])} initial={g.select} />
@@ -181,8 +175,8 @@ export default function Playground() {
         ))}
       </div>
       <footer className="pg-foot">
-        <span>你的选择：{summary}</span>
-        <button className="pg-pick" onClick={() => navigator.clipboard?.writeText(summary)}>复制</button>
+        <span>{T.pg.yourPicks(summary)}</span>
+        <button className="pg-pick" onClick={() => navigator.clipboard?.writeText(summary)}>{T.pg.copy}</button>
       </footer>
     </div>
   );

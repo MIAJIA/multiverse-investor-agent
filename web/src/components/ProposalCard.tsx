@@ -3,10 +3,12 @@ import { CRITIC, EXIT_LOGIC, GATE, PROPOSAL_STATUS, SUPPORT } from '../status';
 import type { Condition, ConditionOverride, Graph, TradeProposal } from '../types';
 import Badge from './Badge';
 import ConditionRow from './ConditionRow';
+import { T } from '../strings';
 
-export default function ProposalCard({ proposal, graph, overrides, onOverride, compact }: {
+export default function ProposalCard({ proposal, graph, overrides, onOverride, compact, planB }: {
   proposal: TradeProposal; graph: Graph; compact?: boolean;
   overrides?: Record<string, ConditionOverride>; onOverride?: (id: string, o: ConditionOverride | null) => void;
+  planB?: boolean; // 方案 B：「研究判断」移到页面顶部的理解确认行；null 阈值高亮「需要你确认」
 }) {
   const { direction: d, user_judgment: uj, key_dependency: kd } = proposal;
   const name = (id: string | null) => graph.nodes.find((n) => n.id === id)?.statement ?? id;
@@ -16,45 +18,45 @@ export default function ProposalCard({ proposal, graph, overrides, onOverride, c
       <div key={c.id}>
         {i > 0 && <div className="joiner">{joiner}</div>}
         <div className="small muted">{name(c.claim_id)}</div>
-        <ConditionRow c={c} override={overrides?.[c.id]} onOverride={onOverride && ((o) => onOverride(c.id, o))} />
+        <ConditionRow c={c} override={overrides?.[c.id]} onOverride={onOverride && ((o) => onOverride(c.id, o))} highlightMissing={planB} />
       </div>
     ));
   return (
     <div className="proposal">
-      <h3>{d.side === 'long' ? '看多' : '看空'} {d.instrument}{d.horizon_days ? ` · ${d.horizon_days} 天` : ''}</h3>
+      <h3>{T.proposal.heading(d.side, d.instrument, d.horizon_days)}</h3>
       {d.note && <div className="small muted">{d.note}</div>}
       <div className="row big-badges" style={{ marginTop: 8 }}>
         <Badge look={PROPOSAL_STATUS[proposal.status]} title="status" />
         <Badge look={GATE[proposal.gate]} title="gate" />
         <Badge look={SUPPORT[proposal.support_status]} title="support_status" />
-        {uj.confirmed && <span className="signed">✓ 已签</span>}
+        {uj.confirmed && <span className="signed">{T.proposal.signed}</span>}
       </div>
       {kd && (
-        <p className="small key-why">关键依赖：{name(kdClaim)} — {kd.why}</p>
+        <p className="small key-why">{T.proposal.keyDependency(String(name(kdClaim)), kd.why)}</p>
       )}
       {!compact && (
         <>
-          <h4>进场条件（全部满足才进入复核：且）</h4>
-          {rows(proposal.entry_conditions, '且')}
-          <h4>退出条件 · <Badge look={EXIT_LOGIC[proposal.exit_logic]} /></h4>
-          {rows(proposal.exit_conditions, proposal.exit_logic === 'ANY' ? '或' : '且')}
-          <h4>研究判断</h4>
+          <h4>{T.proposal.entry}</h4>
+          {rows(proposal.entry_conditions, T.proposal.and)}
+          <h4>{T.proposal.exit}<Badge look={EXIT_LOGIC[proposal.exit_logic]} /></h4>
+          {rows(proposal.exit_conditions, proposal.exit_logic === 'ANY' ? T.proposal.or : T.proposal.and)}
+          {!planB && <><h4>{T.proposal.judgment}</h4>
           <p className="small">{uj.clarified_statement}</p>
           {uj.requires_user_confirmation && uj.original_statement !== uj.clarified_statement && (
-            <p className="small muted">原话：{uj.original_statement}（改写过，需要你确认）</p>
+            <p className="small muted">{T.proposal.rewritten(uj.original_statement)}</p>
           )}
           {uj.confirmed && (
-            <p className="small">已确认的假设：{uj.confirmed_claim_ids.map(name).join('；') || '无'}
-              {uj.criteria && <><br />判定条件：{uj.criteria}</>}{uj.deadline && <><br />期限：{uj.deadline}</>}</p>
-          )}
+            <p className="small">{T.proposal.confirmedClaims(uj.confirmed_claim_ids.map(name).join(T.proposal.listSep))}
+              {uj.criteria && <><br />{T.proposal.criteria(uj.criteria)}</>}{uj.deadline && <><br />{T.proposal.deadline(uj.deadline)}</>}</p>
+          )}</>}
         </>
       )}
       <div className="critic small" style={{ color: CRITIC[proposal.critic.status].color }}>
         {CRITIC[proposal.critic.status].label}
-        {proposal.critic.status === 'failed' && `：${proposal.critic.reason}`}
+        {proposal.critic.status === 'failed' && T.proposal.criticFailed(proposal.critic.reason)}
         {proposal.critic.status === 'ok' && (
           <ul style={{ margin: '4px 0', paddingLeft: 18 }}>
-            {proposal.critic.items.map((it) => <li key={it.claim_id + it.challenge}>{name(it.claim_id)}：{it.challenge}</li>)}
+            {proposal.critic.items.map((it) => <li key={it.claim_id + it.challenge}>{T.proposal.criticItem(String(name(it.claim_id)), it.challenge)}</li>)}
           </ul>
         )}
       </div>

@@ -30,5 +30,7 @@ describe('证据符号计数', () => {
     expect(nodeLabel({ label: null, statement: '一二三四五六七八九十一二' })).toBe('一二三四五六七八九十…');
     expect(nodeLabel({ label: '  ', statement: '短句' })).toBe('短句');
     expect(nodeLabel({ label: null, statement: '十个字以内的话' })).toBe('十个字以内的话');
+    expect(nodeLabel({ label: null, statement: 'Photonic chips are being adopted faster than expected' })).toBe('Photonic chips are being…');
+    expect(nodeLabel({ label: null, statement: 'CPO switch shipments' })).toBe('CPO switch shipments');
   });
 });

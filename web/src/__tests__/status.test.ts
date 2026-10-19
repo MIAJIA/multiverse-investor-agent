@@ -13,6 +13,7 @@ const TABLES: [string, readonly string[], Record<string, S.Look>][] = [
   ['EVALUATION', T.EVALUATION_STATUSES, S.EVALUATION],
   ['EXIT_LOGIC', T.EXIT_LOGICS, S.EXIT_LOGIC],
   ['CRITIC', T.CRITIC_STATUSES, S.CRITIC],
+  ['BRANCH_KIND', T.BRANCH_KINDS, S.BRANCH_KIND],
 ];
 
 describe('status 映射', () => {
@@ -43,5 +44,14 @@ describe('status 映射', () => {
   it('三态着色：challenged 橙、unresolved 虚线', () => {
     expect(S.ASSESSMENT.challenged.color).toBe(S.ROLE.shock.color);
     expect(S.ASSESSMENT.unresolved.border).toBe('dashed');
+  });
+
+  it('三类分支：线型各不相同，假设分支有底纹和「假设 · 未观测」标签，有资料的默认不加字', () => {
+    const k = S.BRANCH_KIND;
+    expect(new Set([k.evidenced.line, k.model_only.line, k.hypothetical.line]).size).toBe(3);
+    expect(k.hypothetical.tag).toBe('假设 · 未观测');
+    expect(k.hypothetical.pattern).toContain('repeating-linear-gradient');
+    expect(k.evidenced.tag).toBeNull();
+    expect(k.model_only.dash).toBeTruthy();
   });
 });
