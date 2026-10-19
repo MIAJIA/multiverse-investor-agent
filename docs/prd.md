@@ -14,7 +14,7 @@
 | **Branch kind is derived by code**: evidenced / model-only / hypothetical, distinguishable at a glance in the UI | — | Plan B, D-B9 |
 | **Changing an assumption invalidates only the affected plans**; the other approvals are kept; scenarios can be stacked | "Sign-off is kept on fork" | Plan B, D-B5; the fix for stacked scenarios |
 | **Three evidence stances**: supports / contradicts / neutral (background information, which cannot be used to prove a conclusion) | Two stances | Added during implementation |
-| **Web search switch**: off by default; searches only 18 whitelisted sites; excerpts take the original page text only and are frozen into an evidence pack before reasoning; replayable | "The main demo has it off, and one case has it on for demonstration" (direction unchanged, implemented) | `docs/websearch/design.md` |
+| **Web search switch**: off by default; searches only 19 whitelisted sites; excerpts take the original page text only and are frozen into an evidence pack before reasoning; replayable | "The main demo has it off, and one case has it on for demonstration" (direction unchanged, implemented) | `docs/websearch/design.md` |
 | **Inspect research loop**: with web search on, the agent decides what to look up; after the graph is built, the code finds where evidence is missing and runs one more follow-up round | Searching once at the start only | `docs/changes/2026-10-18-agent-loop.md` |
 | **The local knowledge base goes into the context whole** (the two packs are about 16k tokens); when it grows, switch to RAG, which belongs to the next phase | "The model may retrieve again a limited number of times" | Same, D-A2 |
 | **Critic**: a slot is left in the flow; in this phase it returns "disabled" | Optional item | `docs/core-design.md` |

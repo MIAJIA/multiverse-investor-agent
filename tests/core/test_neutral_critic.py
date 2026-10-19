@@ -90,7 +90,7 @@ class NoModel:
 def test_proposal_always_carries_disabled_critic_without_model_calls(ev):
     r = Scripted([_good()])
     res = ep.inspect("x", reasoner=r, evidence=ev, config=CFG)
-    assert res["proposals"][0]["critic"] == {"status": "disabled", "reason": "未启用：不在本期范围", "items": []}
+    assert res["proposals"][0]["critic"] == {"status": "disabled", "reason": "Not enabled: out of scope for this phase", "items": []}
     assert r.stages == ["inspect", "inspect.plan"]  # 没有多出 critic 那一步
 
     report = ep.critic(res["graph"], res["proposals"][0], reasoner=NoModel(), config=CFG)

@@ -1,6 +1,6 @@
 # Catalyst (multiverse-investor-agent)
 
-A research tool for retail traders. The user enters an event. The system returns a causal graph and a conditional trade proposal (a draft, never executed). The user can change one assumption to fork, and see which premises are challenged. This is an interview take-home. Product and architecture follow `docs/prd.md` and `docs/engineering-design.md` (export snapshots of the online Claude Docs versions). Implementation-level decisions are recorded in `docs/core-design.md`.
+A research tool for retail traders. The user enters an event. The system returns a causal graph and a conditional trade proposal (a draft, never executed). The user can change one assumption to fork, and see which premises are challenged. This is an interview take-home. Product and architecture follow `docs/prd.md` and `docs/engineering-design.md` (they started as exports from Claude Docs; the repository version is now the source of truth). Implementation-level decisions are recorded in `docs/core-design.md`.
 
 ## One principle
 

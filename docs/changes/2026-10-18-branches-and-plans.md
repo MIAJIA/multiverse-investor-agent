@@ -46,7 +46,7 @@ From the user's side, the decision depends on "which premise you believe".
 `store.bundle`, `promote` and `web/scripts/make_fixtures.py` all call the same function. The version bundle gains:
 
 ```
-branches: [{terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk}]
+branches: [{terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}]
 ```
 
 - **Own part**: `own_node_ids = (ancestors(t) ∪ {t}) − ⋃ ancestors(other terminals)`. `own_edge_ids` are the edges whose end falls in `own_node_ids`. This way a side-path root node is not missed.

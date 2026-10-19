@@ -491,13 +491,13 @@
           "graph_version": "c1-v1",
           "meta": {
             "proposal_version": "c1-v1.c1.term.laser_vendor",
-            "prompt_version": "p5",
+            "prompt_version": "p6",
             "model": "scripted",
             "approval_required": true
           },
           "critic": {
             "status": "disabled",
-            "reason": "未启用：不在本期范围",
+            "reason": "Not enabled: out of scope for this phase",
             "items": []
           },
           "approval_reset": false,
@@ -579,13 +579,13 @@
           "graph_version": "c1-v1",
           "meta": {
             "proposal_version": "c1-v1.c1.term.foundry",
-            "prompt_version": "p5",
+            "prompt_version": "p6",
             "model": "scripted",
             "approval_required": true
           },
           "critic": {
             "status": "disabled",
-            "reason": "未启用：不在本期范围",
+            "reason": "Not enabled: out of scope for this phase",
             "items": []
           },
           "approval_reset": false,
@@ -668,13 +668,13 @@
           "graph_version": "c1-v1",
           "meta": {
             "proposal_version": "c1-v1.c1.term.dsp_vendor",
-            "prompt_version": "p5",
+            "prompt_version": "p6",
             "model": "scripted",
             "approval_required": true
           },
           "critic": {
             "status": "disabled",
-            "reason": "未启用：不在本期范围",
+            "reason": "Not enabled: out of scope for this phase",
             "items": []
           },
           "approval_reset": false,
@@ -1321,13 +1321,13 @@
           "graph_version": "c1-v2",
           "meta": {
             "proposal_version": "c1-v2.c1.term.laser_vendor",
-            "prompt_version": "p5",
+            "prompt_version": "p6",
             "model": "scripted",
             "approval_required": true
           },
           "critic": {
             "status": "disabled",
-            "reason": "未启用：不在本期范围",
+            "reason": "Not enabled: out of scope for this phase",
             "items": []
           },
           "approval_reset": false,
@@ -1419,13 +1419,13 @@
           "graph_version": "c1-v2",
           "meta": {
             "proposal_version": "c1-v2.c1.term.foundry",
-            "prompt_version": "p5",
+            "prompt_version": "p6",
             "model": "scripted",
             "approval_required": true
           },
           "critic": {
             "status": "disabled",
-            "reason": "未启用：不在本期范围",
+            "reason": "Not enabled: out of scope for this phase",
             "items": []
           },
           "approval_reset": false,
@@ -1518,13 +1518,13 @@
           "graph_version": "c1-v2",
           "meta": {
             "proposal_version": "c1-v2.c1.term.dsp_vendor",
-            "prompt_version": "p5",
+            "prompt_version": "p6",
             "model": "scripted",
             "approval_required": true
           },
           "critic": {
             "status": "disabled",
-            "reason": "未启用：不在本期范围",
+            "reason": "Not enabled: out of scope for this phase",
             "items": []
           },
           "approval_reset": false,

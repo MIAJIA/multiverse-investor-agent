@@ -226,7 +226,7 @@ class CriticItem(Strict):
     challenge: str = Field(description="The challenge raised against this claim")
 
 
-CRITIC_DISABLED_REASON = "未启用：不在本期范围"
+CRITIC_DISABLED_REASON = "Not enabled: out of scope for this phase"
 
 
 class CriticReport(Strict):
