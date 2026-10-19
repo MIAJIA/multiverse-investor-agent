@@ -1,6 +1,7 @@
 // 后端接口。真实模式走 /api（Vite 代理到 CATALYST_API，默认 http://localhost:8000）；
 // MOCK 模式读离线生成的 fixtures/c1.json。默认 MOCK，`VITE_MOCK=0 npm run dev` 切到真实后端。
 import type { Fixture, Op, RunCreated, SignBody, VersionBundle, WriteResult } from './types';
+import { T } from './strings';
 
 export const MOCK = import.meta.env.VITE_MOCK !== '0';
 
@@ -51,7 +52,7 @@ const mock = {
   },
   async getVersion(version: string): Promise<VersionBundle> {
     const b = (await loadFixture()).versions[version];
-    if (!b) throw new Error(`MOCK：fixture 里没有版本 ${version}`);
+    if (!b) throw new Error(T.mock.noVersion(version));
     return structuredClone(b); // 和网络返回一样：每次一份新对象
   },
   async fork(op: Op): Promise<WriteResult> {
@@ -61,7 +62,7 @@ const mock = {
     );
     if (!hit) {
       const recorded = Object.values(fx.versions).flatMap((b) => b.scenario?.ops.map((o) => o.target) ?? []);
-      return { ok: false, errors: [`MOCK：fixture 只录了 ${recorded.join('、')} 的 ${op.kind}`], version: null };
+      return { ok: false, errors: [T.mock.onlyRecorded(recorded.filter((x): x is string => !!x), op.kind)], version: null };
     }
     return { ok: true, errors: [], version: hit.graph.version };
   },
@@ -69,13 +70,13 @@ const mock = {
     // 只在 MOCK 里改数据：真实后端会产出新版本（op.kind = "sign"），套用 overrides 并重算条件和 gate。
     // 这里只把用户输入写进提案，gate 不重算，返回同一个版本号。
     const p = (await loadFixture()).versions[body.version]?.proposal;
-    if (!p) return { ok: false, errors: [`MOCK：版本 ${body.version} 没有提案`], version: null };
+    if (!p) return { ok: false, errors: [T.mock.noProposal(body.version)], version: null };
     Object.assign(p.user_judgment, {
       clarified_statement: body.clarified_statement, criteria: body.criteria, deadline: body.deadline,
       confirmed: true, confirmed_claim_ids: body.confirmed_claim_ids,
     });
     for (const c of [...p.entry_conditions, ...p.exit_conditions]) Object.assign(c, body.condition_overrides[c.id] ?? {});
-    return { ok: true, errors: ['MOCK：gate 未重算（真实后端会产出新版本并重新判定条件）'], version: body.version };
+    return { ok: true, errors: [T.mock.gateNotRecomputed], version: body.version };
   },
 };
 

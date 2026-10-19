@@ -2,6 +2,7 @@
 // 这些本该由后端 branches.py 和 Inspect 第二步给出；后端交付后整份文件删掉，换成真实 fixture。
 import type { Branch, BranchKind, Fixture, PlanBBundle, TradeProposal } from '../types';
 
+export const DEMO_SUBTITLE = '光子芯片采用快于预期 + 情景「代工停产」';
 export const DEMO_NOTE = '演示数据：分支、类别和 TSM / MRVL 两份计划是手动指定的，不是后端输出';
 
 const OWN: Record<string, { kind: BranchKind; own: string[]; synthetic: boolean }> = {

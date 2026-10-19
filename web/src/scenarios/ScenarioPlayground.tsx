@@ -14,6 +14,7 @@ import {
 } from './model';
 import '../playground/playground.css';
 import './scenarios.css';
+import { T } from '../strings';
 
 type Pick = 'A' | 'B';
 interface Side { name: string; desc: string; render: (v: Versions) => ReactNode }
@@ -56,7 +57,7 @@ function Tree({ versions }: { versions: Versions }) {
   );
   return (
     <div className="sc-row">
-      <nav className="sc-tree">{row(root, 0)}<div className="sc-hint">数字 = 这一层新增的受挑战前提</div></nav>
+      <nav className="sc-tree">{row(root, 0)}<div className="sc-hint">{T.pgScen.treeHint}</div></nav>
       <ScenarioCanvas bundle={versions[cur]} coloring={versions[cur].scenario ? cumulativeColoring(versions, cur) : undefined} />
     </div>
   );
@@ -77,7 +78,7 @@ function Overlay({ versions }: { versions: Versions }) {
       <div className="sc-legend">
         <span><i style={{ background: A_COLOR }} />{scenarioName(versions, a)}</span>
         <span><i style={{ background: B_COLOR }} />{scenarioName(versions, b)}</span>
-        <span><i style={{ background: BOTH_COLOR }} />两个都受挑战</span>
+        <span><i style={{ background: BOTH_COLOR }} />{T.pgScen.bothChallenged}</span>
       </div>
       <ScenarioCanvas bundle={versions[rootOf(versions)]} tints={tints} />
     </div>
@@ -108,7 +109,7 @@ function Relative({ versions }: { versions: Versions }) {
   const v = stacked(versions);
   return (
     <div className="sc-col">
-      <div className="sc-note">「{fullName(versions, v)}」：只标这一层新增的（本版本减去父版本的受挑战集合）；相对「{scenarioName(versions, versions[v].scenario!.base_version)}」</div>
+      <div className="sc-note">{T.pgScen.relativeNote(fullName(versions, v), scenarioName(versions, versions[v].scenario!.base_version))}</div>
       <ScenarioCanvas bundle={versions[v]} coloring={layerColoring(versions, v)} />
     </div>
   );
@@ -118,7 +119,7 @@ function Cumulative({ versions }: { versions: Versions }) {
   const v = stacked(versions);
   return (
     <div className="sc-col">
-      <div className="sc-note">「{fullName(versions, v)}」：叠加后全部受挑战的；相对基线（后端的 scenario_ref.challenged_claim_ids）</div>
+      <div className="sc-note">{T.pgScen.cumulativeNote(fullName(versions, v))}</div>
       <ScenarioCanvas bundle={versions[v]} coloring={cumulativeColoring(versions, v)} />
     </div>
   );
@@ -137,9 +138,9 @@ function BigNumber({ versions }: { versions: Versions }) {
           <div key={v} className="sc-card">
             <div className="sc-card-name">{fullName(versions, v)}</div>
             <div className="sc-big" style={{ color: n ? A_COLOR : '#34c759' }}>{n}</div>
-            <div className="sc-sub">个前提受挑战（相对基线），这一层新增 {added}</div>
+            <div className="sc-sub">{T.pgScen.bigSub(added)}</div>
             <div className="sc-delta">
-              <span>支持度</span>
+              <span>{T.pgScen.support}</span>
               <span style={{ color: SUPPORT[base.support_status].color }}>{base.support_status}</span>
               <span>→</span>
               <span style={{ color: SUPPORT[p.support_status].color }}>{p.support_status}</span>
@@ -149,9 +150,9 @@ function BigNumber({ versions }: { versions: Versions }) {
         );
       })}
       <div className="sc-card sc-base">
-        <div className="sc-card-name">基线</div>
+        <div className="sc-card-name">{T.pgScen.baseline}</div>
         <div className="sc-big">{root.graph.nodes.length}</div>
-        <div className="sc-sub">个前提，gate {root.proposal!.gate}</div>
+        <div className="sc-sub">{T.pgScen.baseSub(root.proposal!.gate)}</div>
       </div>
     </div>
   );
@@ -182,8 +183,8 @@ function WatchFaces({ versions }: { versions: Versions }) {
         </div>
       ))}
       <div className="sc-legend" style={{ gridColumn: '1 / -1' }}>
-        <span><i style={{ background: A_COLOR }} />受挑战</span><span><i style={{ background: B_COLOR }} />改动的假设</span>
-        <span><i style={{ background: '#d1d5db' }} />未变</span><span>每个点是一个节点，位置和画布一致</span>
+        <span><i style={{ background: A_COLOR }} />{T.pgScen.legendChallenged}</span><span><i style={{ background: B_COLOR }} />{T.pgScen.legendChanged}</span>
+        <span><i style={{ background: '#d1d5db' }} />{T.pgScen.legendUnchanged}</span><span>{T.pgScen.legendDots}</span>
       </div>
     </div>
   );
@@ -210,23 +211,23 @@ function Island({ versions }: { versions: Versions }) {
       <ScenarioCanvas bundle={versions[f.from]} coloring={versions[f.from].scenario ? cumulativeColoring(versions, f.from) : undefined} />
       <div className={`sc-island${open ? ' open' : ''}`}>
         {!open ? (
-          <button className="sc-island-pill" onClick={() => setOpen(true)}>＋ 假如…<span>在「{fullName(versions, f.from)}」上</span></button>
+          <button className="sc-island-pill" onClick={() => setOpen(true)}>{T.pgScen.islandPill}<span>{T.pgScen.islandOn(fullName(versions, f.from))}</span></button>
         ) : f.done ? (
-          <div className="sc-island-body"><div>已演示：会从「{fullName(versions, f.from)}」分出「{f.name || f.value.slice(0, 10)}」</div>
-            <button onClick={() => { setOpen(false); f.setDone(false); }}>好</button></div>
+          <div className="sc-island-body"><div>{T.pgScen.demoDone(fullName(versions, f.from), f.name || f.value.slice(0, 10))}</div>
+            <button onClick={() => { setOpen(false); f.setDone(false); }}>{T.pgScen.ok}</button></div>
         ) : (
           <div className="sc-island-body">
-            <div style={{ color: '#9aa1ab', fontSize: 12 }}>在「{fullName(versions, f.from)}」上再假如一次</div>
+            <div style={{ color: '#9aa1ab', fontSize: 12 }}>{T.pgScen.islandLead(fullName(versions, f.from))}</div>
             <div className="sc-island-row">
               <select value={f.target} onChange={(e) => f.setTarget(e.target.value)}>
                 {f.graph.nodes.map((n) => <option key={n.id} value={n.id}>{n.statement.slice(0, 16)}</option>)}
               </select>
             </div>
-            <input placeholder="改成什么，例如：开放推迟两周" value={f.value} onChange={(e) => f.setValue(e.target.value)} />
-            <input placeholder={f.value ? `情景名（默认：${f.value.slice(0, 10)}）` : '情景名'} value={f.name} onChange={(e) => f.setName(e.target.value)} />
+            <input placeholder={T.pgScen.valuePlaceholder} value={f.value} onChange={(e) => f.setValue(e.target.value)} />
+            <input placeholder={T.pgScen.namePlaceholder(f.value)} value={f.name} onChange={(e) => f.setName(e.target.value)} />
             <div className="sc-island-row">
-              <button onClick={() => setOpen(false)}>取消</button>
-              <button className="go" disabled={!f.value.trim()} onClick={() => f.setDone(true)}>分叉</button>
+              <button onClick={() => setOpen(false)}>{T.pgScen.cancel}</button>
+              <button className="go" disabled={!f.value.trim()} onClick={() => f.setDone(true)}>{T.pgScen.fork}</button>
             </div>
           </div>
         )}
@@ -241,20 +242,20 @@ function SideForm({ versions }: { versions: Versions }) {
     <div className="sc-row">
       <ScenarioCanvas bundle={versions[f.from]} coloring={versions[f.from].scenario ? cumulativeColoring(versions, f.from) : undefined} />
       <aside className="sc-form">
-        <label>从哪个版本出发</label>
+        <label>{T.pgScen.fromVersion}</label>
         <select value={f.from} onChange={(e) => f.setFrom(e.target.value)}>
           {f.ids.map((v) => <option key={v} value={v}>{fullName(versions, v)}</option>)}
         </select>
-        <label>改哪个节点</label>
+        <label>{T.pgScen.whichNode}</label>
         <select value={f.target} onChange={(e) => f.setTarget(e.target.value)}>
           {f.graph.nodes.map((n) => <option key={n.id} value={n.id}>{n.statement.slice(0, 16)}</option>)}
         </select>
-        <label>改成</label>
-        <input value={f.value} placeholder="开放推迟两周" onChange={(e) => f.setValue(e.target.value)} />
-        <label>情景名</label>
-        <input value={f.name} placeholder={f.value.slice(0, 10) || '默认取上面这句话'} onChange={(e) => f.setName(e.target.value)} />
-        <button className="pg-pick" disabled={!f.value.trim()} onClick={() => f.setDone(true)}>分叉</button>
-        {f.done && <div className="sc-hint">已演示：会从「{fullName(versions, f.from)}」分出「{f.name || f.value.slice(0, 10)}」</div>}
+        <label>{T.pgScen.changeTo}</label>
+        <input value={f.value} placeholder={T.pgScen.sidePlaceholder} onChange={(e) => f.setValue(e.target.value)} />
+        <label>{T.pgScen.name}</label>
+        <input value={f.name} placeholder={f.value.slice(0, 10) || T.pgScen.nameDefault} onChange={(e) => f.setName(e.target.value)} />
+        <button className="pg-pick" disabled={!f.value.trim()} onClick={() => f.setDone(true)}>{T.pgScen.fork}</button>
+        {f.done && <div className="sc-hint">{T.pgScen.demoDone(fullName(versions, f.from), f.name || f.value.slice(0, 10))}</div>}
       </aside>
     </div>
   );
@@ -263,21 +264,16 @@ function SideForm({ versions }: { versions: Versions }) {
 // ---- 页面 ----------------------------------------------------------------
 
 const GROUNDS: Ground[] = [
-  { key: 'list', title: '情景列表', question: '好几个情景放在哪、怎么切换？',
-    A: { name: '分段胶囊', desc: '一排胶囊，像 Robinhood 的 1D / 1W / 1M；叠加的写成「A › + 停产」', render: (v) => <Segmented versions={v} /> },
-    B: { name: '版本树', desc: '左边一棵小树，看得出谁从谁长出来；数字是这一层受挑战的个数', render: (v) => <Tree versions={v} /> } },
-  { key: 'compare', title: '怎么比较', question: '两个情景（都从基线出发）怎么一起看？',
-    A: { name: '一张图叠色', desc: '在基线上按情景上色：橙 = A，蓝 = B，紫 = 两个都受挑战', render: (v) => <Overlay versions={v} /> },
-    B: { name: '左右并排', desc: '两张小图并排，各自按自己的情景着色', render: (v) => <SideBySide versions={v} /> } },
-  { key: 'stack', title: '叠加后的着色', question: '在 A 上再改一处，颜色以谁为准？',
-    A: { name: '相对上一层', desc: '只亮这一层新增的受挑战节点（由后端的两层结果做集合差得到）', render: (v) => <Relative versions={v} /> },
-    B: { name: '相对基线（累计）', desc: '一路叠下来受挑战的全亮（后端直接给的叠加结果）', render: (v) => <Cumulative versions={v} /> } },
-  { key: 'summary', title: '情景摘要', question: '不点进去，怎么一眼看出每个情景的影响？',
-    A: { name: '大数字卡片', desc: 'Robinhood 式：一个大数字 + 支持度怎么变 + gate', render: (v) => <BigNumber versions={v} /> },
-    B: { name: '表盘点阵', desc: 'Apple Watch 式：每个情景一个缩略点阵，形状就是这张图', render: (v) => <WatchFaces versions={v} /> } },
-  { key: 'create', title: '新建情景', question: '在当前看的情景上「再假如一次」，入口长什么样？',
-    A: { name: '灵动岛', desc: '底部一颗「＋ 假如…」胶囊，点开原地展开成小表单；默认在当前情景上叠加', render: (v) => <Island versions={v} /> },
-    B: { name: '侧边表单', desc: '右侧固定表单，明确选「从哪个版本出发」，可以起名', render: (v) => <SideForm versions={v} /> } },
+  { key: 'list', ...T.pgScen.list,
+    A: { ...T.pgScen.list.A, render: (v) => <Segmented versions={v} /> }, B: { ...T.pgScen.list.B, render: (v) => <Tree versions={v} /> } },
+  { key: 'compare', ...T.pgScen.compare,
+    A: { ...T.pgScen.compare.A, render: (v) => <Overlay versions={v} /> }, B: { ...T.pgScen.compare.B, render: (v) => <SideBySide versions={v} /> } },
+  { key: 'stack', ...T.pgScen.stack,
+    A: { ...T.pgScen.stack.A, render: (v) => <Relative versions={v} /> }, B: { ...T.pgScen.stack.B, render: (v) => <Cumulative versions={v} /> } },
+  { key: 'summary', ...T.pgScen.summary,
+    A: { ...T.pgScen.summary.A, render: (v) => <BigNumber versions={v} /> }, B: { ...T.pgScen.summary.B, render: (v) => <WatchFaces versions={v} /> } },
+  { key: 'create', ...T.pgScen.create,
+    A: { ...T.pgScen.create.A, render: (v) => <Island versions={v} /> }, B: { ...T.pgScen.create.B, render: (v) => <SideForm versions={v} /> } },
 ];
 
 const STORE = 'catalyst.scenarios.picks';
@@ -296,43 +292,43 @@ export default function ScenarioPlayground() {
     setPicks(next);
     try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* 不记住也能用 */ }
   };
-  if (!fx) return <div className="pg">加载 fixture…</div>;
+  if (!fx) return <div className="pg">{T.pg.loading}</div>;
   const g = GROUNDS[active];
-  const summary = GROUNDS.map((x, i) => `${i + 1}${picks[x.key] ?? '?'} ${x.title}：${picks[x.key] ? x[picks[x.key]].name : '未选'}`).join('；');
+  const summary = GROUNDS.map((x, i) => T.pg.summaryItem(i + 1, picks[x.key], x.title, picks[x.key] ? x[picks[x.key]].name : null)).join(T.pg.summarySep);
   const versions = fx.versions;
 
   return (
     <div className="pg">
       <header className="pg-head">
-        <a href="#" className="pg-back">← 回到应用</a>
-        <a href="#playground" className="pg-back">节点视觉 playground</a>
-        <strong>多情景 playground</strong>
+        <a href="#" className="pg-back">{T.pg.back}</a>
+        <a href="#playground" className="pg-back">{T.pgScen.linkNode}</a>
+        <strong>{T.pgScen.title}</strong>
         <nav className="pg-nav">
           {GROUNDS.map((x, i) => (
             <button key={x.key} className={i === active ? 'on' : ''} onClick={() => setActive(i)}>
-              {i + 1} {x.title}{picks[x.key] ? ` · ${picks[x.key]}` : ''}
+              {T.pg.navItem(i + 1, x.title, picks[x.key])}
             </button>
           ))}
         </nav>
       </header>
       <div className="pg-q">
         <h2>{active + 1}. {g.question}</h2>
-        <span className="pg-note">数据：fixtures/c1_multi.json（{chain(versions, Object.keys(versions).at(-1)!).length} 层）。情景名是演示用的，后端还没有 name 字段。这一页不调后端。</span>
+        <span className="pg-note">{T.pgScen.note(chain(versions, Object.keys(versions).at(-1)!).length)}</span>
       </div>
       <div className="pg-ab">
         {(['A', 'B'] as Pick[]).map((p) => (
           <section key={p} className={`pg-option${picks[g.key] === p ? ' picked' : ''}`}>
             <div className="pg-option-head">
-              <div><strong>{p}　{g[p].name}</strong><div className="pg-sub">{g[p].desc}</div></div>
-              <button className="pg-pick" onClick={() => choose(g.key, p)}>{picks[g.key] === p ? '✓ 已选' : '选这个'}</button>
+              <div><strong>{T.pg.optionTitle(p, g[p].name)}</strong><div className="pg-sub">{g[p].desc}</div></div>
+              <button className="pg-pick" onClick={() => choose(g.key, p)}>{picks[g.key] === p ? T.pg.picked : T.pg.pick}</button>
             </div>
             <div className="pg-pane" key={`${g.key}-${p}`}>{g[p].render(versions)}</div>
           </section>
         ))}
       </div>
       <footer className="pg-foot">
-        <span>你的选择：{summary}</span>
-        <button className="pg-pick" onClick={() => navigator.clipboard?.writeText(summary)}>复制</button>
+        <span>{T.pg.yourPicks(summary)}</span>
+        <button className="pg-pick" onClick={() => navigator.clipboard?.writeText(summary)}>{T.pg.copy}</button>
       </footer>
     </div>
   );

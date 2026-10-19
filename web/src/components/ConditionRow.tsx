@@ -3,6 +3,7 @@
 import { EVALUATION, VERIFICATION } from '../status';
 import type { Condition, ConditionOverride } from '../types';
 import Badge from './Badge';
+import { T } from '../strings';
 
 export default function ConditionRow({ c, override, onOverride, highlightMissing }: {
   c: Condition; override?: ConditionOverride; onOverride?: (o: ConditionOverride | null) => void;
@@ -14,25 +15,25 @@ export default function ConditionRow({ c, override, onOverride, highlightMissing
   const missing = highlightMissing && c.kind === 'numeric' && threshold == null;
   return (
     <div className={`condition${missing ? ' need-confirm' : ''}`}>
-      {missing && <div className="need-confirm-tag">需要你确认：资料里没有可依据的阈值</div>}
+      {missing && <div className="need-confirm-tag">{T.condition.needConfirm}</div>}
       <div className="cond-rule">{c.rule}</div>
       <div className="cond-fields small">
         <span>{c.kind} · {c.predicate}</span>
         <span>{c.series ?? c.source ?? '—'}</span>
-        <span>起点 {c.anchor}</span>
+        <span>{T.condition.anchor} {c.anchor}</span>
         <span>
-          截止{' '}
+          {T.condition.deadline}{' '}
           {onOverride ? (
             <input type="date" value={deadline} onChange={(e) => set({ deadline: e.target.value })} />
           ) : c.deadline}
         </span>
         {c.kind === 'numeric' && (
           <span>
-            阈值 {c.comparator ?? ''}{' '}
+            {T.condition.threshold} {c.comparator ?? ''}{' '}
             {onOverride ? (
-              <input type="number" className="threshold" placeholder="你来定" value={threshold ?? ''}
+              <input type="number" className="threshold" placeholder={T.condition.youDecide} value={threshold ?? ''}
                 onChange={(e) => set({ threshold: e.target.value === '' ? null : Number(e.target.value) })} />
-            ) : threshold ?? <em>你来定</em>}
+            ) : threshold ?? <em>{T.condition.youDecide}</em>}
           </span>
         )}
       </div>
@@ -42,8 +43,8 @@ export default function ConditionRow({ c, override, onOverride, highlightMissing
         <Badge look={EVALUATION[c.evaluation_status]} title="evaluation_status" />
         {override && (
           <span className="small edited">
-            已修改，签字后由后端重算{' '}
-            <button className="link" onClick={() => onOverride?.(null)}>撤销</button>
+            {T.condition.edited}{' '}
+            <button className="link" onClick={() => onOverride?.(null)}>{T.condition.undo}</button>
           </span>
         )}
       </div>

@@ -1,6 +1,7 @@
 // 分支类别的缩略：B2 结论列表的行首竖条、B1 结论卡片和 B3 计划对比上的标签。样式全部来自 status.ts 的 BRANCH_KIND。
 import { BRANCH_KIND, SYNTHETIC_EVIDENCE_TAG } from '../status';
 import type { BranchKind } from '../types';
+import { T } from '../strings';
 
 /** 行首竖条：实色 / 虚线 / 斜线灰紫，和画布上的节点同一套视觉。 */
 export function BranchBar({ kind }: { kind: BranchKind }) {
@@ -37,7 +38,7 @@ export function HypotheticalBanner({ what }: { what?: string }) {
   const k = BRANCH_KIND.hypothetical;
   return (
     <div className="branch-banner" style={{ color: k.title, background: k.bg, backgroundImage: k.pattern, borderColor: k.border }}>
-      <BranchTag kind="hypothetical" /> 这条分支建立在尚未发生的假设上{what ? `：${what}` : ''}
+      <BranchTag kind="hypothetical" /> {T.branchBanner(what)}
     </div>
   );
 }

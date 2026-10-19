@@ -5,6 +5,7 @@ import Scenario from './components/Scenario';
 import Signoff, { type SignForm } from './components/Signoff';
 import Workspace from './components/Workspace';
 import type { ConditionOverride, RunCreated, VersionBundle, WriteResult } from './types';
+import { T } from './strings';
 
 type Tab = 'workspace' | 'signoff' | 'scenario';
 
@@ -29,11 +30,11 @@ const INITIAL: AppState = {
   notices: null, runNote: null,
 };
 
-const TABS: [Tab, string][] = [['workspace', 'B1 Research Workspace'], ['signoff', 'B2 Sign-off'], ['scenario', 'B3 Scenario Diff']];
+const TABS: [Tab, string][] = [['workspace', T.app.tabs.workspace], ['signoff', T.app.tabs.signoff], ['scenario', T.app.tabs.scenario]];
 
 export default function App() {
   const [s, setS] = useState<AppState>(INITIAL);
-  const [event, setEvent] = useState('光子芯片采用快于预期');
+  const [event, setEvent] = useState<string>(T.app.defaultEvent);
   const patch = (p: Partial<AppState>) => setS((prev) => ({ ...prev, ...p }));
 
   /** 发一个写操作；成功后取回新版本并存进缓存。 */
@@ -50,7 +51,7 @@ export default function App() {
       }
       const runId = ('run_id' in res ? res.run_id : null) ?? s.runId;
       if (!res.ok || !res.version || !runId) {
-        patch({ busy: false, errors: res.errors.length ? res.errors : ['后端没有返回版本号'] });
+        patch({ busy: false, errors: res.errors.length ? res.errors : [T.app.noVersion] });
         return;
       }
       const bundle = await api.getVersion(runId, res.version);
@@ -104,20 +105,20 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <strong className="brand">Catalyst</strong>
+        <strong className="brand">{T.app.brand}</strong>
         <input className="event-input" value={event} onChange={(e) => setEvent(e.target.value)}
-          placeholder="你相信什么会发生？" onKeyDown={(e) => e.key === 'Enter' && analyze()} />
-        <button className="primary" disabled={s.busy || !event.trim()} onClick={analyze}>Analyze</button>
+          placeholder={T.app.eventPlaceholder} onKeyDown={(e) => e.key === 'Enter' && analyze()} />
+        <button className="primary" disabled={s.busy || !event.trim()} onClick={analyze}>{T.app.analyze}</button>
         <span className="spacer" />
-        {s.busy && <span className="muted">处理中…</span>}
-        {base && <span className="muted small">run {s.runId} · {base.graph.version}{scen ? ` → ${scen.graph.version}` : ''}</span>}
-        <a href="#playground" className="small" style={{ color: '#aab4c8' }}>节点视觉 playground</a>
-        <a href="#scenarios" className="small" style={{ color: '#aab4c8' }}>多情景 playground</a>
-        <a href="#plan-b" className="small" style={{ color: '#aab4c8' }}>方案 B 预览</a>
+        {s.busy && <span className="muted">{T.app.busy}</span>}
+        {base && <span className="muted small">{T.app.runInfo(s.runId, base.graph.version, scen?.graph.version)}</span>}
+        <a href="#playground" className="small" style={{ color: '#aab4c8' }}>{T.app.linkPlayground}</a>
+        <a href="#scenarios" className="small" style={{ color: '#aab4c8' }}>{T.app.linkScenarios}</a>
+        <a href="#plan-b" className="small" style={{ color: '#aab4c8' }}>{T.app.linkPlanB}</a>
         {api.MOCK && (
           <span className="badge mock">
-            MOCK ·{' '}
-            <select className="mock-select" value={mockName} onChange={(e) => pickMock(e.target.value)} aria-label="MOCK 数据">
+            {T.app.mock}
+            <select className="mock-select" value={mockName} onChange={(e) => pickMock(e.target.value)} aria-label={T.app.mockAria}>
               {mockOptions.map((o) => <option key={o.name} value={o.name}>{o.label}</option>)}
             </select>
           </span>
@@ -132,12 +133,12 @@ export default function App() {
       {s.errors && <div className="banner error">{s.errors.map((e) => <div key={e}>{e}</div>)}</div>}
       {s.notices && <div className="banner notice">{s.notices.map((e) => <div key={e}>{e}</div>)}</div>}
       <main className="main">
-        {!base && !s.runNote && <div className="empty">输入一个事件，点 Analyze。</div>}
+        {!base && !s.runNote && <div className="empty">{T.app.empty}</div>}
         {!base && s.runNote && (
           <div className="empty abstain">
-            <h2>没有找到有依据的因果链</h2>
+            <h2>{T.app.abstainTitle}</h2>
             <p>{s.runNote}</p>
-            <p className="small muted">所以没有画图，也没有生成提案。找不到依据时系统选择弃权，不会为了出结果硬连一个标的。</p>
+            <p className="small muted">{T.app.abstainNote}</p>
           </div>
         )}
         {base && s.tab === 'workspace' && (

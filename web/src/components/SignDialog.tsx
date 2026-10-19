@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { UserJudgment } from '../types';
 import type { SignForm } from './Signoff';
+import { T } from '../strings';
 
 export default function SignDialog({ uj, busy, onCancel, onSubmit }: {
   uj: UserJudgment; busy: boolean; onCancel: () => void; onSubmit: (f: SignForm) => void;
@@ -12,23 +13,23 @@ export default function SignDialog({ uj, busy, onCancel, onSubmit }: {
   return (
     <div className="modal-bg" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ margin: 0 }}>签字</h3>
-        <label>可检验的判断</label>
+        <h3 style={{ margin: 0 }}>{T.sign.title}</h3>
+        <label>{T.sign.clarified}</label>
         <textarea rows={3} value={clarified} onChange={(e) => setClarified(e.target.value)} />
-        {uj.original_statement !== clarified && <div className="small muted">原话：{uj.original_statement}</div>}
-        <label>判定条件（怎样算对、怎样算错）</label>
-        <textarea rows={2} value={criteria} placeholder="例如：季度出货报告达到上面确认的阈值"
+        {uj.original_statement !== clarified && <div className="small muted">{T.sign.original(uj.original_statement)}</div>}
+        <label>{T.sign.criteria}</label>
+        <textarea rows={2} value={criteria} placeholder={T.sign.criteriaPlaceholder}
           onChange={(e) => setCriteria(e.target.value)} />
-        <label>期限</label>
+        <label>{T.sign.deadline}</label>
         <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         <div className="actions">
-          <button className="secondary" onClick={onCancel}>取消</button>
+          <button className="secondary" onClick={onCancel}>{T.sign.cancel}</button>
           <button className="primary" disabled={busy || !clarified.trim()}
             onClick={() => onSubmit({ clarified_statement: clarified.trim(), criteria: criteria.trim() || null, deadline: deadline || null })}>
-            Sign
+            {T.sign.submit}
           </button>
         </div>
-        <div className="sign-note" style={{ textAlign: 'right' }}>签的是研究判断，不是下单。</div>
+        <div className="sign-note" style={{ textAlign: 'right' }}>{T.sign.note}</div>
       </div>
     </div>
   );

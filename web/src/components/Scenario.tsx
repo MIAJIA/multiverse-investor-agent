@@ -7,6 +7,7 @@ import type { TradeProposal, VersionBundle } from '../types';
 import Badge from './Badge';
 import GraphCanvas from './GraphCanvas';
 import NodePanel from './NodePanel';
+import { T } from '../strings';
 
 function ForkForm({ bundle, busy, onFork }: { bundle: VersionBundle; busy: boolean; onFork: (t: string, v: string) => void }) {
   const nodes = [...bundle.graph.nodes].sort((a, b) => Number(b.role === 'assumption') - Number(a.role === 'assumption'));
@@ -14,14 +15,14 @@ function ForkForm({ bundle, busy, onFork }: { bundle: VersionBundle; busy: boole
   const [value, setValue] = useState('');
   return (
     <div className="fork-form">
-      <span className="small">假如</span>
+      <span className="small">{T.scenario.ifLabel}</span>
       <select value={target} onChange={(e) => { setTarget(e.target.value); setValue(''); }}>
-        {nodes.map((n) => <option key={n.id} value={n.id}>{ROLE[n.role].label}：{n.statement}</option>)}
+        {nodes.map((n) => <option key={n.id} value={n.id}>{T.scenario.roleOption(ROLE[n.role].label, n.statement)}</option>)}
       </select>
-      <span className="small">改成</span>
-      <input value={value} placeholder="新的假设值，例如：主流 CPO 方案改用集成激光，不再需要外置光源"
+      <span className="small">{T.scenario.changeTo}</span>
+      <input value={value} placeholder={T.scenario.valuePlaceholder}
         onChange={(e) => setValue(e.target.value)} />
-      <button className="primary" disabled={busy || !target || !value.trim()} onClick={() => onFork(target, value.trim())}>Fork</button>
+      <button className="primary" disabled={busy || !target || !value.trim()} onClick={() => onFork(target, value.trim())}>{T.scenario.fork}</button>
     </div>
   );
 }
@@ -35,11 +36,11 @@ function ProposalCompare({ a, b, av, bv }: { a: TradeProposal; b: TradeProposal;
     <table className="compare">
       <thead><tr><th /><th>{av}</th><th>{bv}</th></tr></thead>
       <tbody>
-        {row('gate', <Badge look={GATE[a.gate]} />, <Badge look={GATE[b.gate]} />)}
-        {row('status', <Badge look={PROPOSAL_STATUS[a.status]} />, <Badge look={PROPOSAL_STATUS[b.status]} />)}
-        {row('支持度', <Badge look={SUPPORT[a.support_status]} />, <Badge look={SUPPORT[b.support_status]} />)}
-        {row('标的', `${a.direction.side} ${a.direction.instrument}`, `${b.direction.side} ${b.direction.instrument}`)}
-        {row('进场条件', conds(a), conds(b))}
+        {row(T.scenario.rows.gate, <Badge look={GATE[a.gate]} />, <Badge look={GATE[b.gate]} />)}
+        {row(T.scenario.rows.status, <Badge look={PROPOSAL_STATUS[a.status]} />, <Badge look={PROPOSAL_STATUS[b.status]} />)}
+        {row(T.scenario.rows.support, <Badge look={SUPPORT[a.support_status]} />, <Badge look={SUPPORT[b.support_status]} />)}
+        {row(T.scenario.rows.instrument, `${a.direction.side} ${a.direction.instrument}`, `${b.direction.side} ${b.direction.instrument}`)}
+        {row(T.scenario.rows.entry, conds(a), conds(b))}
       </tbody>
     </table>
   );
@@ -67,49 +68,48 @@ export default function Scenario({ versions, base, scenario, viewing, busy, sele
       {sc && (
         <div className="fork-form">
           <div className="toggle">
-            <button className={!showScenario ? 'on' : ''} onClick={() => onToggle('base')}>基线 {sc.base_version}</button>
-            <button className={showScenario ? 'on' : ''} onClick={() => onToggle('scenario')}>情景 {sc.version}</button>
+            <button className={!showScenario ? 'on' : ''} onClick={() => onToggle('base')}>{T.scenario.base(sc.base_version)}</button>
+            <button className={showScenario ? 'on' : ''} onClick={() => onToggle('scenario')}>{T.scenario.scenario(sc.version)}</button>
           </div>
-          <span className="small">{sc.ops.map((o) => `假如「${String(o.value)}」`).join('；')}</span>
-          <span className="badge" style={{ color: ROLE.shock.color, borderColor: ROLE.shock.color }}>假设，未观测</span>
+          <span className="small">{T.scenario.opsLine(sc.ops.map((o) => String(o.value)))}</span>
+          <span className="badge" style={{ color: ROLE.shock.color, borderColor: ROLE.shock.color }}>{T.scenario.notObserved}</span>
         </div>
       )}
       <div className="split">
         <GraphCanvas bundle={shown} opts={opts} selectedNodeId={selectedNodeId} onSelect={onSelect} />
         {selectedNodeId && shown.graph.nodes.some((n) => n.id === selectedNodeId) ? (
           <div className="panel" style={{ padding: 0 }}>
-            <div style={{ padding: '8px 16px' }}><button className="link" onClick={() => onSelect(null)}>← 返回情景摘要</button></div>
+            <div style={{ padding: '8px 16px' }}><button className="link" onClick={() => onSelect(null)}>{T.scenario.backToSummary}</button></div>
             <NodePanel bundle={shown} nodeId={selectedNodeId} assessment={showScenario ? sc!.assessment[selectedNodeId] : undefined}
               reason={showScenario ? sc!.assessment_reason[selectedNodeId] : undefined} />
           </div>
         ) : (
           <aside className={`panel${showScenario ? '' : ' dim'}`}>
-            {!sc && <p className="muted">选一个节点、写下新的假设值，点 Fork。</p>}
+            {!sc && <p className="muted">{T.scenario.emptyHint}</p>}
             {sc && (
               <>
                 <div className="diff-block">
-                  <h3>受挑战的前提 <Badge look={ASSESSMENT.challenged} /></h3>
-                  {challenged.length === 0 && <p className="small muted">没有前提受挑战。</p>}
+                  <h3>{T.scenario.challengedTitle} <Badge look={ASSESSMENT.challenged} /></h3>
+                  {challenged.length === 0 && <p className="small muted">{T.scenario.noneChallenged}</p>}
                   {challenged.map((id) => (
                     <div key={id} className="challenged-item">
                       <div>{name(id)}</div>
-                      <div className="small muted">{sc.assessment_reason[id] ?? '（没有理由）'}</div>
+                      <div className="small muted">{sc.assessment_reason[id] ?? T.scenario.noReason}</div>
                     </div>
                   ))}
                 </div>
                 <div className="diff-block">
-                  <h3>下一步查什么</h3>
+                  <h3>{T.scenario.nextChecks}</h3>
                   {(scenario!.proposal?.scenario_ref?.next_checks ?? []).map((c) => <p key={c}>{c}</p>)}
-                  {!scenario!.proposal?.scenario_ref?.next_checks.length && <p className="small muted">后端没有给出下一步。</p>}
+                  {!scenario!.proposal?.scenario_ref?.next_checks.length && <p className="small muted">{T.scenario.noNextChecks}</p>}
                 </div>
                 <div className="diff-block">
-                  <h3>提案 {sc.base_version} → {sc.version}</h3>
+                  <h3>{T.scenario.proposalDiff(sc.base_version, sc.version)}</h3>
                   {baseB.proposal && scenario!.proposal
                     ? <ProposalCompare a={baseB.proposal} b={scenario!.proposal} av={sc.base_version} bv={sc.version} />
-                    : <p className="small muted">缺少提案。</p>}
+                    : <p className="small muted">{T.scenario.noProposal}</p>}
                   <p className="small">
-                    追溯：改动 {changedTargets(sc).map(name).join('、')}；
-                    受影响的 claim（后端 diff）：{(scenario!.diff?.changed_claim_ids ?? []).map(name).join('；')}
+                    {T.scenario.trace(changedTargets(sc).map(name), (scenario!.diff?.changed_claim_ids ?? []).map(name))}
                   </p>
                 </div>
               </>

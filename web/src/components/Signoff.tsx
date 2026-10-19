@@ -8,6 +8,7 @@ import type { ConditionOverride, VersionBundle } from '../types';
 import Badge from './Badge';
 import ProposalCard from './ProposalCard';
 import SignDialog from './SignDialog';
+import { T } from '../strings';
 
 export interface SignForm {
   clarified_statement: string;
@@ -39,11 +40,11 @@ export default function Signoff({ bundle, signoff, busy, onChange, onSign }: {
 
   return (
     <div className="page">
-      <h2>我签哪几条？ <span className="small muted">{confirmed.size} / {rows.length} confirmed · {graph.version}</span></h2>
+      <h2>{T.signoff.heading} <span className="small muted">{T.signoff.progress(confirmed.size, rows.length, graph.version)}</span></h2>
       <div className="cols">
         <table className="assumptions">
           <thead>
-            <tr><th>假设</th><th>失效条件</th><th>证据状态</th><th>用户状态</th></tr>
+            <tr>{T.signoff.cols.map((c) => <th key={c}>{c}</th>)}</tr>
           </thead>
           <tbody>
             {rows.map((n) => (
@@ -53,14 +54,14 @@ export default function Signoff({ bundle, signoff, busy, onChange, onSign }: {
                   {n.statement}
                 </td>
                 <td className="small">
-                  {nodeConditions(graph, n.id).map((c) => <div key={c.id}>{c.rule}（截止 {c.deadline}）</div>)}
+                  {nodeConditions(graph, n.id).map((c) => <div key={c.id}>{T.signoff.ruleWithDeadline(c.rule, c.deadline)}</div>)}
                   {nodeConditions(graph, n.id).length === 0 && <span className="muted">—</span>}
                 </td>
                 <td><Badge look={EVIDENCE[n.evidence_status]} /></td>
                 <td>
                   <label className="small">
                     <input type="checkbox" checked={confirmed.has(n.id)} disabled={signed} onChange={() => toggle(n.id)} />{' '}
-                    {confirmed.has(n.id) ? 'Confirmed' : 'Not started'}
+                    {confirmed.has(n.id) ? T.signoff.confirmed : T.signoff.notStarted}
                   </label>
                 </td>
               </tr>
@@ -73,11 +74,11 @@ export default function Signoff({ bundle, signoff, busy, onChange, onSign }: {
               <ProposalCard proposal={proposal} graph={graph}
                 overrides={signed ? undefined : signoff.conditionOverrides} onOverride={signed ? undefined : override} />
               <button className="primary" disabled={busy || signed} onClick={() => setOpen(true)}>
-                {signed ? '已签' : 'Sign'}
+                {signed ? T.signoff.signed : T.signoff.sign}
               </button>
-              <div className="sign-note">签的是研究判断，不是下单。这里没有执行按钮。</div>
+              <div className="sign-note">{T.signoff.note}</div>
             </>
-          ) : <p className="muted">这个版本没有提案。</p>}
+          ) : <p className="muted">{T.signoff.noProposal}</p>}
         </div>
       </div>
       {open && proposal && (

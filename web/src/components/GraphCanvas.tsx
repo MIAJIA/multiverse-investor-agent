@@ -9,6 +9,7 @@ import { strength } from '../node/strength';
 import { toFlow, type FlowOpts } from '../toFlow';
 import { BRANCH_KIND } from '../status';
 import type { BranchKind, Claim, Graph, VersionBundle } from '../types';
+import { T } from '../strings';
 
 export const LOOK: Look = { shape: 'card', strength: 'ring', color: 'role', expand: 'panel', scenario: 'dim' };
 
@@ -73,7 +74,7 @@ export default function GraphCanvas({ bundle, opts, selectedNodeId, onSelect, br
         <Background gap={24} />
         <Controls showInteractive={false} />
       </ReactFlow>
-      {flow.warnings.length > 0 && <div className="banner error">{flow.warnings.join('；')}</div>}
+      {flow.warnings.length > 0 && <div className="banner error">{flow.warnings.join(T.graph.warningSep)}</div>}
     </div>
   );
 }

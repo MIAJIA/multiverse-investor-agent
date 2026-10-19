@@ -10,7 +10,8 @@ import { ancestors, keyClaimId } from '../lookup';
 import { demoLabel } from '../playground/demoLabels';
 import { BRANCH_KIND, GATE } from '../status';
 import type { Fixture, PlanBBundle, VersionBundle } from '../types';
-import { DEMO_NOTE, demoBundle } from './demoPlanB';
+import { DEMO_NOTE, DEMO_SUBTITLE, demoBundle } from './demoPlanB';
+import { T } from '../strings';
 
 type Tab = 'b1' | 'b2';
 
@@ -37,7 +38,7 @@ export default function PlanBPreview() {
     };
   }, [bundle, terminal]);
 
-  if (!bundle || !view) return <div className="page">加载演示数据…</div>;
+  if (!bundle || !view) return <div className="page">{T.preview.loading}</div>;
   const g = bundle.graph;
   const node = (id: string) => g.nodes.find((n) => n.id === id)!;
   const plan = terminal ? bundle.proposals.find((p) => p.terminal_id === terminal) : null;
@@ -73,18 +74,18 @@ export default function PlanBPreview() {
   return (
     <div className="app">
       <header className="header">
-        <a href="#" className="small" style={{ color: '#aab4c8' }}>← 回到应用</a>
-        <strong className="brand">方案 B 视觉预览</strong>
-        <span className="small" style={{ color: '#aab4c8' }}>{g.version} · 光子芯片采用快于预期 + 情景「代工停产」</span>
+        <a href="#" className="small" style={{ color: '#aab4c8' }}>{T.preview.back}</a>
+        <strong className="brand">{T.preview.title}</strong>
+        <span className="small" style={{ color: '#aab4c8' }}>{g.version} · {DEMO_SUBTITLE}</span>
         <span className="spacer" />
         <span className="badge mock">{DEMO_NOTE}</span>
       </header>
       <nav className="tabs">
-        <button className={tab === 'b1' ? 'tab active' : 'tab'} onClick={() => setTab('b1')}>B1 研究：三类分支</button>
-        <button className={tab === 'b2' ? 'tab active' : 'tab'} onClick={() => setTab('b2')}>B2 批准计划</button>
+        <button className={tab === 'b1' ? 'tab active' : 'tab'} onClick={() => setTab('b1')}>{T.preview.tabB1}</button>
+        <button className={tab === 'b2' ? 'tab active' : 'tab'} onClick={() => setTab('b2')}>{T.preview.tabB2}</button>
         <span className="spacer" />
         <label className="small muted" style={{ alignSelf: 'center' }}>
-          <input type="checkbox" checked={afterFork} onChange={(e) => setAfterFork(e.target.checked)} /> 演示：改了假设之后回到这里
+          <input type="checkbox" checked={afterFork} onChange={(e) => setAfterFork(e.target.checked)} /> {T.preview.afterFork}
         </label>
       </nav>
       <main className="main">
@@ -100,7 +101,7 @@ export default function PlanBPreview() {
                     }} />{BRANCH_KIND[k].label}
                   </span>
                 ))}
-                <span className="small muted">点一个结论（最下面一行）高亮它的整条分支</span>
+                <span className="small muted">{T.preview.highlightHint}</span>
               </div>
               <GraphCanvas bundle={{ graph: g, excerpts: bundle.excerpts }} branchView={view} labelOf={demoLabel}
                 opts={{ keyClaimId: keyClaimId(plan ?? bundle.proposals[0], g) }}
@@ -113,24 +114,24 @@ export default function PlanBPreview() {
             {plan && branch && !nodeId ? (
               <aside className="panel">
                 <h3>{demoLabel(node(plan.terminal_id!))} <BranchTag kind={branch.kind} synthetic={branch.synthetic_evidence} /></h3>
-                <p className="small">{plan.direction.side === 'long' ? '看多' : '看空'} <b>{plan.direction.instrument}</b> · {plan.direction.note}</p>
-                <div className="row"><Badge look={GATE[plan.gate]} />{plan.user_judgment.confirmed && <span className="ok small">✓ 已批准</span>}</div>
-                <p className="small">你需要相信：{branch.own_node_ids.filter((id) => id !== plan.terminal_id).map((id) => demoLabel(node(id))).join('、')}</p>
-                {plan.key_dependency && <p className="small key-why">先查：{plan.key_dependency.why}</p>}
-                <button className="primary" onClick={() => setTab('b2')}>去批准这份计划 →</button>
+                <p className="small">{T.preview.direction(plan.direction.side)} <b>{plan.direction.instrument}</b> · {plan.direction.note}</p>
+                <div className="row"><Badge look={GATE[plan.gate]} />{plan.user_judgment.confirmed && <span className="ok small">{T.preview.approved}</span>}</div>
+                <p className="small">{T.preview.youNeedToBelieve(branch.own_node_ids.filter((id) => id !== plan.terminal_id).map((id) => demoLabel(node(id))))}</p>
+                {plan.key_dependency && <p className="small key-why">{T.preview.checkFirst(plan.key_dependency.why)}</p>}
+                <button className="primary" onClick={() => setTab('b2')}>{T.preview.goApprove}</button>
               </aside>
             ) : nodeId ? (
               <NodePanel bundle={{ ...(bundle as unknown as VersionBundle), proposal: bundle.proposals[0] }} nodeId={nodeId} />
             ) : (
               <aside className="panel">
-                <p className="muted">三个结论，三类分支：</p>
+                <p className="muted">{T.preview.intro}</p>
                 {bundle.branches.map((b) => (
                   <p key={b.terminal_id} className="small">
                     <button className="link" onClick={() => setTerminal(b.terminal_id)}>{demoLabel(node(b.terminal_id))}</button>{' '}
-                    <BranchTag kind={b.kind} synthetic={b.synthetic_evidence} />{b.kind === 'evidenced' && <span className="muted">有资料支持</span>}
+                    <BranchTag kind={b.kind} synthetic={b.synthetic_evidence} />{b.kind === 'evidenced' && <span className="muted">{BRANCH_KIND.evidenced.label}</span>}
                   </p>
                 ))}
-                <p className="small muted">实线 = 有资料支持；虚线、减淡 = 仅模型推断；灰紫斜线、点线 = 建立在尚未发生的假设上。</p>
+                <p className="small muted">{T.preview.legend}</p>
               </aside>
             )}
           </div>

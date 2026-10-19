@@ -6,6 +6,7 @@ import type { AssessmentStatus, BranchKind, Claim, Condition } from '../types';
 import './node.css';
 import { Bars, Ring } from './StrengthGlyph';
 import type { Strength } from './strength';
+import { T } from '../strings';
 
 export interface Look {
   shape: 'pill' | 'card';
@@ -38,7 +39,7 @@ const ROLE_TINT: Record<Claim['role'], string> = {
 
 function Target() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-label="关键依赖">
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-label={T.node.keyDependency}>
       <circle cx="7" cy="7" r="6" fill="none" stroke="var(--pg-orange)" strokeWidth="1.4" />
       <circle cx="7" cy="7" r="3" fill="none" stroke="var(--pg-orange)" strokeWidth="1.4" />
       <circle cx="7" cy="7" r="0.9" fill="var(--pg-orange)" />
@@ -70,8 +71,8 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
     outlineOffset: 3,
   } as const;
 
-  const meta = s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断'
-    : `正方 ${s.support}${s.contra ? ` · 反方 ${s.contra}` : ''}${s.neutral ? ` · 背景 ${s.neutral}` : ''}`;
+  const meta = s.noInEdges ? T.node.noInEdges : s.modelOnly ? T.node.modelOnly
+    : [T.node.support(s.support), s.contra ? T.node.contra(s.contra) : '', s.neutral ? T.node.background(s.neutral) : ''].filter(Boolean).join(T.node.sep);
 
   if (expanded) {
     const deadline = conditions.map((c) => c.deadline).sort()[0];
@@ -88,13 +89,13 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
           {ticker}
         </div>
         <div className="pg-facts">
-          {!s.noInEdges && !s.modelOnly && <span><i className="pg-dot" style={{ background: 'var(--pg-green)' }} />正方 {s.support}</span>}
-          {s.contra > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-red)' }} />反方 {s.contra}</span>}
-          {s.neutral > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-muted)' }} />背景 {s.neutral}</span>}
+          {!s.noInEdges && !s.modelOnly && <span><i className="pg-dot" style={{ background: 'var(--pg-green)' }} />{T.node.support(s.support)}</span>}
+          {s.contra > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-red)' }} />{T.node.contra(s.contra)}</span>}
+          {s.neutral > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-muted)' }} />{T.node.background(s.neutral)}</span>}
           {(s.noInEdges || s.modelOnly) && <span>{meta}</span>}
-          {deadline && <span>截止 {deadline}</span>}
-          {challenged && <span style={{ color: 'var(--pg-orange)' }}>情景下受挑战</span>}
-          {isChanged && <span style={{ color: 'var(--pg-blue)' }}>改动的假设</span>}
+          {deadline && <span>{T.node.deadline(deadline)}</span>}
+          {challenged && <span style={{ color: 'var(--pg-orange)' }}>{T.node.challengedInScenario}</span>}
+          {isChanged && <span style={{ color: 'var(--pg-blue)' }}>{T.changedTarget}</span>}
         </div>
         <Handle type="source" position={Position.Bottom} className="pg-handle" />
       </div>
@@ -109,7 +110,7 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
         {glyph}
         <span className="pg-title">{label}</span>
         {isKey && <Target />}
-        {isChanged && <span className="pg-edit" title="改动的假设">✎</span>}
+        {isChanged && <span className="pg-edit" title={T.changedTarget}>✎</span>}
         {ticker}
       </div>
       {look.shape === 'card' && <div className="pg-meta">{meta}</div>}

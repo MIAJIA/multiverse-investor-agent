@@ -8,6 +8,7 @@ import type { Claim, ConditionOverride, PlanBBundle, TradeProposal } from '../ty
 import Badge from './Badge';
 import { BranchBar, BranchTag, HypotheticalBanner } from './BranchSwatch';
 import ProposalCard from './ProposalCard';
+import { T } from '../strings';
 
 export interface PlanDraft {
   overrides: Record<string, ConditionOverride>;
@@ -50,7 +51,7 @@ export default function ApprovePlans({
   const uj = proposals[0]?.user_judgment; // 后端保证同一版本几份计划的这一句相同
   const [editing, setEditing] = useState(false);
   const [askReplace, setAskReplace] = useState<string | null>(null);
-  if (!current || !uj) return <p className="muted">这个版本没有计划。</p>;
+  if (!current || !uj) return <p className="muted">{T.approve.noPlans}</p>;
 
   const draft = drafts[current.terminal_id!] ?? EMPTY_DRAFT;
   const setDraft = (d: Partial<PlanDraft>) => onDraft(current.terminal_id!, { ...draft, ...d });
@@ -69,23 +70,23 @@ export default function ApprovePlans({
   return (
     <div className="page approve">
       <div className="understood">
-        <span className="small muted">我们把你的想法理解为</span>
+        <span className="small muted">{T.approve.understoodLead}</span>
         {editing ? (
           <>
             <input className="understood-input" defaultValue={understood.text ?? uj.clarified_statement}
               onBlur={(e) => { onUnderstood({ confirmed: true, text: e.target.value.trim() || null }); setEditing(false); }} autoFocus />
           </>
         ) : (
-          <span className="understood-text">「{understood.text ?? uj.clarified_statement}」</span>
+          <span className="understood-text">{T.approve.quoted(understood.text ?? uj.clarified_statement)}</span>
         )}
-        {understood.confirmed ? <span className="ok">✓ 对</span> : (
-          <button className="secondary" onClick={() => onUnderstood({ ...understood, confirmed: true })}>✓ 对</button>
+        {understood.confirmed ? <span className="ok">{T.approve.yes}</span> : (
+          <button className="secondary" onClick={() => onUnderstood({ ...understood, confirmed: true })}>{T.approve.yes}</button>
         )}
-        {!editing && <button className="link" onClick={() => setEditing(true)}>改一下</button>}
-        {uj.original_statement !== uj.clarified_statement && <span className="small muted">原话：{uj.original_statement}</span>}
+        {!editing && <button className="link" onClick={() => setEditing(true)}>{T.approve.edit}</button>}
+        {uj.original_statement !== uj.clarified_statement && <span className="small muted">{T.approve.original(uj.original_statement)}</span>}
       </div>
 
-      <div className="conclusions" role="listbox" aria-label="结论">
+      <div className="conclusions" role="listbox" aria-label={T.approve.listAria}>
         {rows.map((p) => {
           const b = branchOf(p);
           const t = node(p.terminal_id!);
@@ -96,22 +97,21 @@ export default function ApprovePlans({
               onClick={() => onSelect(p.terminal_id!)}>
               {b && <BranchBar kind={b.kind} />}
               <span className="c-main">
-                <span className="c-title">{labelOf(t)} <span className="mono">{p.direction.instrument}</span> {p.direction.side === 'long' ? '看多' : '看空'}
+                <span className="c-title">{labelOf(t)} <span className="mono">{p.direction.instrument}</span> {T.approve.side(p.direction.side)}
                   {b && <BranchTag kind={b.kind} synthetic={b.synthetic_evidence} />}</span>
-                <span className="c-sub">你需要相信：{ps.length === 0 ? '与其他结论共用全部前提'
-                  : ps.slice(0, 3).map((id) => labelOf(node(id))).join('、') + (ps.length > 3 ? ` 等 ${ps.length} 个` : '')}</span>
+                <span className="c-sub">{T.approve.youNeedToBelieve(ps.slice(0, 3).map((id) => labelOf(node(id))), ps.length)}</span>
               </span>
               <Badge look={GATE[p.gate]} />
               <span className="c-state">
-                {p.user_judgment.confirmed && <span className="ok">✓ 已批准</span>}
-                {p.approval_reset && <span className="warn">前提已改动，请重新批准</span>}
-                {p.rival_changed && !p.approval_reset && <span className="small muted">另一份计划受了影响，值得再看一眼</span>}
+                {p.user_judgment.confirmed && <span className="ok">{T.approve.approved}</span>}
+                {p.approval_reset && <span className="warn">{T.approve.approvalReset}</span>}
+                {p.rival_changed && !p.approval_reset && <span className="small muted">{T.approve.rivalChanged}</span>}
               </span>
             </button>
           );
         })}
       </div>
-      <p className="small muted">一份都不批准也是一个决定。</p>
+      <p className="small muted">{T.approve.noneIsADecision}</p>
 
       <div className="plan-area">
         {branch?.kind === 'hypothetical' && <HypotheticalBanner what={shock ? labelOf(shock) : undefined} />}
@@ -122,7 +122,7 @@ export default function ApprovePlans({
             setDraft({ overrides: next });
           }} />
         <div className="premises">
-          <div className="small muted">你需要相信的前提（可选勾选，不勾也能批准）</div>
+          <div className="small muted">{T.approve.premisesHint}</div>
           {premises(current).map((id) => (
             <label key={id} className="small">
               <input type="checkbox" checked={draft.confirmedClaimIds.includes(id)}
@@ -132,30 +132,30 @@ export default function ApprovePlans({
             </label>
           ))}
         </div>
-        <input className="note" placeholder="备注（可选）" value={draft.note} onChange={(e) => setDraft({ note: e.target.value })} />
+        <input className="note" placeholder={T.approve.notePlaceholder} value={draft.note} onChange={(e) => setDraft({ note: e.target.value })} />
         <div className="approve-row">
           {isApproved ? (
-            <><span className="ok">✓ 已批准这份计划</span><button className="secondary" disabled={busy} onClick={onRevoke}>撤销批准</button></>
+            <><span className="ok">{T.approve.approvedThis}</span><button className="secondary" disabled={busy} onClick={onRevoke}>{T.approve.revoke}</button></>
           ) : (
-            <button className="primary" disabled={busy || needUnderstood} onClick={approve}>批准这份计划</button>
+            <button className="primary" disabled={busy || needUnderstood} onClick={approve}>{T.approve.approveThis}</button>
           )}
-          {needUnderstood && <span className="small warn">先确认上面那句理解</span>}
-          {missing > 0 && !isApproved && <span className="small muted">还有 {missing} 个阈值需要你确认（不确认也能批准，进场判定会保持「先别动」）</span>}
+          {needUnderstood && <span className="small warn">{T.approve.confirmUnderstoodFirst}</span>}
+          {missing > 0 && !isApproved && <span className="small muted">{T.approve.missingThresholds(missing)}</span>}
         </div>
         <div className="small muted">
-          {approved ? <>本版本已批准：{labelOf(node(approved.terminal_id!))}{!isApproved && <> · <button className="link" onClick={onRevoke}>撤销批准</button></>}</>
-            : '本版本没有批准任何计划（= 不交易）'}
-          <span style={{ marginLeft: 16 }}>批准的是一份计划，不是下单。</span>
+          {approved ? <>{T.approve.approvedInVersion(labelOf(node(approved.terminal_id!)))}{!isApproved && <>{T.approve.sep}<button className="link" onClick={onRevoke}>{T.approve.revoke}</button></>}</>
+            : T.approve.noneApproved}
+          <span style={{ marginLeft: 16 }}>{T.approve.notAnOrder}</span>
         </div>
       </div>
 
       {askReplace && approved && (
         <div className="modal-bg" onClick={() => setAskReplace(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <p>批准这份会撤销对「{labelOf(node(approved.terminal_id!))}」的批准。同一个版本只能批准一份。</p>
+            <p>{T.approve.replaceQuestion(labelOf(node(approved.terminal_id!)))}</p>
             <div className="actions">
-              <button className="secondary" onClick={() => setAskReplace(null)}>取消</button>
-              <button className="primary" onClick={() => { onApprove(askReplace); setAskReplace(null); }}>批准并撤销另一份</button>
+              <button className="secondary" onClick={() => setAskReplace(null)}>{T.approve.cancel}</button>
+              <button className="primary" onClick={() => { onApprove(askReplace); setAskReplace(null); }}>{T.approve.replaceConfirm}</button>
             </div>
           </div>
         </div>

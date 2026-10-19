@@ -4,6 +4,7 @@ import { keyClaimId } from '../lookup';
 import type { VersionBundle } from '../types';
 import GraphCanvas from './GraphCanvas';
 import NodePanel from './NodePanel';
+import { T } from '../strings';
 
 export default function Workspace({ bundle, selectedNodeId, onSelect }: {
   bundle: VersionBundle; selectedNodeId: string | null; onSelect: (id: string | null) => void;
@@ -16,8 +17,8 @@ export default function Workspace({ bundle, selectedNodeId, onSelect }: {
         <NodePanel bundle={bundle} nodeId={selectedNodeId} />
       ) : (
         <aside className="panel">
-          <p className="muted">点一个节点，看它的证据和「什么会证明我错」。</p>
-          <p className="small muted">圆环：绿格 = 正方引用，红格 = 反方，空环 = 没有引用。虚线 = 仅模型推断。橙框加靶心的是关键依赖。</p>
+          <p className="muted">{T.workspace.hint}</p>
+          <p className="small muted">{T.workspace.legend}</p>
         </aside>
       )}
     </div>
