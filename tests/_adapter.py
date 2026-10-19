@@ -150,3 +150,9 @@ def require_plan_b():
     fields = getattr(getattr(schema, "TradeProposal", None), "model_fields", {})
     if "terminal_id" not in fields:
         pytest.skip("核心还没有方案 B 的 proposals 契约（TradeProposal.terminal_id）")
+
+
+def core_condition_evaluator():
+    """回测按事后真相回判用核心的条件判定（和 CLI 里 eval.runner.load_core_condition_evaluator 一样）。"""
+    conditions = _core("catalyst.conditions")
+    return conditions.evaluate

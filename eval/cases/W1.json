@@ -29,7 +29,7 @@
   "evals": [
     "E1",
     "E2",
-    "分支质量"
+    "Branch quality"
   ],
   "auto_checks": [
     "gate_per_plan",

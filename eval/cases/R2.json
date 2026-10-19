@@ -2,11 +2,11 @@
   "id": "R2",
   "type": "backtest",
   "layer": "R",
-  "title": "回测：「海峡正式开放了，做空 Brent」",
+  "title": "Backtest: 'The strait is officially open, go short Brent'",
   "entry": "inspect",
   "as_of": "2026-06-21",
   "input": {
-    "event": "霍尔木兹海峡正式开放了，做空 Brent",
+    "event": "The Strait of Hormuz is officially open again, so go short Brent",
     "target": null,
     "today": "2026-06-21",
     "evidence_packs": [
@@ -31,24 +31,24 @@
     "hz-018"
   ],
   "allowed_exceptions": {
-    "hz-004": "PortWatch 方法说明，片段日期是取数日（2026-08-25），内容在决策时点前已公开",
-    "hz-005": "同上",
-    "hz-006": "同上（每周二更新，说明数据有滞后）",
-    "hz-007": "同上（数据会回修）",
-    "hz-009": "片段日期是取数日（2026-10-14），内容是 2025 年与 2026-02 的关闭前基线，决策时点前早已可见",
-    "hz-010": "片段日期是取数日（2026-10-14），内容是 4/9–4/28 的过境量，按每周更新，5 月初已可见"
+    "hz-004": "PortWatch methodology; the excerpt date is the retrieval date (2026-08-25) but the content was public before as_of",
+    "hz-005": "same as hz-004",
+    "hz-006": "same as hz-004 (weekly Tuesday updates, so data lags)",
+    "hz-007": "same as hz-004 (data gets revised)",
+    "hz-009": "excerpt date is the retrieval date (2026-10-14); content is the 2025 and Feb 2026 pre-closure baseline, public well before as_of",
+    "hz-010": "excerpt date is the retrieval date (2026-10-14); content is 4/9-4/28 transits, published weekly, visible by early May"
   },
   "excluded": {
-    "hz-016": "同一片段混有决策前后的信息（含 2025 年数据，但结构上要等证据线拆开再用）",
-    "hz-011": "事后真相",
-    "hz-012": "事后真相",
-    "hz-013": "事后数据（7–10 月）",
-    "hz-014": "决策后发表（2026-08-26）",
-    "hz-019": "事后真相",
-    "hz-020": "决策后发表（2026-08-11）",
-    "hz-021": "决策后发表",
-    "hz-022": "决策后发表",
-    "hz-023": "决策后发表"
+    "hz-016": "mixes pre- and post-decision information in one excerpt; needs splitting by the evidence line",
+    "hz-011": "outcome",
+    "hz-012": "outcome",
+    "hz-013": "post-decision data (Jul-Oct)",
+    "hz-014": "published after as_of (2026-08-26)",
+    "hz-019": "outcome",
+    "hz-020": "published after as_of (2026-08-11)",
+    "hz-021": "published after as_of",
+    "hz-022": "published after as_of",
+    "hz-023": "published after as_of"
   },
   "outcome": {
     "excerpt_ids": [
@@ -56,7 +56,7 @@
       "hz-012",
       "hz-019"
     ],
-    "truth": "6/18–7/8 日过境船数平均约 24 艘，峰值 51 艘（6/24），不到关闭前约 92 艘的一半（hz-011）；7/12 伊朗革命卫队宣布再次关闭（hz-012）；Brent 7/2 跌到 $69，7/23 回到 $105（hz-019）。",
+    "truth": "Transits from 6/18 to 7/8 averaged about 24 ships/day with a peak of 51 on 6/24, under half the pre-closure ~92 (hz-011); the IRGC declared the strait closed again on 7/12 (hz-012); Brent fell to $69 on 7/2 and was back at $105 on 7/23 (hz-019).",
     "observations": [
       {
         "source": "portwatch.hormuz.daily_transits",
@@ -71,7 +71,7 @@
             "excerpt_id": "hz-011"
           }
         ],
-        "note": "只有峰值是单日数据；日均约 24 是区间均值，不能当单日记录。完整的日数据要证据线从 PortWatch 导出后补进来"
+        "note": "Only the peak is a single-day value; the ~24/day average is a range mean and cannot be a daily record. Full daily data needs a PortWatch export from the evidence line."
       },
       {
         "source": "hormuz.closure_or_attack",
@@ -97,25 +97,29 @@
   },
   "expected": {
     "gate": "WAIT",
-    "behavior": "不把 6/20 的开放通告当进场信号；关键依赖是持续的真实通航，引用 hz-009 的关闭前基线说明恢复到多少要用户确认（阈值 null + 说明）；看到 hz-010（4 月停火后过境没有恢复）这个先例并回应；离场条件含「再次关闭 / 新袭击」这类可观测事件。",
-    "key_dependency_should_be": "真实过境量的持续恢复，而不是开放通告",
+    "behavior": "Do not treat the 6/20 reopening notice as an entry signal. The key dependency is sustained real transits; cite the hz-009 pre-closure baseline and leave the recovery threshold to the user (null threshold plus a note). Address the hz-010 precedent (no recovery after the April ceasefire). Exit conditions include an observable event such as a renewed closure or new attack.",
+    "key_dependency_should_be": "sustained recovery of real transits, not the reopening notice",
     "backtest": {
-      "entry_resolution": "取决于用户确认的阈值：阈值高于 51 艘/日时，6/18–7/8 期间进场条件不满足（避开了 7 月的反转）；阈值不高于 51 时 6/24 会满足",
+      "entry_resolution": "Depends on the user-confirmed threshold: above 51 ships/day the entry condition is never met from 6/18 to 7/8 (avoiding the July reversal); at or below 51 it is met on 6/24",
       "exit_should_trigger": {
         "date": "2026-07-12",
-        "what": "再次关闭 / 新的封锁或袭击"
+        "what": "renewed closure / new blockade or attack"
       },
       "counter_excerpts_to_address": [
         "hz-010",
         "hz-015"
+      ],
+      "pass_if_any": [
+        "entry_not_met_by:2026-07-08",
+        "exit_met_by:2026-07-12"
       ]
     }
   },
-  "contamination_probe": "不看任何资料：2026 年 6 月 20 日霍尔木兹海峡宣布开放之后，7 月发生了什么？Brent 价格怎么走？",
+  "contamination_probe": "Without any documents: what happened in the Strait of Hormuz in July 2026, after it was declared open on June 20, 2026? How did Brent move?",
   "evals": [
     "E1",
     "E2",
-    "回测"
+    "Backtest"
   ],
   "auto_checks": [
     "online_forced_off",
@@ -126,10 +130,19 @@
     "contamination_probe"
   ],
   "human_review": [
-    "回测: 关键依赖选的是真实通航还是开放通告",
-    "E1: 是否回应 hz-010、hz-015",
-    "E2: 离场条件能否在 7/12 被触发"
+    "Backtest: is the key dependency real transits or the reopening notice",
+    "E1: are hz-010 and hz-015 addressed",
+    "E2: could the exit conditions fire on 7/12"
   ],
-  "notes": "回测必须离线：runner 对 R 层强制关联网，不受 --online 影响；只用 allowed_excerpts 组成本轮资料包，事后片段只用于判分；跑前先做污染检查；模型引用了 allowed_excerpts 以外的片段或任何网址，记 leak。",
-  "pack_rule": "时点资料包 = 决策时点前已公开的全部片段（不只挑相关的）：产品本来就把整包放进上下文，只挑相关片段会让题目比现实简单"
+  "notes": "Backtests must run offline: the runner refuses --online for layer R; the pack holds only allowed_excerpts, outcome excerpts are used for grading only; the contamination probe runs first; citing anything outside allowed_excerpts counts as a leak.",
+  "pack_rule": "Point-in-time pack = every excerpt public by as_of, not just the relevant ones: the product puts the whole pack in context, so hand-picking would make the task easier than reality.",
+  "contamination_markers": [
+    "closed again",
+    "re-closed",
+    "reclosed",
+    "July 12",
+    "IRGC",
+    "$105",
+    "105"
+  ]
 }

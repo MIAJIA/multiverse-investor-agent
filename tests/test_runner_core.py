@@ -46,7 +46,7 @@ def test_c4_discover_abstains_synthetic(evidence):
                  entrypoints=_adapter.core_entrypoints(), pack_source="synthetic")
     assert r["status"] == "PENDING_REVIEW", r
     assert r["actual"]["candidates"] == 0
-    assert any("合成占位" in n for n in r["notes"])
+    assert any("synthetic placeholder" in n for n in r["notes"])
 
 
 def test_c4_discover_abstains_real(real_evidence):
@@ -90,7 +90,7 @@ def test_real_mode_refuses_provider_already_holding_synthetic(real_evidence):
     """同一个 provider 先跑过 synthetic，再跑 real：不能悄悄用到注册进去的占位包。"""
     prepare_packs(load_case("D1"), real_evidence, "synthetic")
     packs, notes = prepare_packs(load_case("D1"), real_evidence, "real")
-    assert packs == [] and any("合成包" in n for n in notes)
+    assert packs == [] and any("is synthetic" in n for n in notes)
 
 
 def test_key_excerpts_exist_in_real_packs(real_evidence):
@@ -111,3 +111,12 @@ def test_pre_plan_b_core_is_reported_not_silently_passed(evidence):
     r = run_case(load_case("T1"), "pipeline", reasoner=ScriptedReasoner(), evidence=evidence,
                  entrypoints=_adapter.core_entrypoints())
     assert r["status"] == "ERROR" and "proposals" in r["actual"]["error"]
+
+
+def test_b5_fork_carries_one_plan_per_terminal(evidence):
+    """B5：带着 C1 的 3 份计划分叉，核心要按 terminal 一一返回计划（方案 B 的 fork）。"""
+    _adapter.require_plan_b()
+    r = run_case(load_case("B5"), "pipeline", reasoner=ScriptedReasoner(), evidence=evidence,
+                 entrypoints=_adapter.core_entrypoints())
+    failed = [c for c in r["checks"] if not c["passed"]]
+    assert not failed, failed

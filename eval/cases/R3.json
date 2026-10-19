@@ -2,11 +2,11 @@
   "id": "R3",
   "type": "backtest",
   "layer": "R",
-  "title": "回测：「美国放宽 H200 对华出口，NVDA 中国收入回升」",
+  "title": "Backtest: 'US eases H200 exports to China, NVDA China revenue recovers'",
   "entry": "inspect",
   "as_of": "2026-01-16",
   "input": {
-    "event": "美国把 H200 对华出口改成逐案审查，NVDA 的中国数据中心收入会回升",
+    "event": "The US moved H200 exports to China to case-by-case review, so NVDA's China data-center revenue will recover",
     "target": "NVDA",
     "today": "2026-01-16",
     "evidence_packs": [
@@ -34,22 +34,22 @@
   ],
   "allowed_exceptions": {},
   "excluded": {
-    "sc-051": "事后真相（2026-05-20）",
-    "sc-047": "决策后的政策变化（2026-03-13）",
-    "sc-048": "决策后的政策变化（2026-05-31）",
-    "sc-049": "决策后的政策变化（2026-07-10）",
-    "sc-046": "决策后发表（2026-05-12）",
-    "sc-011": "决策后发表（2026-02-25），与本题无关",
-    "sc-012": "同上",
-    "sc-013": "同上",
-    "sc-014": "同上",
-    "sc-015": "同上"
+    "sc-051": "outcome(2026-05-20)",
+    "sc-047": "policy change after as_of(2026-03-13)",
+    "sc-048": "policy change after as_of(2026-05-31)",
+    "sc-049": "policy change after as_of(2026-07-10)",
+    "sc-046": "published after as_of(2026-05-12)",
+    "sc-011": "published after as_of(2026-02-25)，unrelated",
+    "sc-012": "same as above",
+    "sc-013": "same as above",
+    "sc-014": "same as above",
+    "sc-015": "same as above"
   },
   "outcome": {
     "excerpt_ids": [
       "sc-051"
     ],
-    "truth": "截至 2026-05-20（FY2027 Q1 10-Q），NVIDIA 只获许向特定中国客户少量出货 H200，许可计划尚未产生收入，且出货须缴 25% 关税（sc-051）。",
+    "truth": "As of 2026-05-20 (FY2027 Q1 10-Q), NVIDIA had licences for only small H200 shipments to specific Chinese customers, the licensing program had produced no revenue yet, and shipments carry a 25% tariff (sc-051).",
     "observations": [
       {
         "source": "nvidia.sec_filings.china_h200_revenue",
@@ -58,7 +58,7 @@
           "end": "2026-05-20"
         },
         "records": [],
-        "note": "到 5/20 的披露里没有确认 H200 对华收入：文件型条件在这个窗口内未观测到"
+        "note": "No H200 China revenue confirmed in filings through 5/20: a document condition is not observed in this window."
       }
     ],
     "series_aliases": {
@@ -71,22 +71,25 @@
   },
   "expected": {
     "gate": "WAIT",
-    "behavior": "关键依赖是许可实际发放并确认收入，而不是规则放宽本身；进场条件是文件型（财报或 8-K 披露 H200 对华收入），带截止日期；指出 sc-030（性能门槛）、sc-031（50% 上限、第三方检测、不挤占美国产能）、sc-032（D:5 与澳门仍推定拒绝）这些摩擦；可以引用 sc-050（H20 的许可与 $5.5B 费用）作为管制反复的先例。",
-    "key_dependency_should_be": "许可实际发放并在财报里确认收入",
+    "behavior": "The key dependency is licences actually granted and revenue confirmed, not the rule change itself. The entry condition is a document (a filing that discloses H200 China revenue) with a deadline. Raise the frictions in sc-030 (performance thresholds), sc-031 (50% cap, third-party testing, no crowding out US capacity), sc-032 (D:5 and Macau still presumed denied); sc-050 (H20 licence and $5.5B charge) can serve as a precedent for policy reversals.",
+    "key_dependency_should_be": "licences actually granted and revenue confirmed in filings",
     "backtest": {
-      "entry_resolution": "截至 2026-05-20 文件型进场条件未满足，应一直 WAIT",
+      "entry_resolution": "The document entry condition is not met through 2026-05-20, so the plan should stay WAIT",
       "counter_excerpts_to_address": [
         "sc-030",
         "sc-031",
         "sc-032"
+      ],
+      "pass_if_any": [
+        "entry_not_met_by:2026-05-20"
       ]
     }
   },
-  "contamination_probe": "不看任何资料：2026 年 1 月美国把 H200 对华出口改成逐案审查之后，到 2026 年 5 月 NVIDIA 的 H200 对华收入怎么样？",
+  "contamination_probe": "Without any documents: after the US moved H200 exports to China to case-by-case review in January 2026, what happened to NVIDIA's H200 revenue from China by May 2026?",
   "evals": [
     "E1",
     "E2",
-    "回测"
+    "Backtest"
   ],
   "auto_checks": [
     "online_forced_off",
@@ -96,9 +99,16 @@
     "contamination_probe"
   ],
   "human_review": [
-    "回测: 关键依赖选的是收入确认还是规则放宽",
-    "E1: 是否回应 sc-030、sc-031、sc-032"
+    "Backtest: is the key dependency revenue confirmation or the rule change",
+    "E1: are sc-030, sc-031, sc-032 addressed"
   ],
-  "notes": "回测必须离线：runner 对 R 层强制关联网，不受 --online 影响；只用 allowed_excerpts 组成本轮资料包，事后片段只用于判分；跑前先做污染检查；模型引用了 allowed_excerpts 以外的片段或任何网址，记 leak。",
-  "pack_rule": "时点资料包 = 决策时点前已公开的全部片段（不只挑相关的）：产品本来就把整包放进上下文，只挑相关片段会让题目比现实简单"
+  "notes": "Backtests must run offline: the runner refuses --online for layer R; the pack holds only allowed_excerpts, outcome excerpts are used for grading only; the contamination probe runs first; citing anything outside allowed_excerpts counts as a leak.",
+  "pack_rule": "Point-in-time pack = every excerpt public by as_of, not just the relevant ones: the product puts the whole pack in context, so hand-picking would make the task easier than reality.",
+  "contamination_markers": [
+    "no revenue",
+    "not yet generated revenue",
+    "25% tariff",
+    "25 percent",
+    "small quantities"
+  ]
 }

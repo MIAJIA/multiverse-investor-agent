@@ -68,8 +68,8 @@ def test_report_from_sample_results(tmp_path):
     header = "| " + " | ".join(report.COLUMNS) + " |"
     assert header in md
     assert "%" not in md, "不报百分比"
-    assert "n/a（scenario 全文给定）" in md
-    assert "当前流程不可信" in md  # sample 里 C3 有越界写入
+    assert "n/a (scenario given in full)" in md
+    assert "cannot be trusted" in md  # sample 里 C3 有越界写入
     for r in results:
         assert f"| {r['case_id']} |" in md
 
@@ -77,7 +77,7 @@ def test_report_from_sample_results(tmp_path):
 def test_committed_sample_results_render():
     path = EVAL_DIR / "sample_results.json"
     md = report.render_report(json.loads(path.read_text(encoding="utf-8")))
-    assert "## pipeline 组" in md and "## baseline 组" in md and "## 两组对照" in md
+    assert "## pipeline group" in md and "## baseline group" in md and "## pipeline vs baseline" in md
 
 
 def test_abstain_before_inspect_is_not_silently_pending():
@@ -116,7 +116,7 @@ def test_synthetic_run_skips_retrieval_and_says_why():
                       entrypoints=FakeEntrypoints(observations=[]), pack_source="synthetic")
     r = results[0]
     assert r["retrieval"] is None and "retrieval_miss" not in r["failure_types"]
-    assert "撞号" in report.render_report(results)
+    assert "ids collide" in report.render_report(results)
 
 
 # ---- 方案 B：proposals 列表、逐份计划检查 ---------------------------------------

@@ -1,109 +1,109 @@
-# eval 对核心包的接口提议
+# Eval interface proposal for the core package
 
-> 2026-10-18 更新：核心已在 `core-schema` 分支落地（commit 64024cc），决定记录在 `docs/core-design.md`。D1、D3–D9 按本文默认采纳，D2 改判 met（已同步）；E3 哈希比对前两边先经 `parse_graph(d).dump()` 规范化。下文保留提议原文，与实现不同处以核心为准。
+> 2026-10-18 update: the core has landed on the `core-schema` branch (commit 64024cc), with decisions recorded in `docs/core-design.md`. D1 and D3–D9 are adopted as the defaults in this document; D2 was changed to met (already synced). For the E3 hash comparison, both sides are first normalized through `parse_graph(d).dump()`. The original proposal text is kept below; where it differs from the implementation, the core wins.
 
-2026-10-18 · eval 线 → 主 session
+2026-10-18 · eval line → main session
 
-这是**提议**，不是规格。主 session 照着实现，或者直接改这份文件；改了之后 eval 线只需要改 `tests/_adapter.py`（测试侧唯一 import catalyst 的地方）和 `eval/runner.py` 的 `load_core_entrypoints()`（runner 侧唯一 import catalyst 的地方）。字段名一律沿用 `docs/engineering-design.md`「核心数据模型」；设计文档没写到、本线需要的字段在下文标「新增」。
+This is a **proposal**, not a spec. The main session can implement it as written, or edit this file directly. After an edit, the eval line only needs to change `tests/_adapter.py` (the only place on the test side that imports catalyst) and `load_core_entrypoints()` in `eval/runner.py` (the only place on the runner side that imports catalyst). Field names always follow `docs/engineering-design.md` "Core data model"; fields this line needs that the design doc does not cover are marked "new" below.
 
-## 1. 数据表示
+## 1. Data representation
 
-- 核心函数**接受普通 dict**（JSON 反序列化的结果），返回 dict 或带 `to_dict()` / `model_dump()` 的对象都可以，adapter 会归一。如果核心用 pydantic / dataclass，请提供 `catalyst.schema.parse_graph(dict)`、`parse_condition(dict)`，adapter 会自动用上。
-- 日期在数据里是 ISO 字符串 `YYYY-MM-DD`；`now` 参数是 `datetime.date`。
-- 枚举值是小写字符串（`met`、`not_met`、`unknown`、`supported` …）；gate 结果是大写字符串（`WAIT`、`BLOCKED`、`READY_FOR_REVIEW`）。返回 `Enum` 也行，adapter 取 `.value`。
+- Core functions **accept plain dicts** (the result of JSON deserialization). They may return dicts or objects with `to_dict()` / `model_dump()`; the adapter normalizes them. If the core uses pydantic / dataclass, please provide `catalyst.schema.parse_graph(dict)` and `parse_condition(dict)`; the adapter will use them automatically.
+- Dates in the data are ISO strings `YYYY-MM-DD`; the `now` parameter is a `datetime.date`.
+- Enum values are lowercase strings (`met`, `not_met`, `unknown`, `supported` …); gate results are uppercase strings (`WAIT`, `BLOCKED`, `READY_FOR_REVIEW`). Returning an `Enum` is also fine; the adapter takes `.value`.
 
-## 2. 函数
+## 2. Functions
 
-| 函数 | 签名 | 行为要求（测试会查的） |
+| Function | Signature | Behavior requirements (checked by tests) |
 | --- | --- | --- |
-| 进场判定 | `catalyst.gate.evaluate_entry(conditions: list[Condition]) -> "WAIT" \| "BLOCKED" \| "READY_FOR_REVIEW"` | AND；任一 not_met → BLOCKED；否则任一 unknown → WAIT；空集 → WAIT；全 met → READY_FOR_REVIEW；只看 evaluation_status，verification_status = verifiable 不算满足 |
-| 条件判定 | `catalyst.conditions.evaluate(condition, observations: list[Observation], now: date) -> "met" \| "not_met" \| "unknown"` | not_observed_by：`now > observation_window.end` 且某个同源 observation 的 coverage 覆盖整个窗口、窗口内无记录 → met；窗口内有记录 → not_met；其余 unknown（决定 D2）；threshold 为 null 时数值条件永远 unknown |
-| Condition 校验 | `catalyst.validator.validate_condition(condition) -> list[Error]` | numeric 且 threshold 为 null 时 threshold_note 必须非空；anchor、deadline 都是日期时 deadline ≥ anchor；anchor 以 `scenario:` 开头时跳过日期比较；predicate、kind 在枚举内 |
-| 引用校验 | `catalyst.validator.validate_references(graph, evidence_pack) -> list[Error]` | excerpt_id 必须存在于**当前** pack；`model_only: true` 的边不得带 stance = supports 的证据；evidence_status = supported 的 Claim 必须至少有一条非 model_only 的入边带 supports 证据 |
-| 写范围 | `catalyst.fork.compute_write_scope(graph, op) -> (node_ids: set[str], edge_ids: set[str])` | 见决定 D4 |
-| 打补丁 | `catalyst.fork.apply_patch(graph, patch, scope) -> Graph` | 返回新版本：`version` 新值、`parent_version` = 基线 version；**不原地修改**输入图；越界抛 `catalyst.fork.ScopeViolation`，且不留半截写入 |
-| diff | `catalyst.diff.diff(g1, g2) -> dict` | 至少含 `nodes_changed`、`edges_changed`、`conditions_changed`、`nodes_added`、`edges_added`、`nodes_removed`、`edges_removed`（id 列表或集合） |
-| 案例入口 | 见第 4 节 | |
+| Entry evaluation | `catalyst.gate.evaluate_entry(conditions: list[Condition]) -> "WAIT" \| "BLOCKED" \| "READY_FOR_REVIEW"` | AND; any not_met → BLOCKED; otherwise any unknown → WAIT; empty set → WAIT; all met → READY_FOR_REVIEW; only looks at evaluation_status, verification_status = verifiable does not count as satisfied |
+| Condition evaluation | `catalyst.conditions.evaluate(condition, observations: list[Observation], now: date) -> "met" \| "not_met" \| "unknown"` | not_observed_by: `now > observation_window.end` and the coverage of some same-source observation covers the whole window, no record inside the window → met; a record inside the window → not_met; everything else unknown (decision D2); when threshold is null, a numeric condition is always unknown |
+| Condition validation | `catalyst.validator.validate_condition(condition) -> list[Error]` | When numeric and threshold is null, threshold_note must be non-empty; when anchor and deadline are both dates, deadline ≥ anchor; when anchor starts with `scenario:`, skip the date comparison; predicate and kind are within the enums |
+| Reference validation | `catalyst.validator.validate_references(graph, evidence_pack) -> list[Error]` | excerpt_id must exist in the **current** pack; an edge with `model_only: true` must not carry evidence with stance = supports; a Claim with evidence_status = supported must have at least one non-model_only incoming edge with supports evidence |
+| Write scope | `catalyst.fork.compute_write_scope(graph, op) -> (node_ids: set[str], edge_ids: set[str])` | See decision D4 |
+| Apply patch | `catalyst.fork.apply_patch(graph, patch, scope) -> Graph` | Returns a new version: a new `version` value, `parent_version` = baseline version; **does not modify** the input graph in place; out of scope raises `catalyst.fork.ScopeViolation`, and leaves no partial write |
+| diff | `catalyst.diff.diff(g1, g2) -> dict` | Contains at least `nodes_changed`, `edges_changed`, `conditions_changed`, `nodes_added`, `edges_added`, `nodes_removed`, `edges_removed` (lists or sets of ids) |
+| Case entry points | See section 4 | |
 
-`Error` 可以是字符串或对象，但 `str(error)` 必须包含出错的 node / edge / condition / excerpt id——测试用这个定位。
+`Error` can be a string or an object, but `str(error)` must contain the id of the failing node / edge / condition / excerpt: tests use this to locate it.
 
-## 3. 字段（新增标注）
+## 3. Fields (new ones marked)
 
-- **node**（Claim）：`id`、`statement`、`original_statement`、`evidence_status`、`time_bucket`、`instruments`；新增 `role`：event / assumption / intermediate / terminal / shock（定位 ChangeAssumption 目标、AddShock 新节点用）。
-- **edge**（Mechanism）：新增 `id`（写范围按 id 记边）；`from`、`to`、`channel`、`sign`（`+` / `-`）、`lag_days`、`mechanism`、`evidence: [{tier, source_id, excerpt_id, stance, supports}]` 或 `model_only: true`；stance = contradicts 的证据新增可选 `rebuttal`（说明为什么不构成反驳；没有 rebuttal 的 contradicts 证据才推进 Claim 为 contradicted，见决定 D8）。
-- **channel 枚举**（提议）：adoption、capex、demand、supply、price、substitution、technology、policy、revenue、sentiment。
-- **condition**：新增 `id`；其余照设计文档：`claim_id`、`kind`、`predicate`、`series`、`source`、`comparator`、`threshold`、`threshold_note`、`anchor`、`deadline`、`observation_window: {start, end}`、`rule`、`verification_status`、`evaluation_status`。
-- **graph**：`version`、`parent_version`、`op`、`nodes`、`edges`、`model_output_ref`、`observations_ref`；新增 `conditions`（挂在图上，Fork 的「相关 Condition 变更一律拒绝」才能按图快照比对）。
-- **op**：`{kind, target, value}`；AddShock 额外带 Stage 1 结果 `impacts: [node_id]`、`new_nodes: [node]`、`new_edges: [edge]`（三小时由代码查预定义表填）。
-- **patch**（新增）：`{base_version, node_updates: [{id, fields}], edge_updates: [{id, fields}], condition_updates: [{id, fields}], node_adds: [node], edge_adds: [edge], assessment: {claim_id: unaffected|challenged|unresolved}}`。
-- **observation**（新增）：`{source, coverage: {start, end}, records: [{date, value, excerpt_id}]}`；`source` 与 condition 的 `series` 或 `source` 匹配；`coverage` 是来源实际覆盖到的区间。
-- **evidence pack**：`{pack_id, excerpts: [{source_id, excerpt_id, source, date, text, stance}]}`。
+- **node** (Claim): `id`, `statement`, `original_statement`, `evidence_status`, `time_bucket`, `instruments`; new `role`: event / assumption / intermediate / terminal / shock (used to locate the ChangeAssumption target and AddShock new nodes).
+- **edge** (Mechanism): new `id` (the write scope records edges by id); `from`, `to`, `channel`, `sign` (`+` / `-`), `lag_days`, `mechanism`, `evidence: [{tier, source_id, excerpt_id, stance, supports}]` or `model_only: true`; evidence with stance = contradicts gets a new optional `rebuttal` (explains why it is not a refutation; only contradicts evidence without a rebuttal moves a Claim to contradicted, see decision D8).
+- **channel enum** (proposed): adoption, capex, demand, supply, price, substitution, technology, policy, revenue, sentiment.
+- **condition**: new `id`; the rest as in the design doc: `claim_id`, `kind`, `predicate`, `series`, `source`, `comparator`, `threshold`, `threshold_note`, `anchor`, `deadline`, `observation_window: {start, end}`, `rule`, `verification_status`, `evaluation_status`.
+- **graph**: `version`, `parent_version`, `op`, `nodes`, `edges`, `model_output_ref`, `observations_ref`; new `conditions` (attached to the graph, so that Fork's "any change to related Conditions is rejected" can be checked against the graph snapshot).
+- **op**: `{kind, target, value}`; AddShock also carries the Stage 1 results `impacts: [node_id]`, `new_nodes: [node]`, `new_edges: [edge]` (for the three-hour version, filled in by code from a predefined table).
+- **patch** (new): `{base_version, node_updates: [{id, fields}], edge_updates: [{id, fields}], condition_updates: [{id, fields}], node_adds: [node], edge_adds: [edge], assessment: {claim_id: unaffected|challenged|unresolved}}`.
+- **observation** (new): `{source, coverage: {start, end}, records: [{date, value, excerpt_id}]}`; `source` matches the condition's `series` or `source`; `coverage` is the range the source actually covers.
+- **evidence pack**: `{pack_id, excerpts: [{source_id, excerpt_id, source, date, text, stance}]}`.
 
-## 4. 案例入口（runner 用）
+## 4. Case entry points (used by the runner)
 
-都放在 `catalyst.entrypoints`（或主 session 指定的模块），Reasoner 与 Evidence Provider 注入：
+All placed in `catalyst.entrypoints` (or a module the main session specifies), with Reasoner and Evidence Provider injected:
 
 ```python
 discover(event: str, target: str | None = None, *, reasoner, evidence, config=None) -> {
-    "candidates": [{"id", "direction", "label": "grounded" | "hypothesis" | "not_recommended", "rationale"}],  # 0–3 个
+    "candidates": [{"id", "direction", "label": "grounded" | "hypothesis" | "not_recommended", "rationale"}],  # 0–3 items
     "abstained": bool, "abstain_reason": str | None,
-    "observations": [excerpt_id],          # 本轮检索到的全部片段 id（进快照的 observations_ref）
+    "observations": [excerpt_id],          # ids of all excerpts retrieved this round (go into the snapshot's observations_ref)
 }
 inspect(event: str, target: str | None = None, *, candidate_id=None, material: str | None = None,
         judgment_only: bool = False, reasoner, evidence, config=None) -> {
     "graph": Graph | None, "no_chain": bool, "no_chain_reason": str | None,
-    "proposal": TradeProposal | None,      # judgment_only=True 时必须为 None
-    "judgment": {"label": "YES" | "NO" | "AMBIGUOUS", "rationale": str} | None,   # judgment_only=True 时必填
+    "proposal": TradeProposal | None,      # must be None when judgment_only=True
+    "judgment": {"label": "YES" | "NO" | "AMBIGUOUS", "rationale": str} | None,   # required when judgment_only=True
     "observations": [excerpt_id],
 }
 fork(graph, op, *, reasoner, evidence, config=None) -> {
-    "graph": Graph,                        # 新版本
-    "base_graph": Graph,                   # 原版本（必须仍可取到）
+    "graph": Graph,                        # new version
+    "base_graph": Graph,                   # original version (must still be retrievable)
     "scope": {"nodes": [...], "edges": [...]},
-    "diff": {...},                         # catalyst.diff.diff 的结果
+    "diff": {...},                         # result of catalyst.diff.diff
     "scenario": {"version", "base_version", "ops", "assessment": {claim_id: status}},
     "proposal": TradeProposal | None,
 }
 ```
 
-TradeProposal 至少要有 `entry_conditions`、`support_status`、`meta.approval_required`、`user_judgment`，以及 adapter 读 gate 结果用的 `gate`（`evaluate_entry(entry_conditions)` 的结果，提议作为派生字段直接放进提案）。方案 B 之后返回体改成 `proposals` 列表，见 4c。
+TradeProposal must have at least `entry_conditions`, `support_status`, `meta.approval_required`, `user_judgment`, plus the `gate` the adapter uses to read the gate result (the result of `evaluate_entry(entry_conditions)`, proposed as a derived field placed directly in the proposal). After Plan B the return body changes to a `proposals` list, see 4c.
 
-runner 的 CLI 另外需要 `catalyst.reasoner.default_reasoner()`（返回的对象还要有 `single_prompt(prompt: str) -> str`，baseline 组用同一个模型做单次 prompt）和 `catalyst.evidence.default_provider()`（要有 `load_pack(pack_id) -> list[excerpt]`，baseline 组把同一份资料全文拼进 prompt）。
+The runner CLI also needs `catalyst.reasoner.default_reasoner()` (the returned object must also have `single_prompt(prompt: str) -> str`, so the baseline group can do a single prompt with the same model) and `catalyst.evidence.default_provider()` (must have `load_pack(pack_id) -> list[excerpt]`, so the baseline group can put the full text of the same material into the prompt).
 
-`judgment_only=True` 是给 CausalT5k 的：scenario 作为 `material` 直接给出，只输出因果判断，不生成提案。
+`judgment_only=True` is for CausalT5k: the scenario is given directly as `material`, and only a causal judgment is output, no proposal.
 
-## 4b. runner 实际怎么调核心（对齐后）
+## 4b. How the runner actually calls the core (after alignment)
 
-- 三个入口都传 `packs=<本案例可用的 pack>`，由 `eval.runner.prepare_packs(case, evidence, source)` 算。**一次运行只用一种来源**（`run_all(..., pack_source=)`、CLI `--packs real|synthetic`）：真实包复用了 `sc-001…`、`hz-001…` 这些 id，但含义和立场都和 `eval/fixtures` 里的占位片段不同。
-  - `real`（默认）：只用 `packs/` 下的真实包；缺了就不带并写进 `notes`，不拿合成包补；provider 里若已注册了合成包（`synthetic: true`）也不用。
-  - `synthetic`：一律用 `EvidenceProvider.register` 注入同 pack_id 的占位包，只验证流程；检索命中不判（报告写「n/a（合成包，id 与真实包撞号）」）。
-  - baseline 组的 prompt 用同一份列表，保证「同一资料」。
-- Discover 之后的 inspect 传 `candidate=<整个候选 dict>`（同时带 `candidate_id`）。
-- C3 的 fork 用 golden 图（`c1_graph_v1.json`）加 `pack=<c1_evidence_pack>`、`packs=[]`，不论本轮是不是真实包：golden 图引用的是占位片段 id；E3 哈希的基线取核心回传的 `base_graph`（已是规范形式），不直接哈希手写 fixture。
-- 入口返回 `ok=False` 时记 `structured_failure`，附核心给的 errors。
-- baseline 组优先调 `reasoner.single_prompt(prompt)`；reasoner 没有这个方法时退回 `complete(stage="baseline", system="", user=prompt, schema={"type": "object"})`。
+- All three entry points get `packs=<packs available for this case>`, computed by `eval.runner.prepare_packs(case, evidence, source)`. **One run uses only one source** (`run_all(..., pack_source=)`, CLI `--packs real|synthetic`): the real packs reuse ids like `sc-001…` and `hz-001…`, but their meaning and stance differ from the placeholder excerpts in `eval/fixtures`.
+  - `real` (default): only use the real packs under `packs/`. If one is missing, leave it out and write it into `notes`; do not fill in with a synthetic pack. If a synthetic pack (`synthetic: true`) is already registered in the provider, do not use it either.
+  - `synthetic`: always inject the placeholder pack with the same pack_id via `EvidenceProvider.register`, only to validate the pipeline. Retrieval hit is not judged (the report says "n/a (synthetic pack, ids collide with real pack)").
+  - The baseline group's prompt uses the same list, to guarantee "the same material".
+- The inspect after Discover gets `candidate=<the whole candidate dict>` (and also `candidate_id`).
+- C3's fork uses the golden graph (`c1_graph_v1.json`) with `pack=<c1_evidence_pack>` and `packs=[]`, whether or not this run uses real packs: the golden graph cites placeholder excerpt ids. The baseline for the E3 hash is the `base_graph` returned by the core (already in normalized form); the hand-written fixture is not hashed directly.
+- When an entry point returns `ok=False`, record `structured_failure`, with the errors the core gives attached.
+- The baseline group calls `reasoner.single_prompt(prompt)` first. If the reasoner does not have this method, fall back to `complete(stage="baseline", system="", user=prompt, schema={"type": "object"})`.
 
-## 4c. 方案 B 之后 eval 读的字段（plan-b@d105c45）
+## 4c. Fields eval reads after Plan B (plan-b@d105c45)
 
-- inspect / discover / fork / sign 的返回体：`proposals: list[TradeProposal]`，没有时是 `[]`。**不再读单数 `proposal`。**
-  - eval 用 `eval.runner.read_proposals(out, stage)` 显式读：字段缺失、或者返回体里还是旧的 `proposal`、或者不是列表，一律抛 `MissingField`，run_case 记 ERROR。不允许当成「没有提案」静默通过。
-  - judgment_only（CausalT5k）、Discover、no_chain 时必须是 `[]`。
-- 每份计划（`TradeProposal`）eval 读：`terminal_id`、`gate`、`status`、`support_status`、`entry_conditions`、`exit_conditions`、`user_judgment.requires_user_confirmation`。`approval_reset`、`rival_changed` 目前只在报告里展示，不判分。
-- inspect 返回体的 `branches: [{terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}]`：eval 只把 `kind` 列进报告；分支是不是真正的竞争归人工复核，不做自动检查（方案 B 第 6 节）。
-- 逐份检查：案例里的 `gate` 期望指每一份计划；null 阈值说明、编造阈值逐份检查；`requires_user_confirmation` 逐份检查。条件类型（例如「至少一条数值型」）按整张图的计划合起来看，因为并列受益的计划可以用不同类型的条件。
-- 同一版本几份计划的 `original_statement`、`clarified_statement` 相同，eval 不重复检查。
-- 契约测试 `tests/test_runner_core.py` 里读 `proposals` 的用例，在核心还没有 `TradeProposal.terminal_id` 时跳过；另有一条在旧契约下断言 runner 报错。
+- Return body of inspect / discover / fork / sign: `proposals: list[TradeProposal]`, `[]` when there are none. **The singular `proposal` is no longer read.**
+  - Eval reads it explicitly with `eval.runner.read_proposals(out, stage)`: if the field is missing, or the return body still has the old `proposal`, or it is not a list, always raise `MissingField`, and run_case records ERROR. It must not pass silently as "no proposal".
+  - Must be `[]` for judgment_only (CausalT5k), Discover, and no_chain.
+- For each plan (`TradeProposal`), eval reads: `terminal_id`, `gate`, `status`, `support_status`, `entry_conditions`, `exit_conditions`, `user_judgment.requires_user_confirmation`. `approval_reset` and `rival_changed` are currently only shown in the report, not scored.
+- `branches: [{terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}]` in the inspect return body: eval only lists `kind` in the report. Whether the branches truly compete is part of human review; there is no automatic check (Plan B section 6).
+- Per-plan checks: the `gate` expectation in a case applies to every plan; the null threshold note and invented thresholds are checked plan by plan; `requires_user_confirmation` is checked plan by plan. Condition types (for example "at least one numeric") are checked across all plans of the graph combined, because parallel-beneficiary plans can use different types of conditions.
+- `original_statement` and `clarified_statement` are the same across the plans of one version, so eval does not check them repeatedly.
+- The cases in the contract test `tests/test_runner_core.py` that read `proposals` are skipped while the core does not yet have `TradeProposal.terminal_id`; there is also one that asserts the runner raises an error under the old contract.
 
-## 5. 需要主 session 决定的问题
+## 5. Questions for the main session to decide
 
-| # | 问题 | 本线的默认（测试按它写） | 改了要动哪里 |
+| # | Question | This line's default (tests are written to it) | What to change if it changes |
 | --- | --- | --- | --- |
-| D1 | edge / condition 的 `id`、graph 上的 `conditions`、node 的 `role` 是否加进 schema | 加 | fixture 全部 |
-| D2 | not_observed_by 在「窗口结束 + 来源全覆盖 + 窗口内无记录」时给什么 | **已定（主 session，docs/core-design.md）：met。** evaluation_status 回答「条件是否成立」，「到期未发生」此时成立；窗口内看到记录给 not_met；其余一律 unknown。设计文档原文写的 not_met 待同步 | `eval/fixtures/condition_cases.json` 的 T3 `expected` |
-| D3 | 进场条件里 unknown 与 not_met 同时出现时 | BLOCKED（已证实未满足优先） | `gate_truth_table.json` 的 G6 |
-| D4 | 写范围的边怎么算：ChangeAssumption = 目标 + 全部后代节点 + **这些节点的出边**；指向后代节点、但起点在范围外的入边（如 C1 的 `c1.e3`）**不在**范围内。AddShock = Stage 1 新节点与新边 + `impacts` 及其后代 + 这些节点的出边 | 如左 | `c3_*.json` 的 expected_scope；`tests/test_fixtures.py` 里的参考实现 |
-| D5 | patch 格式、`assessment` 放在 patch 里由模型提议还是由代码从 diff 推出 | 放在 patch 里，代码只接受范围内的 claim | `c3_*.json` |
-| D6 | CausalT5k 的 Skepticism Trap 与谄媚陷阱怎么落到案例：数据集里它们是诊断的失败模式（P1、P2），不是逐例的 `trap` 字段 | T1 = 看似陷阱、实则成立的 YES 案例（Natural Experiment）；T4 = NO 案例 + 用户确定语气的加压句 | `eval/cases/causalt5k/` |
-| D7 | 非数值条件 threshold 为 null 时是否也必须写 threshold_note | 只强制 numeric；fixture 里非数值条件也写了说明 | `condition_cases.json` |
-| D8 | contradicts 证据「被驳回」用什么字段表示 | 可选 `rebuttal` 文本 | `c1_graph_v1.json` 的 `c1.e4` |
-| D9 | 在线搜索 pack 在哪个案例里开着演示 | C2 | `eval/cases/C2.json` |
+| D1 | Whether edge / condition `id`, `conditions` on the graph, and node `role` go into the schema | Add them | All fixtures |
+| D2 | What not_observed_by gives when "window ended + source fully covers + no record inside the window" | **Decided (main session, docs/core-design.md): met.** evaluation_status answers "does the condition hold", and "did not happen by the deadline" holds in this case; a record seen inside the window gives not_met; everything else is unknown. The original design doc text says not_met and is pending sync | `expected` of T3 in `eval/fixtures/condition_cases.json` |
+| D3 | When unknown and not_met appear together in the entry conditions | BLOCKED (confirmed not-met takes precedence) | G6 in `gate_truth_table.json` |
+| D4 | How write scope edges are computed: ChangeAssumption = target + all descendant nodes + **the outgoing edges of these nodes**; incoming edges that point to a descendant node but start outside the scope (such as `c1.e3` in C1) are **not** in scope. AddShock = Stage 1 new nodes and new edges + `impacts` and their descendants + the outgoing edges of these nodes | As stated at left | expected_scope in `c3_*.json`; the reference implementation in `tests/test_fixtures.py` |
+| D5 | Patch format; whether `assessment` goes in the patch as a model proposal, or is derived by code from the diff | Put it in the patch; code only accepts in-scope claims | `c3_*.json` |
+| D6 | How CausalT5k's Skepticism Trap and sycophancy trap map onto cases: in the dataset they are diagnosed failure modes (P1, P2), not a per-case `trap` field | T1 = a YES case that looks like a trap but actually holds (Natural Experiment); T4 = NO case + a pressure sentence in a confident user tone | `eval/cases/causalt5k/` |
+| D7 | Whether a non-numeric condition with a null threshold must also have threshold_note | Only enforced for numeric; non-numeric conditions in the fixtures also have a note | `condition_cases.json` |
+| D8 | Which field expresses that contradicts evidence has been "rebutted" | Optional `rebuttal` text | `c1.e4` in `c1_graph_v1.json` |
+| D9 | In which case the online search pack is turned on for the demo | C2 | `eval/cases/C2.json` |

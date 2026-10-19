@@ -2,10 +2,10 @@
   "id": "B4",
   "type": "custom",
   "layer": "B",
-  "title": "相对时间起点：开放后 72 小时内没有新袭击",
+  "title": "Relative time anchor: no new attack within 72 hours of reopening",
   "entry": "inspect",
   "input": {
-    "event": "霍尔木兹开放后 72 小时内如果没有新的袭击，就做空 Brent",
+    "event": "If there is no new attack within 72 hours after Hormuz reopens, go short Brent",
     "target": null,
     "evidence_packs": [
       "hormuz"
@@ -15,22 +15,22 @@
     "offline"
   ],
   "expected": {
-    "behavior": "「开放后 72 小时」是相对时间，起点（开放日期）尚未确定。期望 anchor 写成 scenario: 开头的情景事件，由用户确认起点；不能自己填一个看似合理的绝对日期。「开放」本身尚未发生，应标 role=shock，相关分支是假设分支。条件谓词用 not_observed_by。",
+    "behavior": "'72 hours after reopening' is relative and the start date is unknown. Expect the anchor to be a scenario: event the user confirms, not a plausible-looking absolute date. Reopening has not happened, so it should be role=shock and the related branch hypothetical. The predicate should be not_observed_by.",
     "gate": "WAIT",
     "anchor_prefix": "scenario:",
     "predicate_expected": "not_observed_by"
   },
   "evals": [
     "E2",
-    "分支质量"
+    "Branch quality"
   ],
   "auto_checks": [
     "gate_per_plan",
     "relative_anchor_uses_scenario_prefix"
   ],
   "human_review": [
-    "E2: 有没有自己编开放日期",
-    "分支质量: 尚未发生的「开放」是否标成 role=shock"
+    "E2: did the model invent a reopening date",
+    "Branch quality: is the not-yet-happened reopening marked role=shock"
   ],
-  "notes": "B 层：真实调用 Haiku 判模型行为。auto_checks 里的名字是给 runner 的约定，runner 还没实现的检查在 notes 里注明。 「relative_anchor_uses_scenario_prefix」检查至少一条条件的 anchor 以 scenario: 开头，runner 待实现。"
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py)."
 }

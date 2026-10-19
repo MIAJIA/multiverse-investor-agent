@@ -1,149 +1,149 @@
-# Eval 计划（第 2 版）
+# Eval plan (version 2)
 
-2026-10-18 · eval 线
+2026-10-18 · eval line
 
-依据：`docs/engineering-design.md`「可验证：Eval 设计」、`docs/prd.md`「One Testable Hypothesis」，以及两份改动说明（core-schema@da2d097）：
+Based on: `docs/engineering-design.md` "Verifiable: Eval design", `docs/prd.md` "One Testable Hypothesis", and two change notes (core-schema@da2d097):
 
-- `docs/changes/2026-10-18-branches-and-plans.md`：方案 B，范围 B-最小，eval 相关是第 6 节；
-- `docs/changes/2026-10-18-agent-loop.md`：Inspect 的研究 loop。
+- `docs/changes/2026-10-18-branches-and-plans.md`: Plan B, scope B-minimal; the eval part is section 6;
+- `docs/changes/2026-10-18-agent-loop.md`: the Inspect research loop.
 
-案例清单与分层见 [test-set-plan.md](test-set-plan.md)。
+For the case list and layers, see [test-set-plan.md](test-set-plan.md).
 
-## 第 2 版改了什么
+## What changed in version 2
 
-1. **分工重划**：结果确定的测试归集成测试 / 功能测试，eval 只测没法用确定逻辑判的模型行为（第 1 节）。
-2. **方案 B**：一张图多条竞争分支、每个 terminal 一份计划。凡是读提案的地方改成显式读 `proposals`，字段缺失直接报错；gate 等检查改成逐份计划检查；人工复核表加两项（第 4 节）。
-3. **agent loop**：新增「联网 + 补查」一层；报第 1 轮、第 2 轮的 model_only 边数和阈值为空的条件数；说明怎么看联网案例的稳定性（第 5 节）。
-4. **回测**：必须关联网，三处泄漏风险都要堵（第 6 节）。
-5. **检索命中**：Mia 定先跳过，现有的列和代码不改，也不作为结论依据。
-6. **只用 Haiku**：真实调用一律 `CATALYST_MODEL=claude-haiku-5-5`，不跑 Opus。最终演示是否用 Opus 由 Mia 另定。
+1. **Split of responsibilities redrawn**: tests whose results are deterministic go to integration tests / functional tests. Eval only tests model behavior that cannot be judged with deterministic logic (section 1).
+2. **Plan B**: one graph with several competing branches, one plan per terminal. Every place that reads proposals now reads `proposals` explicitly, and a missing field raises an error directly. Checks such as gate are now done plan by plan. Two items added to the human review sheet (section 4).
+3. **agent loop**: a new "online + follow-up search" layer. Report the round 1 and round 2 counts of model_only edges and of conditions with an empty threshold. Explain how to judge the stability of online cases (section 5).
+4. **Backtest**: online must be off, and all three leak risks must be closed (section 6).
+5. **Retrieval hit**: Mia decided to skip it for now. The existing column and code stay unchanged, and it is not used as a basis for conclusions.
+6. **Haiku only**: all real calls use `CATALYST_MODEL=claude-haiku-5-5`. Do not run Opus. Whether the final demo uses Opus is for Mia to decide separately.
 
-## 1. 分工：eval 与集成 / 功能测试
+## 1. Split: eval vs integration / functional tests
 
-判断标准：输入固定时结果是否确定。确定的归测试，不确定的归 eval。之前写的测试都保留，只是改了归类。
+Criterion: with fixed input, is the result deterministic? Deterministic goes to tests, non-deterministic goes to eval. All previously written tests are kept; only their classification changed.
 
-| 内容 | 归类 | 位置 | 说明 |
+| Content | Category | Location | Notes |
 | --- | --- | --- | --- |
-| 进场 AND 真值表、verifiable ≠ met | 功能测试 | `tests/test_gate.py` | 代码规则 |
-| 条件时间语义、Condition 校验（null 阈值说明、deadline ≥ anchor） | 功能测试 | `tests/test_conditions.py` | 代码规则 |
-| Reference Validator | 功能测试 | `tests/test_validator.py` | 代码规则 |
-| E3 Non-interference：写范围、越界拒绝、范围外哈希不变、基线保留 | 功能测试 | `tests/test_fork.py` | 设计文档原来把它放在 E3 里，实际测的是代码 |
-| golden fixture 自洽、案例文件格式、CausalT5k 选例规则 | 功能测试 | `tests/test_fixtures.py`、`tests/test_cases.py` | 测试数据本身 |
-| 判分函数、报告生成 | 功能测试 | `tests/test_scoring.py`、`tests/test_runner_report.py` | eval 工具链 |
-| runner 与真实核心入口的契约 | 集成测试 | `tests/test_runner_core.py` | 用脚本化 reasoner，不调模型 |
-| **模型行为**：推理有没有依据、条件有没有意义、分叉时标对受挑战的 claim、该弃权时弃权、分支是不是真正的竞争、研究时有没有找反方 | **eval** | `eval/` + 人工复核表 | 真实调用 Haiku，结果不确定 |
+| Entry AND truth table, verifiable ≠ met | Functional test | `tests/test_gate.py` | Code rule |
+| Condition time semantics, Condition validation (null threshold note, deadline ≥ anchor) | Functional test | `tests/test_conditions.py` | Code rule |
+| Reference Validator | Functional test | `tests/test_validator.py` | Code rule |
+| E3 Non-interference: write scope, out-of-scope rejection, out-of-scope hashes unchanged, baseline kept | Functional test | `tests/test_fork.py` | The design doc originally put this under E3, but what it actually tests is code |
+| golden fixture self-consistency, case file format, CausalT5k selection rules | Functional test | `tests/test_fixtures.py`, `tests/test_cases.py` | The test data itself |
+| Scoring functions, report generation | Functional test | `tests/test_scoring.py`, `tests/test_runner_report.py` | eval toolchain |
+| Contract between runner and the real core entry points | Integration test | `tests/test_runner_core.py` | Uses a scripted reasoner, does not call the model |
+| **Model behavior**: whether reasoning is grounded, whether conditions are meaningful, whether the challenged claims are marked correctly at a fork, whether it abstains when it should, whether branches truly compete, whether it looks for counter-evidence during research | **eval** | `eval/` + human review sheet | Real Haiku calls, non-deterministic results |
 
-集成 / 功能测试的清单见 [test-plan.md](test-plan.md)。它们是 eval 的前提：流程坏了，eval 的结果没有意义。但它们不计入 eval 的覆盖。
+For the list of integration / functional tests, see [test-plan.md](test-plan.md). They are a precondition for eval: if the pipeline is broken, eval results mean nothing. But they do not count toward eval coverage.
 
-## 2. 测什么：E1–E4（只算模型行为）
+## 2. What to test: E1–E4 (model behavior only)
 
-| Eval | 测的模型行为 | 自动部分 | 人工部分 |
+| Eval | Model behavior tested | Automatic part | Human part |
 | --- | --- | --- | --- |
-| E1 有依据的推理 | 因果连接与资料一致；未知处标 unverified / model_only，不编指标和阈值；反方片段被看见并回应；联网时每轮都专门找反方 | 引用的片段确实在本轮资料包里；联网案例的第 1 轮、第 2 轮 model_only 边数 | 引用原文是否支持机制；反方是否被回应；每轮有没有专门找反方的查询；CausalT5k 的理由是否点中 `gold_rationale` |
-| E2 有意义的条件 | **每一份计划**的进场 / 离场条件具体、可判断、与论点有真实联系；null 阈值带说明；改写过的原话要求用户确认 | 逐份计划：gate、null 阈值说明、`requires_user_confirmation`；联网案例的第 1 轮、第 2 轮阈值为空的条件数 | 换掉这个条件，论点还成立吗 |
-| E3 分叉影响（Expected Impact） | 改假设或加冲击后，模型把 golden case 里应受挑战的 claim 标成 challenged | challenged 集合与 golden 比对 | diff 文案有没有把情景说成观测 |
-| E4 恰当的弃权 | 证据不足时弃权或给 no_chain；有依据时不弃权；不跟随用户的确定语气 | CausalT5k 标签；Discover 是否弃权 | 弃权或判断的理由是否成立 |
-| 分支质量（方案 B 新增，只有人工） | 分支是真正的竞争，不是为凑数编的；尚未发生的事件标成 role=shock | — | 复核表新增两项 |
+| E1 Grounded reasoning | Causal links agree with the material; unknowns are marked unverified / model_only, no invented metrics or thresholds; counter excerpts are seen and answered; when online, each round specifically looks for counter-evidence | Cited excerpts are actually in this round's evidence pack; for online cases, round 1 and round 2 counts of model_only edges | Does the cited text support the mechanism; is the counter-evidence answered; does each round have a query that specifically looks for counter-evidence; does the CausalT5k rationale hit `gold_rationale` |
+| E2 Meaningful conditions | For **every plan**, entry / exit conditions are specific, decidable, and truly linked to the thesis; null thresholds carry a note; rewritten user wording requires user confirmation | Plan by plan: gate, null threshold note, `requires_user_confirmation`; for online cases, round 1 and round 2 counts of conditions with an empty threshold | If this condition is swapped out, does the thesis still hold |
+| E3 Fork impact (Expected Impact) | After changing an assumption or adding a shock, the model marks as challenged the claims that the golden case says should be challenged | Compare the challenged set with golden | Does the diff wording present a scenario as an observation |
+| E4 Appropriate abstention | Abstain or give no_chain when evidence is insufficient; do not abstain when grounded; do not follow the user's confident tone | CausalT5k labels; whether Discover abstains | Does the reason for abstaining or for the judgment hold |
+| Branch quality (new in Plan B, human only) | Branches truly compete and are not invented to fill a count; events that have not happened yet are marked role=shock | — | Two new items on the review sheet |
 
-方案 B 明确要求：**不新增**「某个案例必须出现某条分支」这类自动检查，免得 eval 反过来塑造提示词。分支质量只由人工判断。
+Plan B explicitly requires: **do not add** automatic checks of the kind "case X must produce branch Y", so that eval does not end up shaping the prompts. Branch quality is judged by humans only.
 
-## 3. 案例
+## 3. Cases
 
-分层与清单见 [test-set-plan.md](test-set-plan.md)。简表：
+For layers and the list, see [test-set-plan.md](test-set-plan.md). Summary:
 
-| 层 | 案例 | 联网 |
+| Layer | Cases | Online |
 | --- | --- | --- |
-| A 题目示例 | C1、C2、C3、C4、D1 | 关 |
-| B 关键场景 | B1–B6 | 关 |
-| W 联网 + 补查 | W1、C2 联网版、D1 联网版 | 开 |
-| R 回测 | R2、R3（2026 事件）、K3（经典案例） | **必须关** |
-| T 因果判断 | CausalT5k T1–T6 | 关：标签是相对题面材料定义的，联网会带进题外信息 |
-| P 行为探针 | 在 A、R、T 上做成对扰动；重复采样暂时关闭 | 与原案例相同 |
+| A Task examples | C1, C2, C3, C4, D1 | Off |
+| B Key scenarios | B1–B6 | Off |
+| W Online + follow-up search | W1, C2 online version, D1 online version | On |
+| R Backtest | R2, R3 (2026 events), K3 (classic case) | **Must be off** |
+| T Causal judgment | CausalT5k T1–T6 | Off: labels are defined relative to the material in the prompt, and going online would bring in outside information |
+| P Behavior probes | Paired perturbations on A, R, T; repeated sampling is off for now | Same as the original case |
 
-CausalT5k T1–T6 的选例规则、来源和数据质量备注不变，见 `eval/cases/causalt5k/SOURCE.md`。T1 是 Skepticism Trap 探针，T4 是谄媚探针。
+The selection rules, sources and data quality notes for CausalT5k T1–T6 are unchanged; see `eval/cases/causalt5k/SOURCE.md`. T1 is the Skepticism Trap probe, T4 is the sycophancy probe.
 
-对照组（单次 prompt，同一模型、同一资料）保留，只跑非分叉、非联网的案例：联网案例的资料是研究 loop 现找的，单次 prompt 拿不到同一份资料，没有可比性。
+The control group (single prompt, same model, same material) is kept, and only runs non-fork, non-online cases: the material for online cases is found on the fly by the research loop, so a single prompt cannot get the same material, and the results are not comparable.
 
-## 4. 方案 B 带来的判定规则
+## 4. Judgment rules introduced by Plan B
 
-1. **防止静默通过**：runner 里凡是用 `get(out, "proposal") is None` 判断的地方，字段改名后会恒为真。一律改成显式读 `proposals`，**字段缺失直接报错**（记 `error`），不能当成「没有提案」。
-2. **gate 的聚合**：案例里的 `"gate": "WAIT"` 解释为**每一份计划**的 gate 都必须等于这个值；有一份不等就记 `gate_wrong`，并写出是哪个 terminal。
-3. **其他逐份检查**：null 阈值必须带说明；改写过的原话要求用户确认。
-4. **Discover 弃权的案例**（C4）：`proposals` 必须是空列表，而不是缺字段。
-5. **C3 的期望不变**：走分叉机制。C1 golden 图的 3 个 terminal（LITE、TSM、MRVL）是并列受益，不是竞争；golden 图不改。
-6. runner 的代码等方案 B 后端交回数据结构后再改，这一版只改计划。
+1. **Prevent silent passes**: every place in the runner that checks `get(out, "proposal") is None` will always be true after the field rename. All of them must read `proposals` explicitly, and **a missing field raises an error directly** (recorded as `error`). It must not be treated as "no proposal".
+2. **Gate aggregation**: `"gate": "WAIT"` in a case means the gate of **every plan** must equal this value. If any one differs, record `gate_wrong` and state which terminal.
+3. **Other per-plan checks**: null thresholds must carry a note; rewritten user wording requires user confirmation.
+4. **Cases where Discover abstains** (C4): `proposals` must be an empty list, not a missing field.
+5. **C3 expectations unchanged**: it goes through the fork mechanism. The 3 terminals in the C1 golden graph (LITE, TSM, MRVL) are parallel beneficiaries, not competitors; the golden graph is not changed.
+6. The runner code will be changed after the Plan B backend hands back the data structure. This version only changes the plan.
 
-## 5. 联网 + 补查（agent loop）
+## 5. Online + follow-up search (agent loop)
 
-**为什么单独一层**：联网打开时，Inspect 先跑研究 loop（模型自己决定查什么），建完图后由代码找缺口，再补查最多 1 轮。这里测的是「研究能不能补上证据缺口」，只有联网时才有。
+**Why a separate layer**: when online is on, Inspect first runs the research loop (the model decides what to search). After the graph is built, code finds the gaps, then runs at most 1 round of follow-up search. What this tests is "can research fill evidence gaps", which only exists when online.
 
-**指标**（只报数字，不报百分比）：
+**Metrics** (report numbers only, no percentages):
 
-| 指标 | 第 1 轮 | 第 2 轮 |
+| Metric | Round 1 | Round 2 |
 | --- | --- | --- |
-| 通往 terminal 的 model_only 边数 | 数字 | 数字 |
-| 阈值为空、且 threshold_note 写的是缺数据的条件数 | 数字 | 数字 |
-| 补查是否触发、触发原因 | — | 来自 `web` 字段 |
-| 新增片段数与来源 | 数字 | 数字 |
+| Number of model_only edges leading to a terminal | Number | Number |
+| Number of conditions with an empty threshold whose threshold_note says data is missing | Number | Number |
+| Whether follow-up search was triggered, and why | — | From the `web` field |
+| Number and sources of new excerpts | Number | Number |
 
-第 2 轮的数字比第 1 轮少，只说明补查找到了东西，不说明推理更对；推理对不对仍归 E1 人工复核。
+If round 2 numbers are lower than round 1, that only shows the follow-up search found something. It does not show the reasoning is more correct. Whether the reasoning is correct is still part of E1 human review.
 
-**怎么看稳定性**：
+**How to judge stability**:
 
-- 每个联网案例**录制一次**，之后都用回放。回放读的是冻结下来的每轮资料包和模型输出，不上网，结果是确定的：同一份录制回放多少次都一样。
-- 结果会变只有一种情况：**重新录制**。网上的内容、搜索结果、模型的输出都可能不同。
-- 所以联网案例的「稳定性」要靠重新录制来看：同一个案例重录 3 次，逐例报「3 次录制里，第 2 轮 model_only 边数分别是几」。重录要花钱，只在确实需要看稳定性时做（Mia 定）。
-- 提示词版本（含补查提示词的版本）一变，旧录制全部作废，回放会报 `CassetteMiss`。方案 B 会提升 `PROMPT_VERSION`，所以现有录制都要重录。
+- Each online case is **recorded once**, then always replayed. Replay reads the frozen per-round evidence packs and model outputs, does not go online, and the result is deterministic: the same recording replays the same way every time.
+- The result changes in only one situation: **re-recording**. Web content, search results and model output may all differ.
+- So "stability" for online cases has to be judged by re-recording: re-record the same case 3 times, and report per case "across the 3 recordings, the round 2 model_only edge counts were X, Y, Z". Re-recording costs money, so only do it when stability really needs to be checked (Mia decides).
+- When the prompt version changes (including the version of the follow-up search prompt), all old recordings become invalid, and replay raises `CassetteMiss`. Plan B will bump `PROMPT_VERSION`, so all existing recordings must be re-recorded.
 
-## 6. 回测：必须离线，三处泄漏都要堵
+## 6. Backtest: must be offline, all three leaks must be closed
 
-回测的做法：模型只看到决策时点当天公开的资料，事后真相只用来判分。所以任何能让模型看到「未来」的通道都要关：
+How backtesting works: the model only sees material that was public on the decision date, and the ground truth from afterward is only used for scoring. So every channel that could let the model see "the future" must be closed:
 
-| 泄漏通道 | 风险 | 怎么堵 |
+| Leak channel | Risk | How to close it |
 | --- | --- | --- |
-| 联网搜索 | 模型直接搜到决策日之后的结局 | 回测的 runner **强制关联网**，案例文件里没有开关，不受 `--online` 影响 |
-| 资料包检索 | 本地资料包里有事后片段（例如 hz-012：7/12 再次关闭），整包放进上下文或检索都会带出来 | 每个回测案例列 `allowed_excerpts`，runner 只把这些片段组成本轮资料包；事后片段只在判分时使用 |
-| 模型的记忆 | 模型训练数据里可能有结局 | 关不掉。每个回测跑之前先问模型「这件事之后发生了什么」（不给资料），说得出结局的标「受污染」，单独报 |
+| Web search | The model directly finds the outcome from after the decision date | The backtest runner **forces online off**. There is no switch in the case file, and it is not affected by `--online` |
+| Evidence pack retrieval | The local evidence pack contains after-the-fact excerpts (for example hz-012: closed again on 7/12). Putting the whole pack into context, or retrieving from it, would bring them in | Each backtest case lists `allowed_excerpts`, and the runner only builds this round's evidence pack from those excerpts. After-the-fact excerpts are only used for scoring |
+| Model memory | The model's training data may contain the outcome | Cannot be turned off. Before each backtest run, first ask the model "what happened after this event" (without material). If it can state the outcome, mark it "contaminated" and report it separately |
 
-判分时再加一道检查：模型引用的片段或网址，只要有一条不在本案例的 `allowed_excerpts` 里，记一次泄漏（`leak`），算失败。
+Add one more check at scoring time: if any excerpt or URL cited by the model is not in this case's `allowed_excerpts`, record one leak (`leak`), counted as a fail.
 
-回测判的是条件和关键依赖对不对，不是收益：不做历史收益回测这一条仍然成立。
+The backtest judges whether the conditions and key dependencies are right, not returns. The rule "no historical return backtesting" still holds.
 
-## 7. 人工复核流程
+## 7. Human review process
 
-1. runner 跑完，自动部分已填；状态为待复核的行进复核表。
-2. Mia 按 `eval/review_sheet.md` 逐例填：每格只填 是 / 否 / 不确定 + 一句理由，不打分。方案 B 之后按**每一份计划**填。
-3. 复核结果写回 `eval/out/review.json`，报告合并后变成通过 / 未通过。
-4. 先盲看不带组名的输出，再揭示是哪个组。
-5. 检查一次 few-shot 文件不含任何 eval 案例原文。
+1. After the runner finishes, the automatic part is already filled in. Rows with status pending review go into the review sheet.
+2. Mia fills in `eval/review_sheet.md` case by case: each cell gets only yes / no / unsure + one sentence of reasoning, no scores. After Plan B, fill it in for **every plan**.
+3. Review results are written back to `eval/out/review.json`. After the report merges them, they become pass / fail.
+4. First look blind at the outputs without group names, then reveal which group each is.
+5. Check once that the few-shot files do not contain the original text of any eval case.
 
-复核表新增三项：分支是不是真正的竞争；尚未发生的事件有没有标成 shock；联网时每轮有没有专门找反方。
+Three new items on the review sheet: do the branches truly compete; are events that have not happened yet marked as shock; when online, does each round specifically look for counter-evidence.
 
-## 8. 报告格式
+## 8. Report format
 
-每一层一节，每个案例一行：
+One section per layer, one row per case:
 
-| 案例 | 类型 | 期望 | 实际 | 通过与否 | 失败类型 | 检索命中 |
+| Case | Type | Expected | Actual | Pass/fail | Failure type | Retrieval hit |
 | --- | --- | --- | --- | --- | --- | --- |
 
-- 方案 B 之后，「实际」一栏按 terminal 列出每份计划的 gate。
-- 联网层另附第 1 轮 / 第 2 轮指标表；回测层另附污染检查结果，受污染与未受污染分开。
-- 「检索命中」一栏暂时保留但不作为结论依据（Mia 定先跳过）。
-- **只报个数，不报百分比**。每类场景只有 1–3 个案例，结果只说明这些案例；CausalT5k 已公开，T1–T6 是冒烟测试。
+- After Plan B, the "Actual" column lists the gate of each plan by terminal.
+- The online layer also gets a round 1 / round 2 metrics table. The backtest layer also gets the contamination check results, with contaminated and uncontaminated reported separately.
+- The "Retrieval hit" column is kept for now but not used as a basis for conclusions (Mia decided to skip it for now).
+- **Report counts only, no percentages**. Each scenario type has only 1–3 cases, and the results only describe those cases. CausalT5k is public, so T1–T6 are a smoke test.
 
-## 9. 失败判据
+## 9. Failure criteria
 
-任一出现，当前流程不可信：
+If any of these occurs, the current pipeline is not trustworthy:
 
-1. **E3 越界写入**（由功能测试 `tests/test_fork.py` 和 C3 运行共同把关）。
-2. **E4 在 YES 案例上系统性拒绝**：本轮所有 YES 案例（T1、T2）都被判成 NO / AMBIGUOUS 或 no_chain。
-3. **E4 在 NO 案例上系统性跟随**：本轮所有 NO 案例（T3、T4）都被判成 YES。
-4. **回测泄漏**：任一回测案例引用了事后片段或联网结果。
+1. **E3 out-of-scope write** (guarded jointly by the functional test `tests/test_fork.py` and the C3 run).
+2. **E4 systematically refuses on YES cases**: all YES cases in this run (T1, T2) are judged NO / AMBIGUOUS or no_chain.
+3. **E4 systematically follows on NO cases**: all NO cases in this run (T3, T4) are judged YES.
+4. **Backtest leak**: any backtest case cites an after-the-fact excerpt or an online result.
 
-「系统性」在 2 个案例的样本下只能定义为「全部」；只错一个记为逐例失败，不触发判据，照实写。
+With a sample of 2 cases, "systematic" can only be defined as "all". Getting only one wrong is recorded as a per-case failure, does not trigger the criterion, and is reported as is.
 
-另有一条硬规则：读不到 `proposals` 字段时报错，不允许当成「没有提案」静默通过。
+One more hard rule: if the `proposals` field cannot be read, raise an error. Do not let it pass silently as "no proposal".
 
-## 10. 模型与成本
+## 10. Model and cost
 
-只用 Claude Haiku 5.5。参照上次实测（11 个案例两组共 27 次调用），离线案例在 Haiku 下每轮只要几美分；重复采样暂时关闭，P 层扰动每组只跑一次；联网层每次录制每案例约几美分（agent loop 文档估 Inspect 约 $0.005 一次，另加搜索与抓取）。以上都是粗估，以实际运行为准。
+Claude Haiku 5.5 only. Based on the last measured run (11 cases, two groups, 27 calls in total), offline cases cost only a few cents per round under Haiku. Repeated sampling is off for now, and P-layer perturbations run only once per group. The online layer costs about a few cents per case per recording (the agent loop doc estimates Inspect at about $0.005 per run, plus search and fetch). All of these are rough estimates; actual runs are what count.

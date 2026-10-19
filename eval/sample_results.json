@@ -34,11 +34,12 @@
         "name": "no_proposal",
         "eval": "E1",
         "passed": true,
-        "detail": "CausalT5k 只出因果判断",
+        "detail": "CausalT5k produces a causal verdict only",
         "failure_type": null
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -84,11 +85,12 @@
         "name": "no_proposal",
         "eval": "E1",
         "passed": true,
-        "detail": "CausalT5k 只出因果判断",
+        "detail": "CausalT5k produces a causal verdict only",
         "failure_type": null
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -131,11 +133,12 @@
         "name": "no_proposal",
         "eval": "E1",
         "passed": true,
-        "detail": "CausalT5k 只出因果判断",
+        "detail": "CausalT5k produces a causal verdict only",
         "failure_type": null
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -178,11 +181,12 @@
         "name": "no_proposal",
         "eval": "E1",
         "passed": true,
-        "detail": "CausalT5k 只出因果判断",
+        "detail": "CausalT5k produces a causal verdict only",
         "failure_type": null
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -225,11 +229,12 @@
         "name": "no_proposal",
         "eval": "E1",
         "passed": true,
-        "detail": "CausalT5k 只出因果判断",
+        "detail": "CausalT5k produces a causal verdict only",
         "failure_type": null
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -272,11 +277,12 @@
         "name": "no_proposal",
         "eval": "E1",
         "passed": true,
-        "detail": "CausalT5k 只出因果判断",
+        "detail": "CausalT5k produces a causal verdict only",
         "failure_type": null
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -336,7 +342,9 @@
         "c1.term.foundry": "model_only",
         "c1.term.dsp_vendor": "model_only"
       },
-      "conditions": 6
+      "conditions": 6,
+      "cited_excerpts": [],
+      "model_only_edges": 0
     },
     "status": "FAIL",
     "failure_types": [
@@ -368,7 +376,7 @@
         "name": "candidate_count",
         "eval": "Discovery",
         "passed": true,
-        "detail": "2 个（期望 1–3）",
+        "detail": "2 (expected 1-3)",
         "failure_type": null
       },
       {
@@ -424,11 +432,12 @@
         "name": "retrieval_hit",
         "eval": "E1",
         "passed": false,
-        "detail": "缺：['sc-035', 'sc-036', 'sc-025', 'sc-043']",
+        "detail": "missing: ['sc-035', 'sc-036', 'sc-025', 'sc-043']",
         "failure_type": "retrieval_miss"
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E1: does the cited text support each edge's mechanism",
       "E1: is the counter-evidence addressed",
@@ -457,7 +466,7 @@
       "no_chain": false,
       "plans": [
         {
-          "terminal_id": "c2.term.nvda",
+          "terminal_id": "term.nvda",
           "gate": "WAIT",
           "conditions": 1,
           "status": "draft",
@@ -465,9 +474,11 @@
         }
       ],
       "branch_kinds": {
-        "c2.term.nvda": "model_only"
+        "term.nvda": "model_only"
       },
-      "conditions": 1
+      "conditions": 1,
+      "cited_excerpts": [],
+      "model_only_edges": 0
     },
     "status": "FAIL",
     "failure_types": [
@@ -519,11 +530,11 @@
         "name": "document_or_event_condition_present",
         "eval": "E2",
         "passed": true,
-        "detail": "实际类型：['document']",
+        "detail": "kinds present: ['document']",
         "failure_type": null
       },
       {
-        "name": "c2.term.nvda:null_threshold_has_note",
+        "name": "term.nvda:null_threshold_has_note",
         "eval": "E2",
         "passed": true,
         "detail": "",
@@ -533,11 +544,12 @@
         "name": "retrieval_hit",
         "eval": "E1",
         "passed": false,
-        "detail": "缺：['sc-044', 'sc-045', 'sc-046', 'sc-047', 'sc-050', 'sc-051']",
+        "detail": "missing: ['sc-044', 'sc-045', 'sc-046', 'sc-047', 'sc-050', 'sc-051']",
         "failure_type": "retrieval_miss"
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E1: is every hop of the path grounded in the pack",
       "E2: are the document / event conditions specific, decidable and logically tied to the thesis"
@@ -558,7 +570,7 @@
       "behavior": "The model marks exactly the golden claims as challenged. Write scope, out-of-scope hashes, new-edge identification and baseline retention are code behavior covered by the functional tests; here only the model's assessment is judged."
     },
     "actual": {
-      "summary": "change_assumption: challenged=['c1.laser_demand', 'c1.term.laser_vendor'], 越界=1 | add_shock: challenged=['c1.siph_foundry', 'c1.term.foundry'], 越界=1"
+      "summary": "change_assumption: challenged=['c1.laser_demand', 'c1.term.laser_vendor'], out-of-scope writes=1 | add_shock: challenged=['c1.siph_foundry', 'c1.term.foundry'], out-of-scope writes=1"
     },
     "status": "FAIL",
     "failure_types": [
@@ -591,7 +603,7 @@
         "name": "change_assumption:challenged_matches_golden",
         "eval": "E3",
         "passed": true,
-        "detail": "缺 []；多 []",
+        "detail": "missing []; unexpected []",
         "failure_type": null
       },
       {
@@ -619,11 +631,12 @@
         "name": "add_shock:challenged_matches_golden",
         "eval": "E3",
         "passed": true,
-        "detail": "缺 []；多 []",
+        "detail": "missing []; unexpected []",
         "failure_type": null
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E3: does the diff text present the scenario as an observation (it may only say 'challenged', never 'invalidated')"
     ],
@@ -657,7 +670,7 @@
         "name": "abstained_or_only_not_recommended",
         "eval": "E4",
         "passed": true,
-        "detail": "候选 0 个：[]",
+        "detail": "0 candidates: []",
         "failure_type": null
       },
       {
@@ -669,6 +682,7 @@
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E4: is the abstention reason substantive (not a platitude)",
       "E4: did the model use sc-039 / sc-040 (LITE excerpts) to force an election -> LITE chain"
@@ -710,7 +724,9 @@
       "branch_kinds": {
         "d1.term.brent": "model_only"
       },
-      "conditions": 2
+      "conditions": 2,
+      "cited_excerpts": [],
+      "model_only_edges": 0
     },
     "status": "PENDING_REVIEW",
     "failure_types": [],
@@ -735,7 +751,7 @@
         "name": "candidate_count",
         "eval": "Discovery",
         "passed": true,
-        "detail": "2 个（期望 0–3）",
+        "detail": "2 (expected 0-3)",
         "failure_type": null
       },
       {
@@ -775,6 +791,7 @@
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E1: is the counter-evidence addressed",
       "E2: are entry / exit conditions specific and decidable",
@@ -816,6 +833,7 @@
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -855,6 +873,7 @@
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -896,6 +915,7 @@
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -938,6 +958,7 @@
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -980,6 +1001,7 @@
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -1022,6 +1044,7 @@
       }
     ],
     "notes": [],
+    "layer": "T",
     "human_review": [
       "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
       "E4: is the abstention / verdict reasoning sound"
@@ -1059,7 +1082,7 @@
         "name": "candidate_count",
         "eval": "Discovery",
         "passed": true,
-        "detail": "1 个",
+        "detail": "1",
         "failure_type": null
       },
       {
@@ -1078,6 +1101,7 @@
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E1: does the cited text support each edge's mechanism",
       "E1: is the counter-evidence addressed",
@@ -1115,11 +1139,12 @@
         "name": "parse",
         "eval": "—",
         "passed": false,
-        "detail": "输出不是合法 JSON",
+        "detail": "output is not valid JSON",
         "failure_type": "unparseable"
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E1: is every hop of the path grounded in the pack",
       "E2: are the document / event conditions specific, decidable and logically tied to the thesis"
@@ -1140,13 +1165,14 @@
       "behavior": "The model marks exactly the golden claims as challenged. Write scope, out-of-scope hashes, new-edge identification and baseline retention are code behavior covered by the functional tests; here only the model's assessment is judged."
     },
     "actual": {
-      "summary": "单次 prompt 没有可比的写范围"
+      "summary": "a single prompt has no comparable write scope"
     },
     "status": "N/A",
     "failure_types": [],
     "retrieval": null,
     "checks": [],
     "notes": [],
+    "layer": "A",
     "human_review": [],
     "pack_source": "real",
     "fake": true
@@ -1181,11 +1207,12 @@
         "name": "abstained_or_only_not_recommended",
         "eval": "E4",
         "passed": false,
-        "detail": "候选 1 个",
+        "detail": "1 candidates",
         "failure_type": "no_abstain"
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E4: is the abstention reason substantive (not a platitude)",
       "E4: did the model use sc-039 / sc-040 (LITE excerpts) to force an election -> LITE chain"
@@ -1230,11 +1257,12 @@
         "name": "no_fabricated_threshold",
         "eval": "E1",
         "passed": false,
-        "detail": "编造阈值的条件：[None]",
+        "detail": "conditions with invented thresholds: [None]",
         "failure_type": "fabricated_threshold"
       }
     ],
     "notes": [],
+    "layer": "A",
     "human_review": [
       "E1: is the counter-evidence addressed",
       "E2: are entry / exit conditions specific and decidable",

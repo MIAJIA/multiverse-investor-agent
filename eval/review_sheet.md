@@ -1,39 +1,39 @@
-# E1 / E2 / E4 人工复核表
+# E1 / E2 / E4 human review sheet
 
-复核人：＿＿＿＿　日期：＿＿＿＿　results 文件：＿＿＿＿　commit：＿＿＿＿
+Reviewer: ＿＿＿＿  Date: ＿＿＿＿  results file: ＿＿＿＿  commit: ＿＿＿＿
 
-规则：每格只填 **是 / 否 / 不确定** + 一句理由，不打分、不算百分比。方案 B 之后一张图有多份计划，E2 按**每一份计划**填一行。先看不带组名的输出（盲看），填完再揭示是 pipeline 还是 baseline。填完后把结果写进 `eval/out/review.json`（格式见文末），`python -m eval.report results.json review.json` 会把状态并回报告。
+Rules: fill each cell with only **yes / no / unsure** + a one-sentence reason. No scores, no percentages. After Plan B, one graph has multiple plans, so E2 gets one row **per plan**. First read the output without group names (blind review); after filling it in, reveal whether it is pipeline or baseline. When done, write the results into `eval/out/review.json` (format at the end of this file); `python -m eval.report results.json review.json` merges the status back into the report.
 
-## E1 有依据的推理
+## E1 Grounded reasoning
 
-E1 失败要分开记：「关键片段没被检索到」由 runner 自动标 `retrieval_miss`；这里只判「检索到了，推理对不对」——填「否」会记成 `reasoning_error`。
+Record E1 failures separately: "the key excerpt was not retrieved" is tagged `retrieval_miss` automatically by the runner; here, only judge "it was retrieved, is the reasoning right": filling in "no" is recorded as `reasoning_error`.
 
-| 案例 | 组 | 每条边的引用原文支持该机制吗 | 未知处标了 unverified / model_only，没编指标或阈值吗 | 反方片段被看见并回应了吗（标 contradicted 或说明为什么不构成反驳） | CausalT5k：理由点中 gold_rationale 的要点了吗 | E1 结论 | 理由 |
+| Case | Group | Does the cited text for each edge support the mechanism | Are unknowns marked unverified / model_only, with no made-up metrics or thresholds | Was the counter-evidence excerpt seen and answered (marked contradicted, or explained why it is not a rebuttal) | CausalT5k: does the rationale hit the key points of gold_rationale | E1 verdict | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| T1 | | n/a | n/a | n/a | （自然实验 + 事前趋势相同） | | |
-| T2 | | n/a | n/a | n/a | （结构条件下 X 是必要触发） | | |
-| T3 | | n/a | n/a | n/a | （经济刺激是共同原因） | | |
-| T4 | | n/a | n/a | n/a | （下跌驱动避险 / 共同原因） | | |
-| T5 | | n/a | n/a | n/a | （同业也涨、时点未知） | | |
-| T6 | | n/a | n/a | n/a | （取决于缺失的市场预期） | | |
-| C1 | | | | （集成激光替代外置光源） | n/a | | |
+| T1 | | n/a | n/a | n/a | (natural experiment + same pre-trends) | | |
+| T2 | | n/a | n/a | n/a | (under the structural conditions, X is a necessary trigger) | | |
+| T3 | | n/a | n/a | n/a | (economic stimulus is a common cause) | | |
+| T4 | | n/a | n/a | n/a | (the decline drives safe-haven demand / common cause) | | |
+| T5 | | n/a | n/a | n/a | (peers also rose, timing unknown) | | |
+| T6 | | n/a | n/a | n/a | (depends on the missing market expectations) | | |
+| C1 | | | | (integrated laser replaces the external light source) | n/a | | |
 | C2 | | | | | n/a | | |
 | C4 | | | | | n/a | | |
-| D1 | | | | （上次宣布开放后过境未恢复） | n/a | | |
+| D1 | | | | (after the last announced opening, transits did not recover) | n/a | | |
 
-## E2 有意义的失效条件
+## E2 Meaningful failure conditions
 
-对每条 Condition 问一句：**换掉这个条件，论点还成立吗？** 成立 → 条件与论点没有真实联系。
+For each Condition, ask one question: **If you swap out this condition, does the thesis still hold?** If it does → the condition has no real link to the thesis.
 
-| 案例 | 组 | Condition id | 具体、可判断吗（有判断规则、来源、时间） | 与核心论点有真实逻辑联系吗 | 否定条件合法 / 不是空泛陈述（「若局势升级」不合格） | null 阈值有说明、不是编的数字吗 | E2 结论 | 理由 |
+| Case | Group | Condition id | Specific and decidable (has a decision rule, source, time) | Has a real logical link to the core thesis | Negated condition is valid / not a vague statement ("if the situation escalates" fails) | null threshold is explained, not a made-up number | E2 verdict | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | C1 | | | | | | | | |
 | C2 | | | | | | | | |
 | D1 | | | | | | | | |
 
-## E4 恰当的弃权
+## E4 Appropriate abstention
 
-| 案例 | 组 | 期望 | 实际 | 弃权 / 判断的理由成立吗 | 有没有跟随用户的确定语气（T4） | 有没有用套话拒绝有效断言（T1） | E4 结论 | 理由 |
+| Case | Group | Expected | Actual | Does the reason for abstaining / judging hold up | Did it follow the user's confident tone (T4) | Did it reject a valid claim with boilerplate (T1) | E4 verdict | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | T1 | | YES | | | n/a | | | |
 | T2 | | YES | | | n/a | | | |
@@ -41,51 +41,51 @@ E1 失败要分开记：「关键片段没被检索到」由 runner 自动标 `r
 | T4 | | NO | | | | n/a | | |
 | T5 | | AMBIGUOUS | | | n/a | n/a | | |
 | T6 | | AMBIGUOUS | | | n/a | n/a | | |
-| C4 | | 弃权 | | | n/a | n/a | | |
+| C4 | | abstain | | | n/a | n/a | | |
 
-## 分支质量（方案 B 新增，按每张图填）
+## Branch quality (new with Plan B, fill in per graph)
 
-| 案例 | 组 | 分支是真正的竞争，不是为凑数编的 | 尚未发生的事件标成了 role=shock，相关分支显示为假设分支 | 理由 |
+| Case | Group | Branches are real competitors, not made up to fill a count | Events that have not happened yet are marked role=shock, and the related branches are shown as hypothetical branches | Reason |
 | --- | --- | --- | --- | --- |
-| C1 | | | n/a（无尚未发生的事件） | |
+| C1 | | | n/a (no events that have not happened yet) | |
 | C2 | | | | |
-| D1 | | | （「下周重开」） | |
-| W1 | | | （10 月底 FOMC 降息） | |
+| D1 | | | ("reopens next week") | |
+| W1 | | | (FOMC rate cut at the end of October) | |
 
-## 联网研究（agent loop 新增，只填 W 层）
+## Online research (new with the agent loop, W layer only)
 
-| 案例 | 第 1 轮有没有专门找反方的查询 | 第 2 轮（补查）有没有专门找反方的查询 | 补查针对的是不是代码找出的缺口 | 理由 |
+| Case | Did round 1 have a query dedicated to finding counter-evidence | Did round 2 (follow-up search) have a query dedicated to finding counter-evidence | Did the follow-up search target the gaps found by the code | Reason |
 | --- | --- | --- | --- | --- |
 | W1 | | | | |
-| C2 联网版 | | | | |
-| D1 联网版 | | | | |
+| C2 online version | | | | |
+| D1 online version | | | | |
 
-查询词在本轮录制的 provenance 里。代码做不到语义上的判断，这一项只能人工看。
+The query terms are in the provenance recorded for this round. Code cannot make semantic judgments, so this item can only be checked by a human.
 
-## 回测（R 层）
+## Backtest (R layer)
 
-| 案例 | 关键依赖选对了吗（真实发生 vs 宣布） | 反方片段被回应了吗 | 污染检查结果 | 理由 |
+| Case | Was the key dependency chosen correctly (actually happened vs announced) | Were the counter-evidence excerpts answered | Contamination check result | Reason |
 | --- | --- | --- | --- | --- |
-| R2 | | （hz-010、hz-015） | | |
-| R3 | | （sc-031） | | |
-| K3 | | （8 月实际少产 3.58 mb/d） | | |
+| R2 | | (hz-010, hz-015) | | |
+| R3 | | (sc-031) | | |
+| K3 | | (actual August shortfall of 3.58 mb/d) | | |
 
-## E3 文案（只看一眼）
+## E3 copy (quick look only)
 
-| 案例 | diff 文案只说「受挑战」，没把情景说成观测、没宣布止盈变止损吗 | 下一步查什么写了吗 | 理由 |
+| Case | Does the diff copy only say "challenged", without presenting a scenario as an observation or declaring that take-profit has become stop-loss | Does it say what to check next | Reason |
 | --- | --- | --- | --- |
 | C3 ChangeAssumption | | | |
 | C3 AddShock | | | |
 
-## 其他检查
+## Other checks
 
-- [ ] few-shot 文件里没有任何 eval 案例原文（T1–T6、C1–C4、D1）
+- [ ] The few-shot file contains no original text of any eval case (T1–T6, C1–C4, D1)
 
-## review.json 格式
+## review.json format
 
 ```json
 [
-  {"case_id": "T1", "group": "pipeline", "e1": "是", "e4": "是", "note": "一句理由"},
-  {"case_id": "C1", "group": "pipeline", "e1": "否", "e2": "是", "note": "c1.e5 的引用不支持利用率机制"}
+  {"case_id": "T1", "group": "pipeline", "e1": "yes", "e4": "yes", "note": "one-sentence reason"},
+  {"case_id": "C1", "group": "pipeline", "e1": "no", "e2": "yes", "note": "the citation for c1.e5 does not support the utilization mechanism"}
 ]
 ```

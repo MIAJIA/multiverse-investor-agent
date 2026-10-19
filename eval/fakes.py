@@ -8,18 +8,44 @@ import copy
 import json
 from typing import Any
 
-from eval.loader import load_case, load_fixture
+from eval.loader import EVAL_DIR, load_case, load_fixture
 
 
 class FakeEvidence:
-    """和核心的 EvidenceProvider 一样：不存在的 pack 抛 FileNotFoundError。"""
+    """和核心的 EvidenceProvider 一样：不存在的 pack 抛 FileNotFoundError；支持 register。"""
+
+    def __init__(self):
+        self.registered: dict[str, dict] = {}
+
+    def register(self, pack: dict) -> dict:
+        self.registered[pack["pack_id"]] = copy.deepcopy(pack)
+        return pack
+
+    def pack(self, pack_id: str) -> dict:
+        if pack_id in self.registered:
+            return self.registered[pack_id]
+        return {"pack_id": pack_id, "synthetic": False, "excerpts": self.load_pack(pack_id)}
 
     def load_pack(self, pack_id: str) -> list[dict]:
+        if pack_id in self.registered:
+            return copy.deepcopy(self.registered[pack_id]["excerpts"])
         if pack_id == "semiconductor":
             return load_fixture("c1_evidence_pack.json")["excerpts"]
         if pack_id == "hormuz":
             return load_fixture("d1_hormuz.json")["evidence_pack"]["excerpts"]
         raise FileNotFoundError(pack_id)
+
+
+class RealPackEvidence(FakeEvidence):
+    """读仓库 packs/ 下的真实资料包（只读 JSON，不 import catalyst），给回测和探针的单测用。"""
+
+    def load_pack(self, pack_id: str) -> list[dict]:
+        if pack_id in self.registered:
+            return copy.deepcopy(self.registered[pack_id]["excerpts"])
+        path = EVAL_DIR.parent / "packs" / f"{pack_id}.json"
+        if not path.exists():
+            raise FileNotFoundError(pack_id)
+        return json.loads(path.read_text(encoding="utf-8"))["excerpts"]
 
 
 class _Completion:
@@ -65,7 +91,7 @@ class ScriptedReasoner:
                 "next_checks": [fx["expected_next_checks_hint"]],
             }
             return _Completion(json.dumps(out, ensure_ascii=False))
-        raise NotImplementedError(f"ScriptedReasoner 不覆盖 stage={stage}")
+        raise NotImplementedError(f"ScriptedReasoner does not cover stage={stage}")
 
     def single_prompt(self, prompt: str) -> str:
         return json.dumps({"label": "YES", "rationale": "scripted baseline"})
@@ -132,15 +158,23 @@ class FakeEntrypoints:
 
     def __init__(self, labels: dict[str, str] | None = None, leak_edge: str | None = None,
                  raise_on: set[str] | None = None, observations: list[str] | None = None,
-                 plan_gates: dict[str, str] | None = None, legacy: bool = False):
+                 plan_gates: dict[str, str] | None = None, legacy: bool = False,
+                 plans: list[dict] | None = None, edges: list[dict] | None = None, no_chain: bool = False,
+                 branch_kind: str = "model_only"):
         self.labels = labels or {}
         self.leak_edge = leak_edge
         self.raise_on = raise_on or set()
+        self.explicit_observations = observations is not None
         if observations is None:  # 默认命中所有案例声明的关键片段（happy path）
             observations = sorted({x for c in ("C1", "C2", "D1") for x in load_case(c)["expected"].get("key_excerpts", [])})
         self.observations = observations
         self.plan_gates = plan_gates or {}
         self.legacy = legacy
+        self.plans_override = plans          # 指定 inspect 返回的计划（回测、B 层单测用）
+        self.edges = edges or []             # 指定图上的边（含证据引用）
+        self.no_chain = no_chain
+        self.branch_kind = branch_kind
+        self.seen_kw: list[dict] = []
         self.calls: list[tuple[str, str]] = []
 
     def _maybe_raise(self, event: str):
@@ -172,29 +206,43 @@ class FakeEntrypoints:
             label = self.labels.get(case_id, load_case(case_id)["expected"]["label"])
             return self._shape({"graph": None, "no_chain": False, "proposals": [], "branches": [],
                                 "judgment": {"label": label, "rationale": "fake rationale"}, "observations": []})
-        if "Hormuz" in event:
+        self.seen_kw.append({k: v for k, v in kw.items() if k not in ("reasoner", "evidence")})
+        if self.no_chain:
+            return self._shape({"graph": None, "no_chain": True, "no_chain_reason": "fake", "proposals": [],
+                                "branches": [], "judgment": None, "observations": self._context(kw)})
+        if self.plans_override is not None:
+            plans = copy.deepcopy(self.plans_override)
+        elif "Hormuz" in event:
             uj = {"original_statement": event, "clarified_statement": "fake", "requires_user_confirmation": True}
             plans = [_fake_plan("d1.term.brent", "BZ", load_fixture("d1_hormuz.json")["entry_conditions"], uj)]
         elif target:
             cond = {"id": "cond.fake.doc", "kind": "document", "predicate": "observed_by", "threshold": None,
-                    "threshold_note": "文件型条件"}
-            plans = [_fake_plan("c2.term.nvda", target, [cond], {"requires_user_confirmation": False})]
+                    "threshold_note": "document condition"}
+            plans = [_fake_plan(f"term.{target.lower()}", target, [cond], {"requires_user_confirmation": False})]
         else:
             plans = c1_fake_plans(self.plan_gates)
-        branches = [{"terminal_id": p["terminal_id"], "kind": "model_only"} for p in plans]
-        return self._shape({"graph": {"version": "fake"}, "no_chain": False, "proposals": plans, "branches": branches,
-                            "judgment": None, "observations": list(self.observations)})
+        branches = [{"terminal_id": p["terminal_id"], "kind": self.branch_kind} for p in plans]
+        graph = {"version": "fake", "nodes": [], "edges": copy.deepcopy(self.edges)}
+        return self._shape({"graph": graph, "no_chain": False, "proposals": plans, "branches": branches,
+                            "judgment": None, "observations": self._context(kw)})
+
+    def _context(self, kw: dict) -> list[str]:
+        """和核心一样：本轮资料包里的全部片段 id 就是 observations；没给资料包时用预设值。"""
+        evidence, packs = kw.get("evidence"), kw.get("packs")
+        if evidence is not None and packs and not self.explicit_observations:
+            return sorted({x["excerpt_id"] for p in packs for x in evidence.load_pack(p)})
+        return list(self.observations)
 
     def fork(self, graph: dict, op: dict, **kw) -> dict:
         self.calls.append(("fork", op["kind"]))
         fx = load_fixture("c3_change_assumption.json" if op["kind"] == "change_assumption" else "c3_add_shock.json")
         new = _apply_patch_for_fake(graph, fx["patch_in_scope"], graph["version"] + "-" + op["kind"])
         if self.leak_edge:
-            next(e for e in new["edges"] if e["id"] == self.leak_edge)["mechanism"] = "fake 越界写入"
+            next(e for e in new["edges"] if e["id"] == self.leak_edge)["mechanism"] = "fake out-of-scope write"
         return {"graph": new, "base_graph": graph, "scope": fx["expected_scope"], "diff": {},
                 "scenario": {"version": new["version"], "base_version": graph["version"], "ops": [op],
                              "assessment": dict(fx["patch_in_scope"]["assessment"])},
-                "proposals": []}
+                "proposals": copy.deepcopy(kw.get("proposals") or [])}
 
 
 def sample_baseline_reasoner() -> FakeReasoner:

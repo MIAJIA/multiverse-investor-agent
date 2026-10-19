@@ -2,10 +2,10 @@
   "id": "B6",
   "type": "custom",
   "layer": "B",
-  "title": "该成链时不弃权：NVIDIA 采购承诺 → LITE",
+  "title": "Do not abstain when evidenced: NVIDIA purchase commitment -> LITE",
   "entry": "inspect",
   "input": {
-    "event": "NVIDIA 对 Lumentum 的数十亿美元采购承诺会推高 Lumentum 的收入",
+    "event": "NVIDIA's multi-billion-dollar purchase commitment to Lumentum will lift Lumentum's revenue",
     "target": "LITE",
     "evidence_packs": [
       "semiconductor"
@@ -15,7 +15,7 @@
     "offline"
   ],
   "expected": {
-    "behavior": "资料直接支持这条链：sc-040（NVIDIA 对 Lumentum 的采购承诺和 $2B 投资）、sc-039（Lumentum 拿到首笔 ELS 订单、CPO 激光器需求增加）。期望给出路径，不因为谨慎而 no_chain；有一份以 LITE 为标的的计划；同时可以指出 sc-025（ELS 让激光器总数降到 1/4）这类反方。",
+    "behavior": "The pack supports this chain directly: sc-040 (NVIDIA's purchase commitment and $2B investment in Lumentum), sc-039 (Lumentum's first ELS order, rising CPO laser demand). Expect a path, not a cautious no_chain, and a plan with LITE as the instrument. Counter-evidence such as sc-025 (ELS cuts the total laser count to 1/4) may be raised.",
     "no_chain": false,
     "plan_instruments_include": [
       "LITE"
@@ -33,12 +33,12 @@
   ],
   "auto_checks": [
     "no_chain_is_false",
-    "plan_for_instrument:LITE",
+    "plan_for_instrument",
     "gate_per_plan"
   ],
   "human_review": [
-    "E4: 有没有用套话弃权",
-    "E1: 有没有回应 sc-025"
+    "E4: did the model abstain with a platitude",
+    "E1: is sc-025 addressed"
   ],
-  "notes": "B 层：真实调用 Haiku 判模型行为。auto_checks 里的名字是给 runner 的约定，runner 还没实现的检查在 notes 里注明。 这是 Skepticism Trap 的产品版，和 T1 对应。"
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py). Product version of the Skepticism Trap, paired with T1."
 }
