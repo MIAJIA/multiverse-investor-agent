@@ -44,3 +44,9 @@
   - 例外：第 10 步的「改截止日期」在内置浏览器里没法往 date 输入框里打字，没有验证到；改阈值验证过。
 - 演示中修的一处：签字后假设表的勾选回到 Not started。现在签过之后以提案的 `confirmed_claim_ids` 为准。
 - `types.ts` 的 OpKind 先加了 `sign`（主 session 已定，schema 还没合），`check_fixtures.py` 的 PENDING 里登记了，schema 加上后删掉。
+
+## 复查记录（换成新节点样式之后）
+
+- 第 1–17 步在新样式下重走一遍，全部通过；第 10 步的改截止日期这次也验证了（逐键输入），签字后提案里截止日期是 2027-02-28。
+- 新增第 18 步（BLOCKED）和第 19 步（弃权），通过。截图：`screenshots/b2-blocked.jpg`、`screenshots/c4-abstain.jpg`。
+- MOCK 下每次 Analyze 都会重新载入干净的 fixture，签字改过的数据不会带到下一次。

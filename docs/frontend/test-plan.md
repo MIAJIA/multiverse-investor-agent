@@ -96,3 +96,12 @@ npm run typecheck && npm test && npm run build
 ### 真实后端（后端落地后补跑）
 
 `VITE_MOCK=0 npm run dev`，重走 1–17。差异只应出现在：没有 MOCK 徽章；第 12 步 gate 由后端重算（阈值改了、观测为空时仍应是 WAIT）；第 17 步走真实 fork。
+
+### 补充案例（MOCK 页头的数据选择器）
+
+| # | 操作 | 预期看到 |
+| --- | --- | --- |
+| 18 | 选「C1 到期复查（BLOCKED）」，Analyze，切到 Sign-off | 提案卡 gate = 红色「BLOCKED · 受阻」，status 仍是 draft；`cond.c1.els_design_wins` 是红色「未满足」，`cond.c1.cpo_shipments` 仍是「未知」 |
+| 19 | 选「C4 弃权（没有因果链）」，Analyze | 没有画布，显示「没有找到有依据的因果链」和后端给的理由；三个标签都不可点 |
+
+数据来源：`make_fixtures.py` 生成 `c1_blocked.json`（today=2027-04-15，加一份编造的「覆盖整个窗口但没有记录」的观测，not_met 和 BLOCKED 由代码判定）与 `c4_abstain.json`（真实 `ep.discover` 入口 + ScriptedReasoner 弃权）。没有覆盖：D1 霍尔木兹（没有 golden 图，ScriptedReasoner 也没有 inspect，只能等真实录制）、READY_FOR_REVIEW（C1 的出货阈值是 null，代码不会判 met）、AddShock（界面已砍）。

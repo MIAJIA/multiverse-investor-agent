@@ -190,8 +190,17 @@ export interface VersionBundle {
 
 export interface Fixture {
   _source?: unknown;
+  label: string; // MOCK 数据选择器里的名字
+  event: string;
+  run?: RunCreated; // 没有图的运行（弃权）时，POST /runs 的返回值
   versions: Record<string, VersionBundle>;
-  latest: string;
+  latest: string | null;
+}
+
+export interface DiscoverResult {
+  candidates: unknown[];
+  abstained: boolean | null;
+  abstain_reason: string | null;
 }
 
 /** 所有写操作（建 run、fork、sign）的返回值：成功时给新版本号，失败时给校验器的拒绝理由。 */
@@ -203,7 +212,8 @@ export interface WriteResult {
 
 export interface RunCreated extends WriteResult {
   run_id: string | null;
-  discover?: unknown;
+  discover?: DiscoverResult | null;
+  inspect?: { no_chain?: boolean | null; no_chain_reason?: string | null } | null;
 }
 
 export interface ConditionOverride {

@@ -23,9 +23,10 @@ from catalyst import entrypoints as ep  # noqa: E402
 from catalyst.evidence import EvidenceProvider  # noqa: E402
 from catalyst.schema import ProposalDraft, parse_graph  # noqa: E402
 from eval.fakes import ScriptedReasoner  # noqa: E402
-from eval.loader import load_fixture  # noqa: E402
+from catalyst.conditions import evaluate  # noqa: E402
+from eval.loader import load_case, load_fixture  # noqa: E402
 
-OUT = ROOT / "web" / "fixtures" / "c1.json"
+OUT = ROOT / "web" / "fixtures" / "c1.json"  # 其余 fixture 写在同一目录
 TODAY = "2026-10-18"
 
 # 唯一手写的「模型输出」：基线提案草稿。gate / status / support_status / meta 由 derive_proposal 派生。
@@ -66,46 +67,86 @@ class DemoReasoner(ScriptedReasoner):
         return c
 
 
-def main() -> None:
-    golden = {k: v for k, v in load_fixture("c1_graph_v1.json").items() if not k.startswith("_")}
-    pack = load_fixture("c1_evidence_pack.json")
-    fx = load_fixture("c3_change_assumption.json")
-    ev = EvidenceProvider(ROOT / "packs")
-    ev.register(pack)
-    cfg = ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c1")
+COMMON_NOTES = [
+    "离线生成，不是模型输出：reasoner 是 eval.fakes.ScriptedReasoner（assessment 理由换成演示句子）",
+    "golden C1 图的根节点标了 supported，过不了 inspect 的 _root_issues，所以基线没走 inspect，"
+    "直接 derive_proposal；ProposalDraft 是脚本里手写的，gate / status / support_status 由代码派生",
+    "资料包是合成占位片段（synthetic: true），不能当证据引用",
+]
 
-    base = parse_graph(golden)
+# BLOCKED 演示：把日期放到设计中标条件的窗口结束之后，并给一份「覆盖整个窗口、但没有记录」的观测。
+# 条件判定、gate 都由代码按这份观测算出；观测本身是编的，只用来让界面出现 not_met / BLOCKED。
+BLOCKED_TODAY = "2027-04-15"
+BLOCKED_OBS = [{"source": "company_filings", "coverage": {"start": "2026-10-18", "end": BLOCKED_TODAY}, "records": []}]
+
+
+def _write(name: str, fixture: dict) -> None:
+    out = OUT.parent / f"{name}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(fixture, ensure_ascii=False, indent=2) + "\n")
+    print(f"fixture: {out.relative_to(ROOT)}（版本 {list(fixture['versions'])}）")
+
+
+def _with_evaluation(graph, cfg):
+    """按 cfg 的日期和观测重新判定全部条件（与入口里的做法一致，只用公开的 conditions.evaluate）。"""
+    import datetime as dt
+    now = dt.date.fromisoformat(cfg.today)
+    conds = [c.model_copy(update={"evaluation_status": evaluate(c, cfg.observations, now)}) for c in graph.conditions]
+    return graph.model_copy(update={"conditions": conds})
+
+
+def c1_run(name: str, label: str, cfg, ev, pack, notes: list[str]) -> None:
+    golden = {k: v for k, v in load_fixture("c1_graph_v1.json").items() if not k.startswith("_")}
+    fx = load_fixture("c3_change_assumption.json")
+    base = _with_evaluation(parse_graph(golden), cfg)
     proposal = ep.derive_proposal(ProposalDraft.model_validate(DRAFT), base, model="scripted").dump()
     res = ep.fork(base.dump(), fx["op"], reasoner=DemoReasoner(), evidence=ev, config=cfg, pack=pack, proposal=proposal)
     if not res["ok"]:
         sys.exit("fork 失败：" + "; ".join(res["errors"]))
-
     excerpts = [x.dump() for x in ev.pack(pack["pack_id"]).excerpts]
     v1, v2 = base.version, res["graph"]["version"]
-    fixture = {
-        "_source": {
-            "script": "web/scripts/make_fixtures.py",
-            "case": "C1 golden + C3 change_assumption",
-            "today": TODAY,
-            "packs": [pack["pack_id"]],
-            "notes": [
-                "离线生成，不是模型输出：reasoner 是 eval.fakes.ScriptedReasoner（assessment 理由换成演示句子）",
-                "golden C1 图的根节点标了 supported，过不了 inspect 的 _root_issues，所以基线没走 inspect，"
-                "直接 derive_proposal；ProposalDraft 是脚本里手写的，gate / status / support_status 由代码派生",
-                "资料包是合成占位片段（synthetic: true），不能当证据引用",
-            ],
-        },
+    _write(name, {
+        "_source": {"script": "web/scripts/make_fixtures.py", "case": "C1 golden + C3 change_assumption",
+                    "today": cfg.today, "packs": [pack["pack_id"]], "notes": COMMON_NOTES + notes},
+        "label": label,
+        "event": "光子芯片采用快于预期",
         "versions": {
             v1: {"graph": base.dump(), "proposal": proposal, "scenario": None, "diff": None, "excerpts": excerpts},
             v2: {"graph": res["graph"], "proposal": res["proposal"], "scenario": res["scenario"], "diff": res["diff"],
                  "excerpts": excerpts},
         },
         "latest": v2,
-    }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(fixture, ensure_ascii=False, indent=2) + "\n")
-    challenged = sorted(k for k, s in res["scenario"]["assessment"].items() if s == "challenged")
-    print(f"fixture: {OUT.relative_to(ROOT)}（版本 {list(fixture['versions'])}，challenged={challenged}）")
+    })
+
+
+def abstain_run(ev, pack) -> None:
+    """C4：真实的 discover 入口 + ScriptedReasoner 的弃权输出；没有图、没有提案。"""
+    case = load_case("C4")["input"]
+    cfg = ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c4")
+    res = ep.discover(case["event"], case.get("target"), reasoner=ScriptedReasoner(), evidence=ev, config=cfg)
+    _write("c4_abstain", {
+        "_source": {"script": "web/scripts/make_fixtures.py", "case": "C4 discover 弃权", "today": TODAY,
+                    "packs": [pack["pack_id"]], "notes": ["离线生成：ScriptedReasoner 的 discover 一律弃权"]},
+        "label": "C4 弃权（没有因果链）",
+        "event": case["event"],
+        "run": {"ok": res["ok"], "errors": res["errors"], "version": None,
+                "discover": {k: res[k] for k in ("candidates", "abstained", "abstain_reason")}},
+        "versions": {},
+        "latest": None,
+    })
+
+
+def main() -> None:
+    pack = load_fixture("c1_evidence_pack.json")
+    ev = EvidenceProvider(ROOT / "packs")
+    ev.register(pack)
+    cfg = ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c1")
+    c1_run("c1", "C1 光子芯片（WAIT）", cfg, ev, pack, [])
+    blocked = ep.Config(packs=[pack["pack_id"]], today=BLOCKED_TODAY, run_prefix="c1", observations=BLOCKED_OBS)
+    c1_run("c1_blocked", "C1 到期复查（BLOCKED）", blocked, ev, pack, [
+        f"today={BLOCKED_TODAY}，观测是编的：company_filings 覆盖整个窗口但没有设计中标记录，"
+        "所以 cond.c1.els_design_wins 由代码判为 not_met，gate 由代码判为 BLOCKED"])
+    abstain_run(ev, pack)
 
 
 if __name__ == "__main__":

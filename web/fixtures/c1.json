@@ -12,6 +12,8 @@
       "资料包是合成占位片段（synthetic: true），不能当证据引用"
     ]
   },
+  "label": "C1 光子芯片（WAIT）",
+  "event": "光子芯片采用快于预期",
   "versions": {
     "c1-v1": {
       "graph": {

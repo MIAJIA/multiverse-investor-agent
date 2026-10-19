@@ -20,13 +20,32 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
 
 // ---- MOCK -------------------------------------------------------------
 
+// fixtures/*.json 都是 make_fixtures.py 生成的；MOCK 下由页头的选择器决定用哪一份。
+const FIXTURES = import.meta.glob<{ default: unknown }>('../fixtures/*.json');
+const nameOf = (path: string) => path.split('/').pop()!.replace('.json', '');
+export const MOCK_FIXTURES = Object.keys(FIXTURES).map(nameOf).sort();
+
+let mockName = MOCK_FIXTURES.includes('c1') ? 'c1' : MOCK_FIXTURES[0];
 let fixtureP: Promise<Fixture> | null = null;
 const loadFixture = () =>
-  (fixtureP ??= import('../fixtures/c1.json').then((m) => structuredClone(m.default) as unknown as Fixture));
+  (fixtureP ??= FIXTURES[Object.keys(FIXTURES).find((p) => nameOf(p) === mockName)!]()
+    .then((m) => structuredClone(m.default) as Fixture));
+
+/** MOCK 专用：选一份 fixture，返回它的名字和事件原话（给页头填输入框）。 */
+export async function mockFixtureInfo(name: string): Promise<{ label: string; event: string }> {
+  const fx = (await FIXTURES[Object.keys(FIXTURES).find((p) => nameOf(p) === name)!]()).default as Fixture;
+  return { label: fx.label, event: fx.event };
+}
+export function setMockFixture(name: string) {
+  mockName = name;
+  fixtureP = null;
+}
 
 const mock = {
   async createRun(): Promise<RunCreated> {
+    fixtureP = null; // 每次 Analyze 都从干净的 fixture 开始（MOCK 签字会改内存里的那份）
     const fx = await loadFixture();
+    if (fx.run) return { ...fx.run, run_id: 'mock' };
     const root = Object.values(fx.versions).find((b) => b.graph.parent_version === null)!;
     return { ok: true, errors: [], version: root.graph.version, run_id: 'mock', discover: null };
   },

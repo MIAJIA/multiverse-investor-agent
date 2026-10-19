@@ -53,7 +53,14 @@ def same_canonical(model, d: dict, label: str) -> list[str]:
 def check_fixture(path: Path) -> list[str]:
     fx = json.loads(path.read_text())
     versions, errs = fx["versions"], []
-    if fx.get("latest") not in versions:
+    if not fx.get("label") or not fx.get("event"):
+        errs.append(f"{path.name} 缺少 label 或 event（MOCK 的数据选择器要用）")
+    if not versions:  # 没有图的运行（弃权 / 无因果链）：必须带 run，且说明了原因
+        run = fx.get("run") or {}
+        d = run.get("discover") or {}
+        if run.get("version") is not None or not (d.get("abstained") and d.get("abstain_reason")):
+            errs.append(f"{path.name} 没有版本，但 run 里不是带理由的弃权")
+    elif fx.get("latest") not in versions:
         errs.append(f"latest={fx.get('latest')} 不在 versions 里")
     for v, b in versions.items():
         p = f"{path.name}:{v}"
