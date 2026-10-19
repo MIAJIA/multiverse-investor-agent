@@ -177,3 +177,11 @@ def test_baseline_single_prompt_is_recorded_and_replayed(tmp_path):
     assert ReplayReasoner(tmp_path / "cassette.jsonl").single_prompt("q1") == "baseline answer for q1"
     with pytest.raises(CassetteMiss):
         ReplayReasoner(tmp_path / "cassette.jsonl").single_prompt("q2")
+
+
+def test_live_client_can_be_constructed(monkeypatch):
+    """Building the real client must not fail on imports (the SDK's HTTP layer is httpx2, not httpx)."""
+    from catalyst.reasoner import AnthropicReasoner, client_timeout
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
+    assert client_timeout().read == 300.0
+    assert AnthropicReasoner(model="claude-haiku-5-5").client is not None

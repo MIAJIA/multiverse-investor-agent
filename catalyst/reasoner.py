@@ -22,10 +22,10 @@ DEFAULT_EFFORT = os.environ.get("CATALYST_EFFORT", "high")
 def client_timeout():
     """Read timeout for API calls. The SDK default (10 minutes) lets a silently dropped stream hang a run for ten
     minutes before retrying; 5 minutes (CATALYST_TIMEOUT, seconds) still covers long thinking."""
-    import httpx
+    import anthropic  # the SDK re-exports its HTTP client's Timeout (httpx2 in SDK 1.x)
 
     read = float(os.environ.get("CATALYST_TIMEOUT", "300"))
-    return httpx.Timeout(connect=15.0, read=read, write=60.0, pool=15.0)
+    return anthropic.Timeout(connect=15.0, read=read, write=60.0, pool=15.0)
 
 
 @dataclass
