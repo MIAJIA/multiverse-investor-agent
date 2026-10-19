@@ -1,5 +1,5 @@
 // 提案卡：status 和 gate 两个徽章分开；进场标「且」，退出显式标 exit_logic。没有执行按钮。
-import { EXIT_LOGIC, GATE, PROPOSAL_STATUS, SUPPORT } from '../status';
+import { CRITIC, EXIT_LOGIC, GATE, PROPOSAL_STATUS, SUPPORT } from '../status';
 import type { Condition, ConditionOverride, Graph, TradeProposal } from '../types';
 import Badge from './Badge';
 import ConditionRow from './ConditionRow';
@@ -49,6 +49,15 @@ export default function ProposalCard({ proposal, graph, overrides, onOverride, c
           )}
         </>
       )}
+      <div className="critic small" style={{ color: CRITIC[proposal.critic.status].color }}>
+        {CRITIC[proposal.critic.status].label}
+        {proposal.critic.status === 'failed' && `：${proposal.critic.reason}`}
+        {proposal.critic.status === 'ok' && (
+          <ul style={{ margin: '4px 0', paddingLeft: 18 }}>
+            {proposal.critic.items.map((it) => <li key={it.claim_id + it.challenge}>{name(it.claim_id)}：{it.challenge}</li>)}
+          </ul>
+        )}
+      </div>
       <div className="small muted mono">graph {proposal.graph_version} · {proposal.meta.proposal_version} · approval_required</div>
     </div>
   );

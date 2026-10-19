@@ -59,7 +59,8 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
     outlineOffset: 3,
   } as const;
 
-  const meta = s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断' : `正方 ${s.support}${s.contra ? ` · 反方 ${s.contra}` : ''}`;
+  const meta = s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断'
+    : `正方 ${s.support}${s.contra ? ` · 反方 ${s.contra}` : ''}${s.neutral ? ` · 背景 ${s.neutral}` : ''}`;
 
   if (expanded) {
     const deadline = conditions.map((c) => c.deadline).sort()[0];
@@ -76,7 +77,8 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
         </div>
         <div className="pg-facts">
           {!s.noInEdges && !s.modelOnly && <span><i className="pg-dot" style={{ background: 'var(--pg-green)' }} />正方 {s.support}</span>}
-          {s.contra > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-red)' }} />反方 {s.contra} · 已回应</span>}
+          {s.contra > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-red)' }} />反方 {s.contra}</span>}
+          {s.neutral > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-muted)' }} />背景 {s.neutral}</span>}
           {(s.noInEdges || s.modelOnly) && <span>{meta}</span>}
           {deadline && <span>截止 {deadline}</span>}
           {challenged && <span style={{ color: 'var(--pg-orange)' }}>情景下受挑战</span>}

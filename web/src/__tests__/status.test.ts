@@ -12,6 +12,7 @@ const TABLES: [string, readonly string[], Record<string, S.Look>][] = [
   ['VERIFICATION', T.VERIFICATION_STATUSES, S.VERIFICATION],
   ['EVALUATION', T.EVALUATION_STATUSES, S.EVALUATION],
   ['EXIT_LOGIC', T.EXIT_LOGICS, S.EXIT_LOGIC],
+  ['CRITIC', T.CRITIC_STATUSES, S.CRITIC],
 ];
 
 describe('status 映射', () => {

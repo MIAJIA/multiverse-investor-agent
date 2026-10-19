@@ -51,3 +51,11 @@
 - 新增第 18 步（BLOCKED）和第 19 步（弃权），通过。截图：`screenshots/b2-blocked.jpg`、`screenshots/c4-abstain.jpg`。
 - MOCK 下每次 Analyze 都会重新载入干净的 fixture，签字改过的数据不会带到下一次。
 - 短标题：`types.ts` 的 Claim 加了可选的 `label`。节点卡片有 label 就显示 label，没有就把 statement 截到 10 个字加「…」（`src/node/labels.ts` 的 `nodeLabel`）。现在的 fixture 没有 label，所以应用里显示的是截短的句子；`screenshots/b1-workspace.jpg`、`b3-scenario.jpg` 里的短标题来自 playground 的演示表，等后端加上 label、重新生成 fixture 后再更新截图。playground 仍用演示表（`src/playground/demoLabels.ts`），有 label 时优先用 label。
+
+## 跟上 core-schema@eb92f73（label / neutral / critic）
+
+- `git merge core-schema` 是快进（core-schema 已经包含 frontend 的全部提交）。
+- `types.ts`：`Claim.label: string | null`；`Stance` 加 `neutral`；`TradeProposal.critic`（`CRITIC_STATUSES` = disabled / ok / failed）。`check_fixtures.py` 去掉了 OpKind 的 PENDING（schema 已有 `sign`），并核对 critic 的取值。
+- 证据面板多一组「背景」（neutral）；圆环上 neutral 是灰格，不算正方也不算反方；卡片小字写「背景 n」。C1 数据里没有 neutral 证据，所以用单元测试（复制一份图、把一条引用改成 neutral）验证。
+- 提案卡加一行「Critic 挑刺：未启用（下一期）」；failed 时显示原因，ok 时列出 items。
+- 重新生成 3 份 fixture，全部通过 `check_fixtures.py`（14 个枚举）。golden C1 图的 label 全是 null，所以节点卡片仍是截短的 statement。

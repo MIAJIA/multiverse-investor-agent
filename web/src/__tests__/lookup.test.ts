@@ -23,6 +23,14 @@ describe('lookup', () => {
     expect(root.modelOnly).toBe(false);
   });
 
+  it('neutral 证据单独成「背景」一组', () => {
+    const g = structuredClone(v1.graph);
+    const e3 = g.edges.find((e) => e.id === 'c1.e3')!;
+    e3.evidence = [...e3.evidence, { ...e3.evidence[0], excerpt_id: 'bg-1', stance: 'neutral', supports: '数据每周才更新' }];
+    const ev = nodeEvidence(g, 'c1.laser_demand', v1.excerpts);
+    expect([ev.supporting.length, ev.contradicting.length, ev.background.length]).toEqual([2, 1, 1]);
+  });
+
   it('节点上的条件', () => {
     expect(nodeConditions(v1.graph, 'c1.laser_demand').map((c) => c.id)).toEqual(['cond.c1.els_design_wins']);
   });
