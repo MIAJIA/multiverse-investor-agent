@@ -39,6 +39,8 @@ CandidateLabel = Literal["grounded", "hypothesis", "not_recommended"]
 OpKind = Literal["generate", "discover", "inspect", "change_assumption", "add_shock", "sign"]
 ExitLogic = Literal["ANY", "ALL"]
 Side = Literal["long", "short"]
+BranchKind = Literal["hypothetical", "evidenced", "model_only"]
+TrunkKind = Literal["evidenced", "model_only"]
 
 
 class Strict(BaseModel):
@@ -212,7 +214,7 @@ class ScenarioRef(Strict):
 
 
 class ProposalMeta(Strict):
-    proposal_version: str
+    proposal_version: str = Field(description="f\"{graph_version}.{terminal_id}\"：同一版本里的多份计划不重名")
     prompt_version: str
     model: str
     approval_required: Literal[True] = True
@@ -238,7 +240,16 @@ def _critic_disabled() -> CriticReport:
 
 
 class TradeProposal(Strict):
-    """派生分析 + 用户判断 + 图版本号。gate / status / meta 只由代码写。"""
+    """一个 terminal 的计划：派生分析 + 用户判断 + 图版本号。每个版本每个 terminal 恰好一份（版本包的 proposals）。
+    gate / status / support_status / meta / approval_reset / rival_changed 只由代码写。
+
+    user_judgment.confirmed 就是「已批准」：同一版本最多一份为 true（批准一份会撤销同版本其他计划的批准）。
+    approval_reset 与 rival_changed 描述「这个版本相对父版本发生了什么」，每次派生都重新计算，不继承父版本的值；
+    只有 fork 会写 true，inspect / sign 一律 false：
+    - approval_reset：这份计划在父版本里已批准，这次分叉的写范围碰到了它（docs/changes 4.3），批准已撤销，需要重新批准。
+    - rival_changed：这份计划没受这次分叉影响，但同版本另一份计划受了影响。它只说明「另一份计划受了影响」，
+      不判断两者是不是竞争关系：并列受益的 terminal（如 C1）也会触发。"""
+    terminal_id: str
     status: ProposalStatus = "draft"
     gate: Gate
     direction: Direction
@@ -253,6 +264,21 @@ class TradeProposal(Strict):
     graph_version: str
     meta: ProposalMeta
     critic: CriticReport = Field(default_factory=_critic_disabled)  # 老快照没有这个字段时也按 disabled 解析
+    approval_reset: bool = False
+    rival_changed: bool = False
+
+
+# ---- 分支（catalyst/branches.py 由代码推导，不由模型标注）----------------------
+
+class Branch(Strict):
+    """一个 terminal 一条分支。kind 按优先级：hypothetical > evidenced > model_only（规则见 branches.py）。"""
+    terminal_id: str
+    divergence_node_ids: list[str] = Field(description="这条分支祖先里的分叉点：几条出边能到达的 terminal 集合不一样的节点")
+    own_node_ids: list[str] = Field(description="(ancestors(t) ∪ {t}) − 其他 terminal 的全部祖先")
+    own_edge_ids: list[str] = Field(description="终点落在 own_node_ids 里的边")
+    kind: BranchKind
+    trunk: TrunkKind = Field(description="共用上游（祖先里不属于独有部分的节点及其入边）的强度")
+    synthetic_evidence: bool = Field(description="独有边引用了合成占位资料包的片段：kind 一律不是 evidenced，界面标「资料为占位」")
 
 
 # ---- 证据 ---------------------------------------------------------------
@@ -304,6 +330,8 @@ class ModelUserJudgment(Strict):
 
 
 class ProposalDraft(Strict):
+    """一个 terminal 的计划草稿。每个 terminal 恰好一份；direction.instrument 必须是该 terminal 的 instrument。"""
+    terminal_id: str
     direction: Direction
     entry_condition_ids: list[str]
     exit_condition_ids: list[str]
@@ -325,7 +353,7 @@ class InspectOutput(Strict):
     nodes: list[Claim]
     edges: list[Mechanism]
     conditions: list[ModelCondition]
-    proposal: Optional[ProposalDraft]
+    proposals: list[ProposalDraft]
 
 
 class InspectGraphOutput(Strict):
@@ -337,9 +365,9 @@ class InspectGraphOutput(Strict):
 
 
 class InspectPlanOutput(Strict):
-    """Inspect 第 2 步：在已通过校验的图上挂判定条件，给出提案草稿。"""
+    """Inspect 第 2 步：在已通过校验的图上挂判定条件，每个 terminal 给一份计划草稿。"""
     conditions: list[ModelCondition]
-    proposal: ProposalDraft
+    proposals: list[ProposalDraft]
 
 
 class JudgmentOutput(Strict):
@@ -388,6 +416,19 @@ class ForkOutput(Strict):
     next_checks: list[str]
 
 
+# ---- 版本包（GET /api/runs/{id}/versions/{v}、promote 的 fixture 同形）------
+
+class VersionBundle(Strict):
+    """一个版本的完整视图。proposals 按图里 terminal 的顺序排，每个 terminal 一份；没有提案时是 []。
+    branches 由 catalyst/branches.py 从图和情景推导（没有 terminal 时是 []）。"""
+    graph: Graph
+    proposals: list[TradeProposal]
+    branches: list[Branch]
+    scenario: Optional[Scenario]
+    diff: Optional[dict[str, Any]]
+    excerpts: list[Excerpt]
+
+
 # ---- 便捷解析（eval 的 tests/_adapter.py 会自动用上）---------------------
 
 def _strip_private(data: dict) -> dict:
@@ -404,3 +445,27 @@ def parse_condition(data: dict | Condition) -> Condition:
 
 def parse_pack(data: dict | EvidencePack) -> EvidencePack:
     return data if isinstance(data, EvidencePack) else EvidencePack.model_validate(_strip_private(data))
+
+
+class LegacyProposalError(ValueError):
+    pass
+
+
+def parse_proposals(data: list | dict | None, graph: dict | Graph) -> list[TradeProposal]:
+    """读一个版本的提案。新格式是列表；方案 B 之前的旧文件是单个 dict，包成只有一项的列表。
+    旧提案没有 terminal_id 时，按 direction.instrument 在图里找唯一含它的 terminal 填上；
+    找不到、或同一个 instrument 出现在多个 terminal 上，直接报错，不猜。"""
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return [p if isinstance(p, TradeProposal) else TradeProposal.model_validate(_strip_private(p)) for p in data]
+    d = _strip_private(dict(data))
+    if not d.get("terminal_id"):
+        g = parse_graph(graph)
+        inst = (d.get("direction") or {}).get("instrument")
+        hits = [n.id for n in g.nodes if n.role == "terminal" and inst in n.instruments]
+        if len(hits) != 1:
+            raise LegacyProposalError(
+                f"[{inst}] 旧提案没有 terminal_id，按标的在图 {g.version} 里找到 {len(hits)} 个 terminal {hits}，无法确定")
+        d["terminal_id"] = hits[0]
+    return [TradeProposal.model_validate(d)]
