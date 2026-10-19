@@ -14,6 +14,8 @@ export const EXIT_LOGICS = ['ANY', 'ALL'] as const;
 export const SIDES = ['long', 'short'] as const;
 export const CRITIC_STATUSES = ['disabled', 'ok', 'failed'] as const;
 export const OP_KINDS = ['generate', 'discover', 'inspect', 'change_assumption', 'add_shock', 'sign'] as const;
+// 方案 B：分支类别由后端 branches.py 推导（kind 三类，trunk 只有前两类）
+export const BRANCH_KINDS = ['evidenced', 'model_only', 'hypothetical'] as const;
 
 export type Role = (typeof ROLES)[number];
 export type EvidenceStatus = (typeof EVIDENCE_STATUSES)[number];
@@ -29,6 +31,7 @@ export type ExitLogic = (typeof EXIT_LOGICS)[number];
 export type Side = (typeof SIDES)[number];
 export type CriticStatus = (typeof CRITIC_STATUSES)[number];
 export type OpKind = (typeof OP_KINDS)[number];
+export type BranchKind = (typeof BRANCH_KINDS)[number];
 
 export interface Claim {
   id: string;
@@ -136,6 +139,7 @@ export interface UserJudgment {
   requires_user_confirmation: boolean;
   confirmed: boolean;
   confirmed_claim_ids: string[];
+  note?: string | null; // 方案 B：批准时的可选备注
 }
 
 export interface ScenarioRef {
@@ -165,6 +169,10 @@ export interface TradeProposal {
   support_status: SupportStatus;
   graph_version: string;
   critic: CriticReport; // 本期一律 disabled
+  // 方案 B（后端 d105c45 起）：每份计划对应一个 terminal；改假设后由后端标出受影响的批准
+  terminal_id?: string;
+  approval_reset?: boolean; // true：前提已改动，请重新批准
+  rival_changed?: boolean; // true：同一版本里另一份计划受了影响
   meta: { proposal_version: string; prompt_version: string; model: string; approval_required: true };
 }
 
@@ -238,6 +246,42 @@ export interface SignBody {
   clarified_statement: string;
   criteria: string | null;
   deadline: string | null;
+  confirmed_claim_ids: string[];
+  condition_overrides: Record<string, ConditionOverride>;
+}
+
+// ---- 方案 B（B-最小）--------------------------------------------------------
+// 第 1 步切换 fixture 时，PlanBBundle 取代 VersionBundle（proposal → proposals），这里先定义好。
+
+export interface Branch {
+  terminal_id: string;
+  divergence_node_ids: string[];
+  own_node_ids: string[];
+  own_edge_ids: string[];
+  kind: BranchKind;
+  trunk: Exclude<BranchKind, 'hypothetical'>;
+  synthetic_evidence: boolean; // true：支撑它的是占位资料包，所以降级成 model_only
+}
+
+export interface PlanBBundle {
+  graph: Graph;
+  proposals: TradeProposal[]; // 每个 terminal 一份，按 terminal_id 关联，不依赖顺序
+  branches: Branch[];
+  node_kinds: Record<string, BranchKind>; // 后端给的节点类别，前端只查表
+  edge_kinds: Record<string, BranchKind>;
+  scenario: Scenario | null;
+  diff: GraphDiff | null;
+  excerpts: Excerpt[];
+}
+
+/** sign 的新语义是「批准」：terminal_id 为 null 表示本版本一份都不批准（撤销批准）。 */
+export interface ApproveBody {
+  version: string;
+  terminal_id: string | null;
+  clarified_statement?: string;
+  criteria?: string | null;
+  deadline?: string | null;
+  note?: string | null;
   confirmed_claim_ids: string[];
   condition_overrides: Record<string, ConditionOverride>;
 }

@@ -1,6 +1,6 @@
 // 所有枚举 → 文案与颜色的唯一映射表。组件不自己写颜色或状态文案。
 import type {
-  AssessmentStatus, CriticStatus, EvaluationStatus, EvidenceStatus, ExitLogic, Gate, ProposalStatus, Role, SupportStatus,
+  AssessmentStatus, BranchKind, CriticStatus, EvaluationStatus, EvidenceStatus, ExitLogic, Gate, ProposalStatus, Role, SupportStatus,
   VerificationStatus,
 } from './types';
 
@@ -75,6 +75,36 @@ export const CRITIC: Record<CriticStatus, Look> = {
   ok: { label: 'Critic 挑刺', ...ORANGE },
   failed: { label: 'Critic 挑刺：没有跑成', ...GREY },
 };
+
+/** 分支类别（D-B9）：靠底纹 + 线型 + 标签区分，不只靠颜色。B1 画布、B2 结论列表、B3 共用这一张表。 */
+export interface BranchLook extends Look {
+  tag: string | null; // 节点和结论卡片上的标签；evidenced 默认不加字
+  line: 'solid' | 'dashed' | 'dotted';
+  dash: string | undefined; // SVG strokeDasharray
+  border: string; // 描边色
+  edge: string; // 连线色
+  title: string; // 标题文字色（model_only 减淡用颜色，不用 opacity）
+  pattern: string | undefined; // 底纹（CSS background-image）
+}
+
+export const BRANCH_KIND: Record<BranchKind, BranchLook> = {
+  evidenced: {
+    label: '有资料支持', tag: null, color: '#1f7a4d', bg: '#e6f4ec', line: 'solid', dash: undefined,
+    border: '#1f7a4d', edge: '#9aa1ab', title: '#1c1f24', pattern: undefined,
+  },
+  model_only: {
+    label: '仅模型推断', tag: '仅推断', color: '#6b7280', bg: '#ffffff', line: 'dashed', dash: '5 4',
+    border: '#b9bfc8', edge: '#c4c9d0', title: '#6b7280', pattern: undefined,
+  },
+  hypothetical: {
+    label: '假设 · 未观测', tag: '假设 · 未观测', color: '#5b4a9e', bg: '#f1eef7', line: 'dotted', dash: '2 3',
+    border: '#8e7cc3', edge: '#8e7cc3', title: '#4b3f72',
+    pattern: 'repeating-linear-gradient(45deg, #e3ddef 0 2px, transparent 2px 8px)',
+  },
+};
+
+/** 合成资料包导致的降级，跟在「仅推断」后面。 */
+export const SYNTHETIC_EVIDENCE_TAG = '资料为占位';
 
 export const KEY_DEPENDENCY = { label: 'Check first · 关键依赖', ...ORANGE };
 export const CHANGED_TARGET = { label: '改动的假设', ...BLUE };

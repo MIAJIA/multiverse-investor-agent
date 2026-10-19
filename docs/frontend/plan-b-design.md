@@ -1,6 +1,6 @@
 # 前端设计：方案 B-最小（分支 + 批准计划）
 
-2026-10-18 · frontend 分支（已合 core-schema@da2d097）· 状态：**待主 session 审，未开始实现**
+2026-10-18 · frontend 分支（已合 core-schema@da2d097）· 状态：**已审过（第 10 节是审后的决定，优先于正文），等后端实现 commit 后开工**
 
 依据：`docs/changes/2026-10-18-branches-and-plans.md`（下称「改动说明」）第 3、5、9 节。本文只写前端；数据契约以方案 B 后端最终交付的 schema 为准，本文先按主 session 转来的契约设计，第 7 节列出需要后端补的地方。
 
@@ -263,3 +263,26 @@ type AppState = {
 - [ ] **9. typecheck / test / build / check_fixtures，手动演示 P1–P10，截图，更新 `docs/frontend/`，commit**（30 分钟）
 
 必做（1–6、9）约 **3 小时 20 分钟**；加上两项可选约 4 小时 15 分钟。第 2 步之后每一步都能单独验收。
+
+## 10. 审后的决定（优先于上文）
+
+| # | 决定 | 改了上文哪里 |
+| --- | --- | --- |
+| 1 | 后端在版本包里给 `node_kinds`、`edge_kinds` 两张表 | 3.2 整节改成查表，第 3 条的取舍规则删掉 |
+| 2 | 撤销批准 = `sign` 发 `terminal_id: null`，产出新版本 | 4.2 第 5 步调这个 |
+| 3 | 「资料为占位」读 `Branch.synthetic_evidence` | 3.1 |
+| 4 | 失效用后端字段：`TradeProposal.approval_reset` → 「前提已改动，请重新批准」；`TradeProposal.rival_changed` → 「同一版本里另一份计划受了影响，值得再看一眼」。rival_changed 不判断是不是竞争关系，文案不写「对手」 | 4.3 的两条推断规则删掉，改读字段 |
+| 5 | evidenced 样式的演示数据等真实资料包重录；在那之前只在 playground 预览并标明演示 | 第 5 节第 5 条 |
+| 6 | 备注：`UserJudgment.note`，sign 请求体加可选 `note` | 4.2、`SignBody` |
+| 7 | 后端保证同一版本几份计划的 `original_statement`、`clarified_statement` 相同，顶部只显示一句 | 4.1 |
+| 8 | 第 8 节的两组 playground 不做，按默认实现 | 第 8 节、第 9 步 |
+| 9 | 联网开关和状态行做 | 4.6、第 7 步 |
+
+后端字段（d105c45 加上面几处）：`ProposalDraft` / `TradeProposal.terminal_id`（必填）；`TradeProposal.approval_reset`、`rival_changed`（默认 false）；`UserJudgment.note`；`Branch = {terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}`；`VersionBundle = {graph, proposals, branches, node_kinds, edge_kinds, scenario, diff, excerpts}`；inspect / fork / sign 返回体里 `proposal` → `proposals`；`proposal_version = "{graph_version}.{terminal_id}"`。
+
+估时随之变成：必做 1–7、9 约 3 小时 15 分钟（去掉 8，第 3、5 步因为查表各少 5 分钟，加上联网 15 分钟）。
+
+### 开工前已做（不依赖后端数据）
+
+- `types.ts` 加了方案 B 的类型（`Branch`、`BranchKind`、`PlanBBundle`、`ApproveBody`，`TradeProposal` / `UserJudgment` 的新字段）。`VersionBundle` 暂时不切，等第 1 步和 fixture 一起切，保证每个 commit 都能编译。
+- `status.ts` 的 `BRANCH_KIND`（文案、颜色、线型、底纹）和 `components/BranchSwatch.tsx`（行首缩略 + 「假设 · 未观测」胶囊）。
