@@ -1,0 +1,57 @@
+/* 节点视觉 A/B：白底，线型分分支类别，只有「先查」用橙色、只有「反对」用红字 */
+.gr-page { height: 100vh; display: flex; flex-direction: column; background: #f6f7f9; color: #1c1f24; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; }
+.gr-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 20px 8px; gap: 16px; }
+.gr-header h1 { font-size: 18px; margin: 0 0 4px; }
+.gr-header p { margin: 0; font-size: 13px; color: #5b6472; max-width: 900px; line-height: 1.5; }
+.gr-back { font-size: 13px; color: #2f6fed; white-space: nowrap; }
+.gr-options { display: flex; gap: 12px; padding: 4px 20px 12px; }
+.gr-option { flex: 1; background: #fff; border: 1.5px solid #e3e6eb; border-radius: 12px; padding: 10px 14px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #5b6472; }
+.gr-option.on { border-color: #2f6fed; box-shadow: 0 0 0 3px #2f6fed1a; }
+.gr-option strong { color: #1c1f24; font-size: 14px; }
+.gr-option-top { display: flex; justify-content: space-between; align-items: center; }
+.gr-pick { border: 1px solid #2f6fed; color: #2f6fed; background: #fff; border-radius: 999px; padding: 3px 12px; font-size: 12px; cursor: pointer; }
+.gr-pick.done { background: #2f6fed; color: #fff; }
+.gr-body { flex: 1; min-height: 0; display: flex; }
+.gr-canvas { flex: 1; min-width: 0; position: relative; background: #fbfbfc; border-top: 1px solid #e3e6eb; }
+.gr-float { position: absolute; top: 10px; left: 12px; font-size: 12px; color: #6b7280; background: #fff; border: 1px solid #e3e6eb; border-radius: 999px; padding: 3px 10px; }
+.gr-toast { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: #1c1f24; color: #fff; border-radius: 12px; padding: 10px 14px; font-size: 13px; max-width: 520px; display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.gr-legend { width: 290px; flex-shrink: 0; background: #fff; border-left: 1px solid #e3e6eb; border-top: 1px solid #e3e6eb; overflow-y: auto; padding: 14px 16px; font-size: 13px; }
+.gr-legend h3 { font-size: 14px; margin: 0 0 8px; }
+.gr-legend h4 { font-size: 12px; color: #6b7280; font-weight: 600; margin: 14px 0 6px; }
+.gr-li { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.gr-li.small { font-size: 11.5px; color: #6b7280; }
+.gr-plain-icon { display: inline-flex; color: #3a414c; width: 26px; justify-content: center; }
+.gr-swatch-line { width: 34px; height: 0; border-top-width: 2px; border-color: #3a414c; border-left: 0; border-right: 0; border-bottom: 0; }
+.gr-swatch-pill { width: 34px; height: 16px; border: 2px solid #1c1f24; border-radius: 999px; }
+.gr-swatch-head { width: 34px; height: 18px; border: 1px solid #c4c9d0; border-radius: 4px; background: linear-gradient(#1c1f24 0 7px, #fff 7px); }
+.gr-removed { font-size: 11.5px; color: #8a919c; margin-top: 14px; line-height: 1.5; }
+
+/* 节点：两种做法共用 */
+.gn { background: #fff; border: 1.5px solid #9aa1ab; color: #1c1f24; font-size: 13px; cursor: default; position: relative; }
+.gn-handle { opacity: 0; }
+.gn-title { font-weight: 600; line-height: 1.3; }
+.gn-foot { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.gn-ev { font-size: 11.5px; color: #3a414c; }
+.gn-ev.muted { color: #8a919c; }
+.gn-contra { color: #c0362c; font-weight: 600; }
+.gn-key { display: inline-flex; align-items: center; gap: 3px; background: #fff4e5; color: #b45309; border: 1px solid #f5b971; border-radius: 999px; font-size: 10.5px; font-weight: 600; padding: 0 6px; line-height: 16px; }
+.gn-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #f1f3f5; color: #3a414c; flex-shrink: 0; }
+.gn-pencil { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid #c4c9d0; background: #fff; color: #2f6fed; cursor: pointer; flex-shrink: 0; }
+.gn-pencil:hover { background: #eef3ff; border-color: #2f6fed; }
+.gn-pencil.static { cursor: default; }
+
+/* A：符号徽章，不写类型字；结论 = 胶囊形，边框更粗 */
+.gn-a { display: flex; align-items: center; gap: 10px; width: 210px; padding: 9px 10px; border-radius: 10px; }
+.gn-a .gn-body { flex: 1; min-width: 0; }
+.gn-a-terminal { border-radius: 999px; border-width: 2.5px; border-color: #1c1f24; padding: 10px 14px 10px 10px; }
+.gn-a-terminal .gn-badge { background: #1c1f24; color: #fff; }
+.gn-ticker { font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace; background: #f1f3f5; border-radius: 6px; padding: 2px 6px; flex-shrink: 0; }
+
+/* B：第一行「符号 + 类型字」；结论 = 顶部深色标题栏 */
+.gn-b { width: 210px; padding: 8px 10px 9px; border-radius: 8px; }
+.gn-head { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #5b6472; margin-bottom: 4px; min-height: 18px; }
+.gn-head .spacer { flex: 1; }
+.gn-head .gn-pencil { width: 22px; height: 22px; }
+.gn-b-terminal { padding-top: 0; overflow: hidden; border-color: #1c1f24; border-width: 2px; }
+.gn-b-terminal .gn-head { background: #1c1f24; color: #fff; margin: 0 -10px 6px; padding: 5px 10px; }
+.gn-head-ticker { font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace; background: #ffffff26; border-radius: 4px; padding: 0 5px; }
