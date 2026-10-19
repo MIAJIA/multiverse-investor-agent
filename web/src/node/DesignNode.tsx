@@ -1,6 +1,7 @@
-// playground 用的节点：同一份数据，按 Look 的五个维度画成不同样子。
+// 画布节点（应用和 playground 共用）：同一份数据，按 Look 的五个维度画成不同样子。
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import type { AssessmentStatus, Claim, Condition } from '../types';
+import './node.css';
 import { Bars, Ring } from './StrengthGlyph';
 import type { Strength } from './strength';
 
@@ -39,7 +40,7 @@ function Target() {
   );
 }
 
-export default function DesignNode({ data }: NodeProps<Node<DesignData>>) {
+export default function DesignNode({ data, selected }: NodeProps<Node<DesignData>>) {
   const { claim, label, look, s, isKey, isChanged, assessment, expanded, conditions } = data;
   const challenged = assessment === 'challenged';
   const receded = assessment && !challenged && !isChanged && look.scenario === 'dim';
@@ -54,6 +55,8 @@ export default function DesignNode({ data }: NodeProps<Node<DesignData>>) {
     borderWidth: challenged || isKey || isChanged ? 2 : 1,
     borderStyle: s.modelOnly || claim.role === 'shock' ? 'dashed' : 'solid',
     opacity: receded ? 0.32 : 1,
+    outline: selected ? '2px solid var(--pg-blue)' : undefined,
+    outlineOffset: 3,
   } as const;
 
   const meta = s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断' : `正方 ${s.support}${s.contra ? ` · 反方 ${s.contra}` : ''}`;
@@ -62,7 +65,7 @@ export default function DesignNode({ data }: NodeProps<Node<DesignData>>) {
     const deadline = conditions.map((c) => c.deadline).sort()[0];
     return (
       <div className="pg-node pg-expanded" style={{ ...style, opacity: 1 }}>
-        <Handle type="target" position={Position.Top} />
+        <Handle type="target" position={Position.Top} className="pg-handle" />
         <div className="pg-row">
           {glyph}
           <div style={{ minWidth: 0 }}>
@@ -79,14 +82,14 @@ export default function DesignNode({ data }: NodeProps<Node<DesignData>>) {
           {challenged && <span style={{ color: 'var(--pg-orange)' }}>情景下受挑战</span>}
           {isChanged && <span style={{ color: 'var(--pg-blue)' }}>改动的假设</span>}
         </div>
-        <Handle type="source" position={Position.Bottom} />
+        <Handle type="source" position={Position.Bottom} className="pg-handle" />
       </div>
     );
   }
 
   return (
     <div className={`pg-node ${look.shape === 'pill' ? 'pg-pill' : 'pg-card'}`} style={style}>
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={Position.Top} className="pg-handle" />
       <div className="pg-row">
         {glyph}
         <span className="pg-title">{label}</span>
@@ -95,7 +98,7 @@ export default function DesignNode({ data }: NodeProps<Node<DesignData>>) {
         {ticker}
       </div>
       {look.shape === 'card' && <div className="pg-meta">{meta}</div>}
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Bottom} className="pg-handle" />
     </div>
   );
 }

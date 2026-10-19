@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { changedTargets, keyClaimId, nodeConditions } from '../lookup';
 import { toFlow } from '../toFlow';
 import type { Fixture, VersionBundle } from '../types';
-import DesignNode, { type DesignData, type Look } from './DesignNode';
-import { shortLabel } from './labels';
-import { strength } from './strength';
-import { Bars, Ring } from './StrengthGlyph';
+import DesignNode, { type DesignData, type Look } from '../node/DesignNode';
+import { shortLabel } from '../node/labels';
+import { strength } from '../node/strength';
+import { Bars, Ring } from '../node/StrengthGlyph';
 import './playground.css';
 
 type Key = keyof Look;

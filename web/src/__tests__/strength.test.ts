@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fixture from '../../fixtures/c1.json';
-import { shortLabel } from '../playground/labels';
-import { strength } from '../playground/strength';
+import { shortLabel } from '../node/labels';
+import { strength } from '../node/strength';
 import type { Fixture } from '../types';
 
 const v1 = (fixture as unknown as Fixture).versions['c1-v1'];

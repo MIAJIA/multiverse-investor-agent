@@ -75,7 +75,7 @@ export default function Scenario({ versions, base, scenario, viewing, busy, sele
         </div>
       )}
       <div className="split">
-        <GraphCanvas graph={shown.graph} opts={opts} selectedNodeId={selectedNodeId} onSelect={onSelect} />
+        <GraphCanvas bundle={shown} opts={opts} selectedNodeId={selectedNodeId} onSelect={onSelect} />
         {selectedNodeId && shown.graph.nodes.some((n) => n.id === selectedNodeId) ? (
           <div className="panel" style={{ padding: 0 }}>
             <div style={{ padding: '8px 16px' }}><button className="link" onClick={() => onSelect(null)}>← 返回情景摘要</button></div>
