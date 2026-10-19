@@ -143,7 +143,9 @@
       "sc-052": "A demonstration, not an order."
     },
     "stance_decisions": {
-      "neutral_2026-10-18": "After the schema added neutral: sc-001, 002, 003, 011, 012, 013, 015, 016, 017, 018, 019, 021, 022, 024, 027 moved from supports / contradicts to neutral (rule in note)."
+      "neutral_2026-10-18": "After the schema added neutral: sc-001, 002, 003, 011, 012, 013, 015, 016, 017, 018, 019, 021, 022, 024, 027 moved from supports / contradicts to neutral (rule in note).",
+      "sc-016": "2026-10-18: neutral → supports (Mia left it to the evidence line). The verbatim 10-K sentence gives a direction: Data Center net revenue up 32% year over year, driven by EPYC CPUs and Instinct GPUs; the caveat that it is not AI-only stays in excerpt_notes.",
+      "sc-009": "2026-10-18: kept as contradicts after re-reading the original. The sentence says the severe 2.5D packaging shortage only begins to ease slightly by 2027, which limits the pace of adoption; the CoWoS expansion plan itself is carried by sc-008 (supports)."
     }
   },
   "excerpts": [
@@ -287,7 +289,7 @@
       "excerpt_id": "sc-016",
       "source": "AMD FY2025 Form 10-K (T1 official) · Item 7 Overview",
       "date": "2026-02-04",
-      "stance": "neutral",
+      "stance": "supports",
       "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
       "text": "Data Center net revenue of $16.6 billion in 2025 increased by 32%, compared to net revenue of $12.6 billion in 2024."
     },
