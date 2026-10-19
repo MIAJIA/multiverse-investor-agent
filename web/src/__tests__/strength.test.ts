@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fixture from '../../fixtures/c1.json';
-import { shortLabel } from '../node/labels';
+import { nodeLabel } from '../node/labels';
 import { strength } from '../node/strength';
 import type { Fixture } from '../types';
 
@@ -18,8 +18,10 @@ describe('证据符号计数', () => {
     expect(s('c1.term.dsp_vendor')).toMatchObject({ modelOnly: true, noInEdges: false });
     expect(s('c1.event')).toMatchObject({ modelOnly: false, noInEdges: true });
   });
-  it('短标题：没有演示标题时截断', () => {
-    expect(shortLabel('x', '一二三四五六七八九十一二三四')).toBe('一二三四五六七八九十一二…');
-    expect(shortLabel('c1.laser_demand', 'whatever')).toBe('光源需求上升');
+  it('短标题：有 label 用 label，没有（或空白）就截短 statement 到 10 个字', () => {
+    expect(nodeLabel({ label: '光源需求上升', statement: '外置 CW 激光光源需求随 CPO 端口数上升' })).toBe('光源需求上升');
+    expect(nodeLabel({ label: null, statement: '一二三四五六七八九十一二' })).toBe('一二三四五六七八九十…');
+    expect(nodeLabel({ label: '  ', statement: '短句' })).toBe('短句');
+    expect(nodeLabel({ statement: '十个字以内的话' })).toBe('十个字以内的话');
   });
 });

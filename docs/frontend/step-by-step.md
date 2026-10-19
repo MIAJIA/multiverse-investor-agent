@@ -50,3 +50,4 @@
 - 第 1–17 步在新样式下重走一遍，全部通过；第 10 步的改截止日期这次也验证了（逐键输入），签字后提案里截止日期是 2027-02-28。
 - 新增第 18 步（BLOCKED）和第 19 步（弃权），通过。截图：`screenshots/b2-blocked.jpg`、`screenshots/c4-abstain.jpg`。
 - MOCK 下每次 Analyze 都会重新载入干净的 fixture，签字改过的数据不会带到下一次。
+- 短标题：`types.ts` 的 Claim 加了可选的 `label`。节点卡片有 label 就显示 label，没有就把 statement 截到 10 个字加「…」（`src/node/labels.ts` 的 `nodeLabel`）。现在的 fixture 没有 label，所以应用里显示的是截短的句子；`screenshots/b1-workspace.jpg`、`b3-scenario.jpg` 里的短标题来自 playground 的演示表，等后端加上 label、重新生成 fixture 后再更新截图。playground 仍用演示表（`src/playground/demoLabels.ts`），有 label 时优先用 label。

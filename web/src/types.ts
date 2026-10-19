@@ -33,6 +33,7 @@ export interface Claim {
   role: Role;
   statement: string;
   original_statement: string;
+  label?: string | null; // 短标题：模型写，10 个汉字以内；后端还没加时为空，前端截短 statement
   evidence_status: EvidenceStatus;
   time_bucket: string | null;
   instruments: string[];

@@ -6,7 +6,7 @@ import { changedTargets, keyClaimId, nodeConditions } from '../lookup';
 import { toFlow } from '../toFlow';
 import type { Fixture, VersionBundle } from '../types';
 import DesignNode, { type DesignData, type Look } from '../node/DesignNode';
-import { shortLabel } from '../node/labels';
+import { demoLabel } from './demoLabels';
 import { strength } from '../node/strength';
 import { Bars, Ring } from '../node/StrengthGlyph';
 import './playground.css';
@@ -83,7 +83,7 @@ function Pane({ bundle, look, scenario, initial }: {
         id: n.id, type: 'design', zIndex: expanded ? 10 : 0,
         position: { x: n.position.x * 0.85, y: n.position.y * (look.shape === 'pill' ? 0.55 : 0.7) },
         data: {
-          claim, look, label: shortLabel(claim.id, claim.statement, changed.includes(claim.id)),
+          claim, look, label: demoLabel(claim, changed.includes(claim.id)),
           s: strength(bundle.graph, claim.id, bundle.excerpts), conditions: nodeConditions(bundle.graph, claim.id),
           isKey: claim.id === key, isChanged: changed.includes(claim.id), assessment: sc?.assessment[claim.id], expanded,
         },
@@ -119,7 +119,7 @@ function Pane({ bundle, look, scenario, initial }: {
           {sel && s ? (
             <>
               <div className="pg-row">{look.strength === 'ring' ? <Ring s={s} size={30} /> : <Bars s={s} />}
-                <div className="pg-title">{shortLabel(sel.id, sel.statement, changed.includes(sel.id))}</div></div>
+                <div className="pg-title">{demoLabel(sel, changed.includes(sel.id))}</div></div>
               <p className="pg-sub">{sel.statement}</p>
               <p className="pg-sub">{s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断' : `正方 ${s.support} · 反方 ${s.contra}`}</p>
               {nodeConditions(bundle.graph, sel.id).map((c) => <p key={c.id} className="pg-sub">截止 {c.deadline}</p>)}

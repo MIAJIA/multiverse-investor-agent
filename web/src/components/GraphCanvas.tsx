@@ -4,7 +4,7 @@ import { Background, Controls, ReactFlow, type Edge, type Node } from '@xyflow/r
 import { useMemo } from 'react';
 import { nodeConditions } from '../lookup';
 import DesignNode, { type DesignData, type Look } from '../node/DesignNode';
-import { shortLabel } from '../node/labels';
+import { nodeLabel } from '../node/labels';
 import { strength } from '../node/strength';
 import { toFlow, type FlowOpts } from '../toFlow';
 import type { VersionBundle } from '../types';
@@ -27,7 +27,7 @@ export default function GraphCanvas({ bundle, opts, selectedNodeId, onSelect }: 
         id: n.id, type: 'design',
         position: { x: n.position.x * 0.85, y: n.position.y * 0.7 }, // 新卡片比旧的矮，层距收紧
         data: {
-          claim, look: LOOK, label: shortLabel(claim.id, claim.statement, changed.includes(claim.id)),
+          claim, look: LOOK, label: nodeLabel(claim),
           s: strength(graph, claim.id, excerpts), conditions: nodeConditions(graph, claim.id),
           isKey: n.data.isKey, isChanged: n.data.isChangedTarget, assessment: n.data.assessment, expanded: false,
         },
