@@ -1,0 +1,1167 @@
+{
+  "_source": {
+    "script": "web/scripts/make_fixtures.py",
+    "case": "C1 golden + C3 change_assumption",
+    "today": "2026-10-18",
+    "packs": [
+      "semiconductor"
+    ],
+    "notes": [
+      "离线生成，不是模型输出：reasoner 是 eval.fakes.ScriptedReasoner（assessment 理由换成演示句子）",
+      "golden C1 图的根节点标了 supported，过不了 inspect 的 _root_issues，所以基线没走 inspect，直接 derive_proposal；ProposalDraft 是脚本里手写的，gate / status / support_status 由代码派生",
+      "资料包是合成占位片段（synthetic: true），不能当证据引用"
+    ]
+  },
+  "versions": {
+    "c1-v1": {
+      "graph": {
+        "version": "c1-v1",
+        "parent_version": null,
+        "op": {
+          "kind": "generate",
+          "target": null,
+          "value": "光子芯片采用快于预期",
+          "impacts": [],
+          "new_nodes": [],
+          "new_edges": []
+        },
+        "nodes": [
+          {
+            "id": "c1.event",
+            "role": "event",
+            "statement": "光子芯片（硅光 / CPO）在 AI 数据中心的采用快于预期",
+            "original_statement": "光子芯片采用快于预期",
+            "evidence_status": "supported",
+            "time_bucket": "2026H2-2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.capex",
+            "role": "assumption",
+            "statement": "2027 年超大规模云厂商 AI 资本开支不下修",
+            "original_statement": "2027 年超大规模云厂商 AI 资本开支不下修",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.external_laser",
+            "role": "assumption",
+            "statement": "主流 CPO 方案采用外置 CW 激光光源（ELS）",
+            "original_statement": "主流 CPO 方案采用外置 CW 激光光源（ELS）",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.cpo_ramp",
+            "role": "intermediate",
+            "statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
+            "original_statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.laser_demand",
+            "role": "intermediate",
+            "statement": "外置 CW 激光光源需求随 CPO 端口数上升",
+            "original_statement": "外置 CW 激光光源需求随 CPO 端口数上升",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.siph_foundry",
+            "role": "intermediate",
+            "statement": "硅光代工产能利用率提升",
+            "original_statement": "硅光代工产能利用率提升",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.pluggable_dsp",
+            "role": "intermediate",
+            "statement": "可插拔光模块 DSP 需求增速放缓",
+            "original_statement": "可插拔光模块 DSP 需求增速放缓",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": []
+          },
+          {
+            "id": "c1.term.laser_vendor",
+            "role": "terminal",
+            "statement": "激光器供应商的数据中心光源营收超预期",
+            "original_statement": "激光器供应商的数据中心光源营收超预期",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "LITE"
+            ]
+          },
+          {
+            "id": "c1.term.foundry",
+            "role": "terminal",
+            "statement": "硅光代工营收占比上升",
+            "original_statement": "硅光代工营收占比上升",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "TSM"
+            ]
+          },
+          {
+            "id": "c1.term.dsp_vendor",
+            "role": "terminal",
+            "statement": "可插拔 DSP 供应商相关业务增速承压",
+            "original_statement": "可插拔 DSP 供应商相关业务增速承压",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": [
+              "MRVL"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "c1.e1",
+            "from": "c1.event",
+            "to": "c1.cpo_ramp",
+            "channel": "adoption",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "采用提前直接表现为 CPO 交换机导入时间表提前",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-001",
+                "stance": "supports",
+                "supports": "导入时间提前",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e2",
+            "from": "c1.assume.capex",
+            "to": "c1.cpo_ramp",
+            "channel": "capex",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "资本开支不下修是提前导入的预算前提",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-002",
+                "stance": "supports",
+                "supports": "资本开支指引维持",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e3",
+            "from": "c1.cpo_ramp",
+            "to": "c1.laser_demand",
+            "channel": "demand",
+            "sign": "+",
+            "lag_days": 60,
+            "mechanism": "每个 CPO 端口需要外置光源，出货提前带动光源需求",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-003",
+                "stance": "supports",
+                "supports": "光源需求与端口数同步",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e4",
+            "from": "c1.assume.external_laser",
+            "to": "c1.laser_demand",
+            "channel": "technology",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "只有在外置光源架构下，CPO 出货才转化为独立的激光光源需求",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-004",
+                "stance": "supports",
+                "supports": "现阶段以外置光源为主",
+                "rebuttal": null
+              },
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-005",
+                "stance": "contradicts",
+                "supports": "集成激光可能替代外置光源",
+                "rebuttal": "片段描述的是在研路线，未给出 2027 年量产时间，不构成对 2027H2 判断的反驳；列为待观察"
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e5",
+            "from": "c1.cpo_ramp",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "CPO 光引擎依赖硅光代工，出货提前抬升代工利用率",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-006",
+                "stance": "supports",
+                "supports": "利用率预计升至 85% 以上",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e6",
+            "from": "c1.cpo_ramp",
+            "to": "c1.pluggable_dsp",
+            "channel": "substitution",
+            "sign": "-",
+            "lag_days": 180,
+            "mechanism": "CPO 去掉可插拔模块里的 DSP，替代会压低 DSP 需求增速",
+            "evidence": [],
+            "model_only": true
+          },
+          {
+            "id": "c1.e7",
+            "from": "c1.laser_demand",
+            "to": "c1.term.laser_vendor",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "光源需求上升转化为激光器供应商数据中心营收",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-007",
+                "stance": "supports",
+                "supports": "订单能见度延长",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e8",
+            "from": "c1.siph_foundry",
+            "to": "c1.term.foundry",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "利用率提升转化为硅光代工营收占比上升",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-008",
+                "stance": "supports",
+                "supports": "营收占比逐季上升",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e9",
+            "from": "c1.pluggable_dsp",
+            "to": "c1.term.dsp_vendor",
+            "channel": "revenue",
+            "sign": "-",
+            "lag_days": 90,
+            "mechanism": "DSP 需求增速放缓压低相关供应商业务增速",
+            "evidence": [],
+            "model_only": true
+          }
+        ],
+        "conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "资料包只有方向性描述，没有可作为阈值的出货基准；阈值由用户或数据确认，系统不填",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "季度出货报告中 CPO 交换机出货量达到阈值即 met；阈值未确认前为 unknown",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "文件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "激光器供应商在正式披露中确认 CPO 外置光源设计中标即 met",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.foundry_utilization",
+            "claim_id": "c1.siph_foundry",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.siph_foundry_utilization",
+            "source": null,
+            "comparator": ">=",
+            "threshold": 0.85,
+            "threshold_note": "阈值取自 sc-006",
+            "anchor": "2026-10-18",
+            "deadline": "2027-09-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-09-30"
+            },
+            "rule": "季度利用率读数 >= 0.85 即 met",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "事件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "窗口内 DSP 供应商未上调可插拔 DSP 指引；窗口结束且来源覆盖整个窗口才可判定",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "model_output_ref": "fixture://c1/model_output_v1",
+        "observations_ref": "fixture://c1/observations_v1"
+      },
+      "proposal": {
+        "status": "draft",
+        "gate": "WAIT",
+        "direction": {
+          "instrument": "LITE",
+          "side": "long",
+          "horizon_days": 270,
+          "note": "激光器供应商的数据中心光源营收，随 CPO 出货提前而上修"
+        },
+        "entry_conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "资料包只有方向性描述，没有可作为阈值的出货基准；阈值由用户或数据确认，系统不填",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "季度出货报告中 CPO 交换机出货量达到阈值即 met；阈值未确认前为 unknown",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "文件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "激光器供应商在正式披露中确认 CPO 外置光源设计中标即 met",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "事件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "窗口内 DSP 供应商未上调可插拔 DSP 指引；窗口结束且来源覆盖整个窗口才可判定",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "exit_logic": "ANY",
+        "key_dependency": {
+          "condition_id": null,
+          "claim_id": "c1.assume.external_laser",
+          "why": "整条激光器路径都建立在外置光源架构上；资料包里有集成激光的反方片段（sc-005），先查它"
+        },
+        "user_judgment": {
+          "original_statement": "光子芯片采用快于预期",
+          "clarified_statement": "2027-06-30 前，CPO 交换机季度出货量达到用户确认的水平，且激光器供应商正式披露外置光源设计中标",
+          "criteria": null,
+          "deadline": "2027-06-30",
+          "probability": null,
+          "requires_user_confirmation": true,
+          "confirmed": false,
+          "confirmed_claim_ids": []
+        },
+        "market_reference": null,
+        "scenario_ref": null,
+        "support_status": "supported",
+        "graph_version": "c1-v1",
+        "meta": {
+          "proposal_version": "c1-v1.p",
+          "prompt_version": "p2",
+          "model": "scripted",
+          "approval_required": true
+        }
+      },
+      "scenario": null,
+      "diff": null,
+      "excerpts": [
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-001",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-15",
+          "text": "占位：多家云厂商把 CPO 交换机的导入时间从 2028 年提前到 2027 年下半年。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-002",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-15",
+          "text": "占位：主要云厂商在最近一季财报中维持 2027 年 AI 资本开支指引。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-003",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-08-20",
+          "text": "占位：每台 CPO 交换机需要若干个外置激光光源模块，光源需求与 CPO 端口数同步增长。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-004",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-08-20",
+          "text": "占位：现阶段量产的 CPO 方案以外置光源（ELS）为主，便于维修与散热。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-005",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-07-30",
+          "text": "占位（反方）：部分厂商在开发集成激光方案，若成熟将减少对外置光源的需求。",
+          "stance": "contradicts",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-006",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-07-30",
+          "text": "占位：硅光代工产线利用率在 CPO 订单带动下预计升至 85% 以上。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-007",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-01",
+          "text": "占位：激光器供应商表示数据中心光源订单能见度延长到四个季度。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-008",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-01",
+          "text": "占位：硅光代工营收占比随 CPO 量产逐季上升。",
+          "stance": "supports",
+          "url": null
+        }
+      ]
+    },
+    "c1-v2": {
+      "graph": {
+        "version": "c1-v2",
+        "parent_version": "c1-v1",
+        "op": {
+          "kind": "change_assumption",
+          "target": "c1.assume.external_laser",
+          "value": "主流 CPO 方案改用集成激光，不再需要外置光源",
+          "impacts": [],
+          "new_nodes": [],
+          "new_edges": []
+        },
+        "nodes": [
+          {
+            "id": "c1.event",
+            "role": "event",
+            "statement": "光子芯片（硅光 / CPO）在 AI 数据中心的采用快于预期",
+            "original_statement": "光子芯片采用快于预期",
+            "evidence_status": "supported",
+            "time_bucket": "2026H2-2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.capex",
+            "role": "assumption",
+            "statement": "2027 年超大规模云厂商 AI 资本开支不下修",
+            "original_statement": "2027 年超大规模云厂商 AI 资本开支不下修",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.assume.external_laser",
+            "role": "assumption",
+            "statement": "情景假设：主流 CPO 方案改用集成激光，不再需要外置光源",
+            "original_statement": "主流 CPO 方案采用外置 CW 激光光源（ELS）",
+            "evidence_status": "supported",
+            "time_bucket": "2027",
+            "instruments": []
+          },
+          {
+            "id": "c1.cpo_ramp",
+            "role": "intermediate",
+            "statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
+            "original_statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.laser_demand",
+            "role": "intermediate",
+            "statement": "外置 CW 激光光源需求随 CPO 端口数上升",
+            "original_statement": "外置 CW 激光光源需求随 CPO 端口数上升",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.siph_foundry",
+            "role": "intermediate",
+            "statement": "硅光代工产能利用率提升",
+            "original_statement": "硅光代工产能利用率提升",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": []
+          },
+          {
+            "id": "c1.pluggable_dsp",
+            "role": "intermediate",
+            "statement": "可插拔光模块 DSP 需求增速放缓",
+            "original_statement": "可插拔光模块 DSP 需求增速放缓",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": []
+          },
+          {
+            "id": "c1.term.laser_vendor",
+            "role": "terminal",
+            "statement": "激光器供应商的数据中心光源营收超预期",
+            "original_statement": "激光器供应商的数据中心光源营收超预期",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "LITE"
+            ]
+          },
+          {
+            "id": "c1.term.foundry",
+            "role": "terminal",
+            "statement": "硅光代工营收占比上升",
+            "original_statement": "硅光代工营收占比上升",
+            "evidence_status": "supported",
+            "time_bucket": "2027H2",
+            "instruments": [
+              "TSM"
+            ]
+          },
+          {
+            "id": "c1.term.dsp_vendor",
+            "role": "terminal",
+            "statement": "可插拔 DSP 供应商相关业务增速承压",
+            "original_statement": "可插拔 DSP 供应商相关业务增速承压",
+            "evidence_status": "unknown",
+            "time_bucket": "2028",
+            "instruments": [
+              "MRVL"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "c1.e1",
+            "from": "c1.event",
+            "to": "c1.cpo_ramp",
+            "channel": "adoption",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "采用提前直接表现为 CPO 交换机导入时间表提前",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-001",
+                "stance": "supports",
+                "supports": "导入时间提前",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e2",
+            "from": "c1.assume.capex",
+            "to": "c1.cpo_ramp",
+            "channel": "capex",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "资本开支不下修是提前导入的预算前提",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-a",
+                "excerpt_id": "sc-002",
+                "stance": "supports",
+                "supports": "资本开支指引维持",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e3",
+            "from": "c1.cpo_ramp",
+            "to": "c1.laser_demand",
+            "channel": "demand",
+            "sign": "+",
+            "lag_days": 60,
+            "mechanism": "每个 CPO 端口需要外置光源，出货提前带动光源需求",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-003",
+                "stance": "supports",
+                "supports": "光源需求与端口数同步",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e4",
+            "from": "c1.assume.external_laser",
+            "to": "c1.laser_demand",
+            "channel": "technology",
+            "sign": "+",
+            "lag_days": 0,
+            "mechanism": "情景下外置光源架构不成立，CPO 出货不再转化为独立的外置光源需求",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-b",
+                "excerpt_id": "sc-004",
+                "stance": "supports",
+                "supports": "现阶段以外置光源为主",
+                "rebuttal": null
+              },
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-005",
+                "stance": "contradicts",
+                "supports": "集成激光可能替代外置光源",
+                "rebuttal": "片段描述的是在研路线，未给出 2027 年量产时间，不构成对 2027H2 判断的反驳；列为待观察"
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e5",
+            "from": "c1.cpo_ramp",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "CPO 光引擎依赖硅光代工，出货提前抬升代工利用率",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-c",
+                "excerpt_id": "sc-006",
+                "stance": "supports",
+                "supports": "利用率预计升至 85% 以上",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e6",
+            "from": "c1.cpo_ramp",
+            "to": "c1.pluggable_dsp",
+            "channel": "substitution",
+            "sign": "-",
+            "lag_days": 180,
+            "mechanism": "CPO 去掉可插拔模块里的 DSP，替代会压低 DSP 需求增速",
+            "evidence": [],
+            "model_only": true
+          },
+          {
+            "id": "c1.e7",
+            "from": "c1.laser_demand",
+            "to": "c1.term.laser_vendor",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "情景下光源需求上升这一前提受挑战，激光器供应商营收超预期失去主要来源",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-007",
+                "stance": "supports",
+                "supports": "订单能见度延长",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e8",
+            "from": "c1.siph_foundry",
+            "to": "c1.term.foundry",
+            "channel": "revenue",
+            "sign": "+",
+            "lag_days": 90,
+            "mechanism": "利用率提升转化为硅光代工营收占比上升",
+            "evidence": [
+              {
+                "tier": "T3",
+                "source_id": "fixture-sc-d",
+                "excerpt_id": "sc-008",
+                "stance": "supports",
+                "supports": "营收占比逐季上升",
+                "rebuttal": null
+              }
+            ],
+            "model_only": false
+          },
+          {
+            "id": "c1.e9",
+            "from": "c1.pluggable_dsp",
+            "to": "c1.term.dsp_vendor",
+            "channel": "revenue",
+            "sign": "-",
+            "lag_days": 90,
+            "mechanism": "DSP 需求增速放缓压低相关供应商业务增速",
+            "evidence": [],
+            "model_only": true
+          }
+        ],
+        "conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "资料包只有方向性描述，没有可作为阈值的出货基准；阈值由用户或数据确认，系统不填",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "季度出货报告中 CPO 交换机出货量达到阈值即 met；阈值未确认前为 unknown",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "文件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "情景下改为：确认主流 CPO 量产方案采用集成激光（正式披露）即 met",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.foundry_utilization",
+            "claim_id": "c1.siph_foundry",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.siph_foundry_utilization",
+            "source": null,
+            "comparator": ">=",
+            "threshold": 0.85,
+            "threshold_note": "阈值取自 sc-006",
+            "anchor": "2026-10-18",
+            "deadline": "2027-09-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-09-30"
+            },
+            "rule": "季度利用率读数 >= 0.85 即 met",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "事件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "窗口内 DSP 供应商未上调可插拔 DSP 指引；窗口结束且来源覆盖整个窗口才可判定",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "model_output_ref": "fixture://c1/model_output_v1",
+        "observations_ref": "fixture://c1/observations_v1"
+      },
+      "proposal": {
+        "status": "draft",
+        "gate": "WAIT",
+        "direction": {
+          "instrument": "LITE",
+          "side": "long",
+          "horizon_days": 270,
+          "note": "激光器供应商的数据中心光源营收，随 CPO 出货提前而上修"
+        },
+        "entry_conditions": [
+          {
+            "id": "cond.c1.cpo_shipments",
+            "claim_id": "c1.cpo_ramp",
+            "kind": "numeric",
+            "predicate": "observed_by",
+            "series": "trendforce.cpo_switch_shipments_quarterly",
+            "source": null,
+            "comparator": ">=",
+            "threshold": null,
+            "threshold_note": "资料包只有方向性描述，没有可作为阈值的出货基准；阈值由用户或数据确认，系统不填",
+            "anchor": "2026-10-18",
+            "deadline": "2027-06-30",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-06-30"
+            },
+            "rule": "季度出货报告中 CPO 交换机出货量达到阈值即 met；阈值未确认前为 unknown",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          },
+          {
+            "id": "cond.c1.els_design_wins",
+            "claim_id": "c1.laser_demand",
+            "kind": "document",
+            "predicate": "observed_by",
+            "series": null,
+            "source": "company_filings",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "文件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "情景下改为：确认主流 CPO 量产方案采用集成激光（正式披露）即 met",
+            "verification_status": "verifiable",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "id": "cond.c1.dsp_guidance",
+            "claim_id": "c1.pluggable_dsp",
+            "kind": "event",
+            "predicate": "not_observed_by",
+            "series": null,
+            "source": "earnings_call_transcripts",
+            "comparator": null,
+            "threshold": null,
+            "threshold_note": "事件型条件，无数值阈值",
+            "anchor": "2026-10-18",
+            "deadline": "2027-03-31",
+            "observation_window": {
+              "start": "2026-10-18",
+              "end": "2027-03-31"
+            },
+            "rule": "窗口内 DSP 供应商未上调可插拔 DSP 指引；窗口结束且来源覆盖整个窗口才可判定",
+            "verification_status": "unverified",
+            "evaluation_status": "unknown"
+          }
+        ],
+        "exit_logic": "ANY",
+        "key_dependency": {
+          "condition_id": null,
+          "claim_id": "c1.assume.external_laser",
+          "why": "整条激光器路径都建立在外置光源架构上；资料包里有集成激光的反方片段（sc-005），先查它"
+        },
+        "user_judgment": {
+          "original_statement": "光子芯片采用快于预期",
+          "clarified_statement": "2027-06-30 前，CPO 交换机季度出货量达到用户确认的水平，且激光器供应商正式披露外置光源设计中标",
+          "criteria": null,
+          "deadline": "2027-06-30",
+          "probability": null,
+          "requires_user_confirmation": true,
+          "confirmed": false,
+          "confirmed_claim_ids": []
+        },
+        "market_reference": null,
+        "scenario_ref": {
+          "base_version": "c1-v1",
+          "challenged_claim_ids": [
+            "c1.laser_demand",
+            "c1.term.laser_vendor"
+          ],
+          "next_checks": [
+            "下一步查证：主要厂商 2027 年量产 CPO 是否确实采用集成激光（正式披露），而不是在研路线"
+          ]
+        },
+        "support_status": "challenged",
+        "graph_version": "c1-v2",
+        "meta": {
+          "proposal_version": "c1-v2.p",
+          "prompt_version": "p2",
+          "model": "scripted",
+          "approval_required": true
+        }
+      },
+      "scenario": {
+        "version": "c1-v2",
+        "base_version": "c1-v1",
+        "ops": [
+          {
+            "kind": "change_assumption",
+            "target": "c1.assume.external_laser",
+            "value": "主流 CPO 方案改用集成激光，不再需要外置光源",
+            "impacts": [],
+            "new_nodes": [],
+            "new_edges": []
+          }
+        ],
+        "assessment": {
+          "c1.event": "unaffected",
+          "c1.assume.capex": "unaffected",
+          "c1.assume.external_laser": "unaffected",
+          "c1.cpo_ramp": "unaffected",
+          "c1.laser_demand": "challenged",
+          "c1.siph_foundry": "unaffected",
+          "c1.pluggable_dsp": "unaffected",
+          "c1.term.laser_vendor": "challenged",
+          "c1.term.foundry": "unaffected",
+          "c1.term.dsp_vendor": "unaffected"
+        },
+        "assessment_reason": {
+          "c1.assume.external_laser": "这是被改的假设本身：情景下改为集成激光",
+          "c1.laser_demand": "外置光源需求以「每个 CPO 端口需要外置光源」为前提；改用集成激光后这条前提不成立",
+          "c1.term.laser_vendor": "激光器供应商的营收超预期来自外置光源需求；上游前提受挑战，这个终点随之受挑战"
+        }
+      },
+      "diff": {
+        "nodes_changed": [
+          "c1.assume.external_laser"
+        ],
+        "nodes_added": [],
+        "nodes_removed": [],
+        "edges_changed": [
+          "c1.e4",
+          "c1.e7"
+        ],
+        "edges_added": [],
+        "edges_removed": [],
+        "conditions_changed": [
+          "cond.c1.els_design_wins"
+        ],
+        "conditions_added": [],
+        "conditions_removed": [],
+        "changed_claim_ids": [
+          "c1.assume.external_laser",
+          "c1.laser_demand",
+          "c1.term.laser_vendor"
+        ]
+      },
+      "excerpts": [
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-001",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-15",
+          "text": "占位：多家云厂商把 CPO 交换机的导入时间从 2028 年提前到 2027 年下半年。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-a",
+          "excerpt_id": "sc-002",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-15",
+          "text": "占位：主要云厂商在最近一季财报中维持 2027 年 AI 资本开支指引。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-003",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-08-20",
+          "text": "占位：每台 CPO 交换机需要若干个外置激光光源模块，光源需求与 CPO 端口数同步增长。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-b",
+          "excerpt_id": "sc-004",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-08-20",
+          "text": "占位：现阶段量产的 CPO 方案以外置光源（ELS）为主，便于维修与散热。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-005",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-07-30",
+          "text": "占位（反方）：部分厂商在开发集成激光方案，若成熟将减少对外置光源的需求。",
+          "stance": "contradicts",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-c",
+          "excerpt_id": "sc-006",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-07-30",
+          "text": "占位：硅光代工产线利用率在 CPO 订单带动下预计升至 85% 以上。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-007",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-01",
+          "text": "占位：激光器供应商表示数据中心光源订单能见度延长到四个季度。",
+          "stance": "supports",
+          "url": null
+        },
+        {
+          "source_id": "fixture-sc-d",
+          "excerpt_id": "sc-008",
+          "source": "fixture（占位，模拟行业研究机构文章）",
+          "date": "2026-09-01",
+          "text": "占位：硅光代工营收占比随 CPO 量产逐季上升。",
+          "stance": "supports",
+          "url": null
+        }
+      ]
+    }
+  },
+  "latest": "c1-v2"
+}

@@ -28,7 +28,6 @@ web/
   vite.config.ts          React 插件；/api 代理到 CATALYST_API（默认 http://localhost:8000）
   tsconfig.json
   index.html
-  .env                    VITE_MOCK=1（后端落地前默认走 fixture）
   fixtures/c1.json        生成的 fixture，不手写（见下文）
   scripts/
     make_fixtures.py      离线跑 catalyst 入口，生成 fixtures/c1.json
@@ -125,7 +124,7 @@ sign(runId: string, body: SignBody): Promise<WriteResult>
 type WriteResult = { ok: boolean; errors: string[]; version: string | null };
 ```
 
-- 开关：`const MOCK = import.meta.env.VITE_MOCK !== '0'`。`web/.env` 里默认 `VITE_MOCK=1`；后端起来后 `VITE_MOCK=0 npm run dev`。页面右上角显示「MOCK · fixture c1」徽章，避免把 fixture 当真实输出演示。
+- 开关：`const MOCK = import.meta.env.VITE_MOCK !== '0'`。默认开（仓库根 `.gitignore` 忽略 `.env`，所以不放 `.env` 文件）；后端起来后 `VITE_MOCK=0 npm run dev`。页面右上角显示「MOCK · fixture c1」徽章，避免把 fixture 当真实输出演示。
 - 真实模式：`fetch('/api/...')`，Vite dev server 代理到后端。非 2xx 时把响应体里的 `errors`（或 `detail`）原样抛给 UI。
 - 每个写操作之后，App 都用返回的 `version` 调一次 `getVersion`，存进 `versions`，再整体重画——这就是设计文档的「操作 → 新版本号 → 重画」。
 - MOCK 模式：`await import('../fixtures/c1.json')`（动态导入，真实模式不打包）。
