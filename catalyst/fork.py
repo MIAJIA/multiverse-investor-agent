@@ -1,0 +1,145 @@
+"""分叉：写范围在改图之前由代码确定，模型只能在范围内提交补丁。
+
+ChangeAssumption：目标节点 + 它的全部后代 + 这些节点的出边 + 挂在这些节点上的条件。
+指向后代、但起点在范围外的入边不在范围内（它描述的是范围外节点的机制）。
+AddShock：Stage 1 声明的新节点与新边 + impacts 及其后代 + 这些节点的出边。
+
+越界写入抛 ScopeViolation，不留半截结果；基线图不被原地修改。
+"""
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+
+from catalyst.schema import Graph, Op, Patch, Scenario, parse_graph
+from catalyst.validator import blocking, validate_graph
+
+NODE_FIELDS = {"statement", "time_bucket", "instruments"}  # evidence_status 不由情景推进
+EDGE_FIELDS = {"mechanism", "sign", "lag_days", "channel"}
+CONDITION_FIELDS = {"comparator", "threshold", "threshold_note", "anchor", "deadline", "observation_window", "rule"}
+
+
+class ScopeViolation(Exception):
+    pass
+
+
+class PatchInvalid(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class Scope:
+    nodes: frozenset[str]
+    edges: frozenset[str]
+    conditions: frozenset[str]
+    new_nodes: frozenset[str] = field(default_factory=frozenset)
+    new_edges: frozenset[str] = field(default_factory=frozenset)
+
+    def to_dict(self) -> dict:
+        return {k: sorted(getattr(self, k)) for k in ("nodes", "edges", "conditions", "new_nodes", "new_edges")}
+
+
+def _descendants(graph: Graph, roots: set[str]) -> set[str]:
+    out_adj: dict[str, list[str]] = {}
+    for e in graph.edges:
+        out_adj.setdefault(e.from_, []).append(e.to)
+    seen, todo = set(roots), list(roots)
+    while todo:
+        for v in out_adj.get(todo.pop(), []):
+            if v not in seen:
+                seen.add(v)
+                todo.append(v)
+    return seen
+
+
+def compute_write_scope(graph: Graph | dict, op: Op | dict) -> Scope:
+    g = parse_graph(graph)
+    o = op if isinstance(op, Op) else Op.model_validate(op)
+    node_ids = {n.id for n in g.nodes}
+    if o.kind == "change_assumption":
+        if o.target not in node_ids:
+            raise ScopeViolation(f"[{o.target}] change_assumption 的目标不在图里")
+        nodes = _descendants(g, {o.target})
+        new_nodes, new_edges = set(), set()
+    elif o.kind == "add_shock":
+        missing = [i for i in o.impacts if i not in node_ids]
+        if missing:
+            raise ScopeViolation(f"[{missing[0]}] add_shock 的 impacts 不在图里")
+        new_nodes = {n.id for n in o.new_nodes}
+        new_edges = {e.id for e in o.new_edges}
+        if clash := (new_nodes & node_ids) | (new_edges & {e.id for e in g.edges}):
+            raise ScopeViolation(f"[{sorted(clash)[0]}] add_shock 新增的 id 与已有对象冲突")
+        nodes = _descendants(g, set(o.impacts)) | new_nodes
+    else:
+        raise ScopeViolation(f"[{o.kind}] 不是分叉操作")
+    edges = {e.id for e in g.edges if e.from_ in nodes} | new_edges
+    conditions = {c.id for c in g.conditions if c.claim_id in nodes}
+    return Scope(frozenset(nodes), frozenset(edges), frozenset(conditions), frozenset(new_nodes), frozenset(new_edges))
+
+
+def _as_scope(scope) -> Scope:
+    if isinstance(scope, Scope):
+        return scope
+    if isinstance(scope, dict):
+        return Scope(*(frozenset(scope.get(k, [])) for k in ("nodes", "edges", "conditions", "new_nodes", "new_edges")))
+    nodes, edges = scope[0], scope[1]
+    return Scope(frozenset(nodes), frozenset(edges), frozenset())
+
+
+def next_version(version: str) -> str:
+    m = re.fullmatch(r"(.*-v)(\d+)", version)
+    return f"{m.group(1)}{int(m.group(2)) + 1}" if m else f"{version}-v2"
+
+
+def apply_patch(graph: Graph | dict, patch: Patch | dict, scope, *, op: Op | dict | None = None,
+                new_version: str | None = None) -> Graph:
+    base = parse_graph(graph)
+    p = patch if isinstance(patch, Patch) else Patch.model_validate(patch)
+    s = _as_scope(scope)
+    data = base.dump()  # 深拷贝：基线对象不动
+
+    if p.base_version != base.version:
+        raise ScopeViolation(f"[{p.base_version}] 补丁基于的版本不是当前图 {base.version}")
+
+    def update(items: list[dict], updates, allowed_ids, allowed_fields, kind):
+        by_id = {x["id"]: x for x in items}
+        for u in updates:
+            if u.id not in allowed_ids:
+                raise ScopeViolation(f"[{u.id}] {kind} 不在写范围内")
+            if u.id not in by_id:
+                raise ScopeViolation(f"[{u.id}] {kind} 不存在")
+            if bad := set(u.fields) - allowed_fields:
+                raise ScopeViolation(f"[{u.id}] 不允许改 {kind} 的字段 {sorted(bad)}")
+            by_id[u.id].update(u.fields)
+
+    for n in p.node_adds:
+        if n.id not in s.new_nodes:
+            raise ScopeViolation(f"[{n.id}] 新节点未经 Stage 1 声明")
+        data["nodes"].append(n.dump())
+    for e in p.edge_adds:
+        if e.id not in s.new_edges:
+            raise ScopeViolation(f"[{e.id}] 新边未经 Stage 1 声明")
+        data["edges"].append(e.dump())
+    update(data["nodes"], p.node_updates, s.nodes, NODE_FIELDS, "节点")
+    update(data["edges"], p.edge_updates, s.edges, EDGE_FIELDS, "边")
+    update(data["conditions"], p.condition_updates, s.conditions, CONDITION_FIELDS, "条件")
+    for cid in list(p.assessment) + list(p.assessment_reason):
+        if cid not in s.nodes:
+            raise ScopeViolation(f"[{cid}] assessment 只能写范围内的 claim")
+
+    data["version"] = new_version or next_version(base.version)
+    data["parent_version"] = base.version
+    if op is not None:
+        data["op"] = (op if isinstance(op, Op) else Op.model_validate(op)).dump()
+    new = Graph.model_validate(data)
+    if errs := blocking(validate_graph(new)):
+        raise PatchInvalid("; ".join(map(str, errs)))
+    return new
+
+
+def build_scenario(base: Graph, new: Graph, op: Op, patch: Patch) -> Scenario:
+    """范围外的 claim 一律 unaffected，由代码写，不由模型写。"""
+    assessment = {n.id: "unaffected" for n in new.nodes}
+    assessment.update(patch.assessment)
+    return Scenario(version=new.version, base_version=base.version, ops=[op],
+                    assessment=assessment, assessment_reason=dict(patch.assessment_reason))
