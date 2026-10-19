@@ -225,7 +225,9 @@ class TestKindTables:
 
     def test_hypothetical_inputs_and_hypothetical_branches(self):
         v = derive_views(_graph(_base_nodes("shock"), _base_edges()))
-        assert set(v["node_kinds"].values()) == {"hypothetical"}  # the shock itself + every own part downstream
+        # the shock itself and everything downstream of it; the side assumption a does not depend on the shock
+        assert v["node_kinds"] == {"e": "hypothetical", "a": "model_only", "x": "hypothetical", "y": "hypothetical",
+                                   "tx": "hypothetical", "ty": "hypothetical"}
         changed = Scenario(version="u-v2", base_version="u-v1", assessment={},
                            ops=[{"kind": "change_assumption", "target": "a"}])
         v = derive_views(G, changed)

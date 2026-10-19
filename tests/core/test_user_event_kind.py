@@ -45,3 +45,19 @@ def test_changing_the_user_event_in_a_fork_still_makes_it_hypothetical():
                 "ops": [{"kind": "change_assumption", "target": "open", "value": "it opens next year"}]}
     kinds = {b.terminal_id: b.kind for b in derive_views(_graph(), scenario)["branches"]}
     assert kinds == {"a": "hypothetical", "b": "hypothetical"}
+
+
+def test_nodes_upstream_of_a_changed_assumption_keep_their_kind():
+    """One branch: changing a middle assumption makes the branch hypothetical, but only the changed node and what
+    follows it are hypothetical nodes; the user's event and the claims before it are not."""
+    nodes = [_n("open", "shock", EVENT), _n("transits", "intermediate", "transits recover"),
+             _n("flows", "intermediate", "oil flows resume"), _n("a", "terminal", "Brent falls", ["BZ"])]
+    edges = [_e("e1", "open", "transits"), _e("e2", "transits", "flows"), _e("e3", "flows", "a")]
+    g = {"version": "d1-v1", "op": {"kind": "inspect", "value": EVENT}, "nodes": nodes, "edges": edges,
+         "conditions": [], "user_event": EVENT}
+    scenario = {"version": "d1-v2", "base_version": "d1-v1", "assessment": {},
+                "ops": [{"kind": "change_assumption", "target": "flows", "value": "flows stay cut"}]}
+    v = derive_views(g, scenario)
+    assert [b.kind for b in v["branches"]] == ["hypothetical"]
+    assert v["node_kinds"] == {"open": "model_only", "transits": "model_only", "flows": "hypothetical", "a": "hypothetical"}
+    assert v["edge_kinds"] == {"e1": "model_only", "e2": "hypothetical", "e3": "hypothetical"}

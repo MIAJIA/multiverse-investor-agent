@@ -19,8 +19,11 @@ nobody keeps a second copy of these rules.
 - trunk: the shared upstream = ancestors(t) − own_node_ids plus the edges ending in it, scored with the evidenced
   rule above. A shared upstream with no edges (e.g. only the starting event) counts as evidenced.
 - node_kinds / edge_kinds (lookup tables for the UI):
-  - hypothetical inputs (shock nodes, scenario-added nodes, changed assumptions) → hypothetical;
-  - a node in some branch's own part → that branch's kind;
+  - hypothetical inputs (shock nodes, scenario-added nodes, changed assumptions) and every node downstream of one
+    → hypothetical;
+  - any other node in some branch's own part → that branch's evidence kind (evidenced or model_only, by rule 2),
+    because a node upstream of the unhappened event does not depend on it. So the user's own event and the claims
+    before a changed assumption keep their evidence kind even when the branch as a whole is hypothetical;
   - a node on the shared trunk → the weakest trunk among the branches that contain it (model_only < evidenced);
   - an edge takes the kind of its target node.
 """
@@ -64,7 +67,7 @@ def ancestors(graph: Graph | dict, node_id: str) -> set[str]:
 
 def own_node_ids(graph: Graph | dict, terminal_id: str) -> set[str]:
     g = parse_graph(graph)
-    _, in_adj = _adjacency(g)
+    out_adj, in_adj = _adjacency(g)
     others = set().union(*(_walk(in_adj, t) for t in terminals(g) if t != terminal_id))
     return (_walk(in_adj, terminal_id) | {terminal_id}) - others
 
@@ -123,10 +126,11 @@ def derive_views(graph: Graph | dict, scenario: Scenario | dict | None = None, *
     synthetic_excerpt_ids: the excerpts of this version that come from a synthetic placeholder pack (the store
     derives them from the `synthetic` flag of the observations file). Branches follow the graph's terminal order."""
     g = parse_graph(graph)
-    _, in_adj = _adjacency(g)
+    out_adj, in_adj = _adjacency(g)
     terms = terminals(g)
     anc = {t: _walk(in_adj, t) for t in terms}
     hypo = hypothetical_inputs(g, scenario)
+    downstream = hypo.union(*(_walk(out_adj, h) for h in hypo))
     div = divergence_nodes(g)
     status = {n.id: n.evidence_status for n in g.nodes}
     synthetic = set(synthetic_excerpt_ids)
@@ -141,24 +145,20 @@ def derive_views(graph: Graph | dict, scenario: Scenario | dict | None = None, *
         own_edges = [e for e in g.edges if e.to in own]
         shared_edges = [e for e in g.edges if e.to in shared]
         uses_synthetic = any(ev.excerpt_id in synthetic for e in own_edges for ev in e.evidence)
-        if (anc[t] | {t}) & hypo:
-            kind = "hypothetical"
-        elif own_edges and _evidenced(own_edges, status, own, synthetic):
-            kind = "evidenced"
-        else:
-            kind = "model_only"
+        evidence_kind = "evidenced" if own_edges and _evidenced(own_edges, status, own, synthetic) else "model_only"
+        kind = "hypothetical" if (anc[t] | {t}) & hypo else evidence_kind
         trunk = "evidenced" if _evidenced(shared_edges, status, shared, synthetic) else "model_only"
         branches.append(Branch(
             terminal_id=t, divergence_node_ids=sorted(div & anc[t], key=order.get),
             own_node_ids=sorted(own, key=order.get), own_edge_ids=[e.id for e in own_edges],
             kind=kind, trunk=trunk, synthetic_evidence=uses_synthetic))
-        own_kind.update({n: kind for n in own})
+        own_kind.update({n: evidence_kind for n in own})
         for n in shared:
             trunk_kinds.setdefault(n, []).append(trunk)
 
     node_kinds: dict[str, str] = {}
     for n in g.nodes:
-        if n.id in hypo:
+        if n.id in downstream:
             node_kinds[n.id] = "hypothetical"
         elif n.id in own_kind:
             node_kinds[n.id] = own_kind[n.id]
