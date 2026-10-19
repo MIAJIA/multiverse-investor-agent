@@ -2,6 +2,9 @@
   flex: 1; overflow-y: auto; padding: 28px 24px 120px; display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif; color: #1c1f24;
 }
+/* The page scrolls, its rows must not: a shrinkable row with overflow (the plan switcher) collapsed to 8px when the
+   card was taller than the viewport. */
+.ap-page > * { flex-shrink: 0; }
 .ap-muted { color: #8a919c; font-size: 12px; }
 .ap-link { background: none; border: 0; color: #007aff; padding: 0; font-size: 13px; cursor: pointer; }
 
