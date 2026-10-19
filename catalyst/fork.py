@@ -167,9 +167,16 @@ def apply_patch(graph: Graph | dict, patch: Patch | dict, scope, *, op: Op | dic
     return new
 
 
-def build_scenario(base: Graph, new: Graph, op: Op, patch: Patch) -> Scenario:
-    """范围外的 claim 一律 unaffected，由代码写，不由模型写。"""
+def build_scenario(base: Graph, new: Graph, op: Op, patch: Patch, parent: Scenario | None = None) -> Scenario:
+    """范围外的 claim 由代码写，不由模型写：基线本身是情景版本（parent）时继承它的值，否则是 unaffected。
+    范围内的 claim 用模型这一次给的值。ops 叠加在父情景之后，root_version 指向最初的非情景基线。"""
     assessment = {n.id: "unaffected" for n in new.nodes}
+    reasons: dict[str, str] = {}
+    if parent:
+        assessment.update({k: v for k, v in parent.assessment.items() if k in assessment})
+        reasons.update({k: v for k, v in parent.assessment_reason.items() if k in assessment})
     assessment.update(patch.assessment)
-    return Scenario(version=new.version, base_version=base.version, ops=[op],
-                    assessment=assessment, assessment_reason=dict(patch.assessment_reason))
+    reasons.update(patch.assessment_reason)
+    root = (parent.root_version or parent.base_version) if parent else base.version
+    return Scenario(version=new.version, base_version=base.version, ops=(list(parent.ops) if parent else []) + [op],
+                    assessment=assessment, assessment_reason=reasons, root_version=root)

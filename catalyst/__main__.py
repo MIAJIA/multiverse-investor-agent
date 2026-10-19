@@ -2,6 +2,7 @@
 
   python -m catalyst run D1 --live                 # 实时调用模型，录音 + 快照落到 runs/D1/<时间戳>/
   python -m catalyst run D1 --replay runs/D1/<ts>  # 用录音回放：零成本、确定性，prompt 变了会报错
+  python -m catalyst run case.json --live --online # 先在白名单网站联网检索，冻结成资料包再推理
   python -m catalyst run C3 --live --base runs/C1/<ts>   # 在录制的 C1 图上分叉
   python -m catalyst promote runs/D1/<ts> d1       # 生成 fixtures/d1.json：UI 与测试共用这一份
   python -m catalyst show runs/D1/<ts>             # 打印摘要
@@ -22,6 +23,17 @@ from catalyst import entrypoints as ep
 from catalyst.evidence import EvidenceProvider
 from catalyst.reasoner import RecordingReasoner, ReplayReasoner, default_reasoner
 from catalyst.store import RunStore
+from catalyst.websearch import WebResult, run_web_stage
+
+
+def attach_web(event: str, target: str | None, *, cfg, ev: EvidenceProvider, store: RunStore, reasoner,
+               replay_dir=None) -> WebResult:
+    """开着联网时，在入口之前跑检索，把冻结的 web 资料包注册进 provider 并加进 cfg.packs。CLI 与 API 共用。"""
+    web = run_web_stage(event, target, cfg=cfg, store=store, reasoner=reasoner, replay_dir=replay_dir)
+    if web.pack is not None:
+        ev.register(web.pack)
+        cfg.packs = [*cfg.packs, web.pack.pack_id]
+    return web
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -95,10 +107,12 @@ def cmd_run(a) -> None:
     cases_dir = Path(a.cases_dir)
     case = _load_case(a.case, cases_dir)
     cid, inp = case["id"], case.get("input", {})
-    recorded_today = None
+    recorded_today, online = None, a.online
     if a.replay:
         rec = Path(a.replay)
-        recorded_today = json.loads((rec / "case.json").read_text()).get("today")  # 回放必须用录制当天的日期
+        recorded = json.loads((rec / "case.json").read_text())
+        recorded_today = recorded.get("today")  # 回放必须用录制当天的日期
+        online = bool(recorded.get("online"))  # 联网与否由录制决定，回放读冻结的资料包，不上网
         store = RunStore(rec.parent / f"{rec.name}.replay-{_dt.datetime.now():%H%M%S}")
         reasoner = ReplayReasoner(rec / "cassette.jsonl")
     else:
@@ -106,9 +120,15 @@ def cmd_run(a) -> None:
         reasoner = RecordingReasoner(default_reasoner(), store.cassette)
     ev, packs, notes = _provider(case, cases_dir, Path(a.packs_dir))
     cfg = ep.Config(packs=packs, today=a.today or recorded_today or inp.get("today") or ep.Config().today,
-                    run_prefix=cid.lower())
-    (store.root / "case.json").write_text(json.dumps({"case": case, "packs": packs, "notes": notes,
-                                                      "today": cfg.today}, ensure_ascii=False, indent=2))
+                    run_prefix=cid.lower(), online=online)
+    web = WebResult("off")
+    if case.get("type") != "causalt5k" and case.get("entry") != "fork":
+        web = attach_web(inp["event"], inp.get("target"), cfg=cfg, ev=ev, store=store, reasoner=reasoner,
+                         replay_dir=a.replay)
+    (store.root / "case.json").write_text(json.dumps({"case": case, "packs": cfg.packs, "notes": notes,
+                                                      "today": cfg.today, "online": cfg.online, "web": web.dump()},
+                                                     ensure_ascii=False, indent=2))
+    print(web.message())
     for n in notes:
         print(f"! {n}")
 
@@ -139,11 +159,12 @@ def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
     """C3：在基线图上依次执行案例列出的每个分叉。基线默认用案例指定的 golden 图（Expected Impact
     只能对 golden 图自动比对）；--base 给出录制目录时改用录制的图。每个分叉都从同一基线出发。"""
     fx_dir = cases_dir.parent / "fixtures"
-    proposal, pack = None, None
+    proposal, pack, scenario = None, None, None
     if a.base:
         rec = RunStore(a.base)
         version = rec.latest_version()
         base_graph, proposal = rec.get_snapshot(version), rec.get_proposal(version)
+        scenario = rec.bundle(version)["scenario"]  # 录制的基线本身是情景版本时，分叉叠加在它之上
         obs = rec.root / "observations" / f"{version}.json"
         if obs.exists():
             pack = {"pack_id": f"recorded:{version}", "excerpts": json.loads(obs.read_text())["excerpts"]}
@@ -157,7 +178,7 @@ def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
         fx = json.loads((fx_dir / name).read_text())
         print(f"→ fork {name}: {fx['op']['kind']} {fx['op'].get('target') or fx['op'].get('impacts')}")
         res = ep.fork(base_graph, fx["op"], reasoner=reasoner, evidence=ev, config=cfg, pack=pack,
-                      proposal=proposal, store=store)
+                      proposal=proposal, scenario=scenario, store=store)
         print("\n".join(_summary(res)))
         if res.get("scope") and "expected_scope" in fx:
             ok = all(set(res["scope"][k]) == set(fx["expected_scope"][k]) for k in ("nodes", "edges"))
@@ -204,6 +225,8 @@ def main(argv=None) -> None:
     mode.add_argument("--live", action="store_true")
     mode.add_argument("--replay", metavar="RUN_DIR")
     r.add_argument("--base", metavar="RUN_DIR")
+    r.add_argument("--online", action="store_true",
+                   help="入口之前在白名单网站里联网检索，结果作为一个资料包加进来（默认关；回放时由录制决定）")
     r.add_argument("--today")
     r.add_argument("--cases-dir", default=os.environ.get("CATALYST_CASES_DIR", str(ROOT / "eval" / "cases")))
     r.add_argument("--packs-dir", default=str(ROOT / "packs"))

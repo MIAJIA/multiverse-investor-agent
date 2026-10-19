@@ -1,7 +1,7 @@
 {
   "pack_id": "hormuz",
   "synthetic": false,
-  "note": "主要论点：霍尔木兹海峡重新开放会带来可观测的实际通航恢复，并通过中东原油供给恢复压低 Brent 近月价格。stance 相对这个论点：supports = 支撑链上某一环（海峡是主要通道、历史基线、过境量可观测、正式开放公告、开放与油价下跌的对应、通航恢复的类比）；contradicts = 削弱它（宣布开放 / 停火后过境量未恢复或很快逆转、保险与船东不跟进、观测滞后与回修、油价受绕行管道与风险溢价等其他因素驱动）。2026 年时间线（据片段）：4/8 停火、6/17 MoU、6/20 JMIC 宣布开放、7/12 IRGC 再次关闭；PortWatch 日数据截至 2026-10-11，EIA STEO 截至 2026-10-06。关闭前基线（hz-009、hz-020）是历史值，不是「恢复」的阈值：恢复到什么水平算恢复，仍须用户确认。",
+  "note": "主要论点：霍尔木兹海峡重新开放会带来可观测的实际通航恢复，并通过中东原油供给恢复压低 Brent 近月价格。stance 相对这个论点（supports / contradicts / neutral）：supports = 支撑链上某一环（正式开放公告、开放与油价下跌的对应、油流约束解除后价格回落的机制、通航恢复的类比）；contradicts = 削弱它（宣布开放 / 停火后过境量未恢复或很快逆转、保险与船东不跟进、可绕行的替代供给、油价受绕行管道与风险溢价等其他因素驱动）；neutral = 只提供背景（地理、历史流量与过境基线、PortWatch 的测量方法与发布节奏、序列回修）。2026 年时间线（据片段）：4/8 停火、6/17 MoU、6/20 JMIC 宣布开放、7/12 IRGC 再次关闭；PortWatch 日数据截至 2026-10-11，EIA STEO 截至 2026-10-06。关闭前基线（hz-009、hz-020）是历史值，不是「恢复」的阈值：恢复到什么水平算恢复，仍须用户确认。",
   "_provenance": {
     "built": "2026-10-18，证据线（evidence 分支）",
     "material_root": "/Users/mia/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/outputs/knowledge_packs/energy.json",
@@ -33,7 +33,8 @@
     },
     "portwatch_query": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname='Strait of Hormuz'&outFields=date,n_total,n_tanker&orderByFields=date&f=json",
     "stance_decisions": {
-      "hz-003": "2026-10-18 由 supports 改为 contradicts（Mia 交主 session 定）：海峡关闭时仍有约 260 万桶/日可经管道绕开，供给缺口没那么大，重开后油价的下跌空间也相应变小，削弱「重开 → 通航恢复 → Brent 回落」这条链。"
+      "hz-003": "2026-10-18 由 supports 改为 contradicts（Mia 交主 session 定）：海峡关闭时仍有约 260 万桶/日可经管道绕开，供给缺口没那么大，重开后油价的下跌空间也相应变小，削弱「重开 → 通航恢复 → Brent 回落」这条链。",
+      "neutral_2026-10-18": "schema 支持 neutral 后，把 hz-001、hz-002、hz-004、hz-005、hz-006、hz-007、hz-009、hz-020 由 supports / contradicts 改为 neutral（规则见 note）。"
     }
   },
   "excerpts": [
@@ -42,7 +43,7 @@
       "excerpt_id": "hz-001",
       "source": "EIA Today in Energy（T1 官方数据）· 开篇段落",
       "date": "2025-06-16",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504",
       "text": "霍尔木兹海峡位于阿曼和伊朗之间，连接波斯湾与阿曼湾、阿拉伯海。"
     },
@@ -51,7 +52,7 @@
       "excerpt_id": "hz-002",
       "source": "EIA Today in Energy（T1 官方数据）· 开篇段落",
       "date": "2025-06-16",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504",
       "text": "EIA 估计 2024 年经海峡的石油流量平均约 2,000 万桶/日（20 million b/d），约占全球石油液体消费的 20%（历史年均值，不是当前过境量）。"
     },
@@ -69,7 +70,7 @@
       "excerpt_id": "hz-004",
       "source": "IMF PortWatch Data & Methodology（T1 官方数据）· Daily Port Activity Data and Trade Estimates",
       "date": "2026-08-25",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
       "text": "PortWatch 用 AIS 船舶信号估算港口活动和海运贸易量（模型估计，不是舱单或海关统计）。"
     },
@@ -78,7 +79,7 @@
       "excerpt_id": "hz-005",
       "source": "IMF PortWatch Data & Methodology（T1 官方数据）· 2024 methodology revision / vessel classification",
       "date": "2026-08-25",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
       "text": "PortWatch 区分干散货、杂货、集装箱、油轮和滚装船等船型。"
     },
@@ -87,7 +88,7 @@
       "excerpt_id": "hz-006",
       "source": "IMF PortWatch Data & Methodology（T1 官方数据）· Daily Port Activity and Daily Chokepoint datasets",
       "date": "2026-08-25",
-      "stance": "contradicts",
+      "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
       "text": "PortWatch 的咽喉要道数据是日频观测，但每周二美东 9 点才更新：通航恢复不会在数据里即时可见。"
     },
@@ -96,7 +97,7 @@
       "excerpt_id": "hz-007",
       "source": "IMF PortWatch Data & Methodology（T1 官方数据）· 2026 revision log",
       "date": "2026-08-25",
-      "stance": "contradicts",
+      "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
       "text": "PortWatch 记录了针对船舶覆盖、边界、AIS 伪造和不完整过境的修订，序列可能被追溯回修；AIS 缺口本身不能证明贸易流量真的变化。"
     },
@@ -114,7 +115,7 @@
       "excerpt_id": "hz-009",
       "source": "IMF PortWatch Daily Chokepoints Data（T1 官方数据）· portname='Strait of Hormuz'，n_total（2025 全年、2026-02-15–02-27）",
       "date": "2026-10-14",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0",
       "text": "PortWatch 霍尔木兹日过境船数：2025 年日均约 85.5 艘；2026-02-15 至 02-27（关闭前）日均约 92 艘（本线按日数据计算的均值）。"
     },
@@ -213,7 +214,7 @@
       "excerpt_id": "hz-020",
       "source": "EIA Short-Term Energy Outlook 2026 年 8 月（T1 官方数据）· PDF 第 6 页",
       "date": "2026-08-11",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.eia.gov/outlooks/steo/archives/aug26.pdf",
       "text": "EIA 估计经霍尔木兹海峡的原油和石油液体 2026 Q2 平均 490 万桶/日，冲突前的 2025 Q4 为 2,160 万桶/日。"
     },

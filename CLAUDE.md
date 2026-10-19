@@ -50,13 +50,14 @@ cd web && npm test && npm run typecheck && npm run build
 set -a && . ./.env && set +a                        # 读入 API key（.env 永不提交）
 .venv/bin/python -m catalyst run D1 --live          # 跑一个案例：录音 + 快照写到 runs/D1/<时间戳>/
 .venv/bin/python -m catalyst run D1 --replay runs/D1/<ts>   # 零成本、确定性回放
+.venv/bin/python -m catalyst run <case.json> --live --online   # 先在白名单网站联网检索（config/web_whitelist.json），冻结成资料包再推理；默认关，回放不上网
 .venv/bin/python -m catalyst promote runs/D1/<ts> d1        # 提升成 fixtures/d1.json
 .venv/bin/python -m eval.runner --record eval/out/<name>    # 全部案例 × pipeline / baseline 两组，出逐例报告
 .venv/bin/python -m catalyst.api                    # 前端用的 HTTP 接口，http://localhost:8000
 cd web && VITE_MOCK=0 npm run dev                   # 前端接真实后端（默认 VITE_MOCK=1 读 fixture）
 ```
 
-- 模型：`CATALYST_MODEL`，默认 `claude-opus-5-5`；调试可以用 `claude-haiku-5-5`。effort 用 `CATALYST_EFFORT` 设置。
+- 模型：`CATALYST_MODEL`，默认 `claude-opus-5-5`；调试可以用 `claude-haiku-5-5`。effort 用 `CATALYST_EFFORT` 设置。联网检索这一步单独用 `CATALYST_WEB_MODEL`，默认 `claude-haiku-5-5`（立场标注和推理仍用 `CATALYST_MODEL`）。
 - 回放按请求哈希匹配。prompt、资料包、schema 或输入任何一项变了，旧录音都会报 `CassetteMiss`。改了 prompt 要提升 `PROMPT_VERSION`。
 
 ## 不要做的事

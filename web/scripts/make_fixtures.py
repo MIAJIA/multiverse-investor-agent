@@ -51,13 +51,21 @@ DEMO_REASONS = {
     "c1.assume.external_laser": "这是被改的假设本身：情景下改为集成激光",
     "c1.laser_demand": "外置光源需求以「每个 CPO 端口需要外置光源」为前提；改用集成激光后这条前提不成立",
     "c1.term.laser_vendor": "激光器供应商的营收超预期来自外置光源需求；上游前提受挑战，这个终点随之受挑战",
+    "shock.siph_fab_outage": "这是加进来的冲击本身：假设，未观测",
+    "c1.siph_foundry": "主力产线停产一个季度，代工利用率提升这一前提受挑战",
+    "c1.term.foundry": "利用率前提受挑战，硅光代工营收占比上升至少推迟一个季度",
 }
 
 
 class DemoReasoner(ScriptedReasoner):
-    """ScriptedReasoner 的 fork 输出原样保留，只把 reason: "scripted" 换成演示句子。"""
+    """ScriptedReasoner 的 fork 输出原样保留，只把 reason: "scripted" 换成演示句子。
+
+    ScriptedReasoner 靠 user 里有没有 "change_assumption" 判断操作类型；叠加分叉时基线图自己的 op
+    也会出现在 user 里，所以 fork 时只把「操作：」那一行交给它判断。"""
 
     def complete(self, *, stage, system, user, schema):
+        if stage == "fork":
+            user = next((l for l in user.splitlines() if l.startswith("操作：")), user)
         c = super().complete(stage=stage, system=system, user=user, schema=schema)
         if stage == "fork":
             out = json.loads(c.text)
@@ -119,6 +127,41 @@ def c1_run(name: str, label: str, cfg, ev, pack, notes: list[str]) -> None:
     })
 
 
+def multi_run(ev, pack) -> None:
+    """多情景（给 #scenarios playground 用）：基线 v1 上分出 A（改假设）和 B（预定义冲击），
+    再在 A 上叠加 B 的冲击。全部走真实的 ep.fork；版本号由 RunStore 避免重名。"""
+    import tempfile
+    from catalyst.store import RunStore
+    golden = {k: v for k, v in load_fixture("c1_graph_v1.json").items() if not k.startswith("_")}
+    change = load_fixture("c3_change_assumption.json")["op"]
+    shock = load_fixture("c3_add_shock.json")["op"]
+    cfg = ep.Config(packs=[pack["pack_id"]], today=TODAY, run_prefix="c1")
+    base = parse_graph(golden)
+    p1 = ep.derive_proposal(ProposalDraft.model_validate(DRAFT), base, model="scripted").dump()
+    excerpts = [x.dump() for x in ev.pack(pack["pack_id"]).excerpts]
+    versions = {base.version: {"graph": base.dump(), "proposal": p1, "scenario": None, "diff": None, "excerpts": excerpts}}
+    with tempfile.TemporaryDirectory() as tmp:
+        store = RunStore(tmp)
+        for parent, op in ((base.version, change), (base.version, shock), ("c1-v2", shock)):
+            b = versions[parent]
+            res = ep.fork(b["graph"], op, reasoner=DemoReasoner(), evidence=ev, config=cfg, pack=pack,
+                          proposal=b["proposal"], store=store)
+            if not res["ok"]:
+                sys.exit(f"多情景 fork 失败（{parent} + {op['kind']}）：" + "; ".join(res["errors"]))
+            versions[res["graph"]["version"]] = {"graph": res["graph"], "proposal": res["proposal"],
+                                                 "scenario": res["scenario"], "diff": res["diff"], "excerpts": excerpts}
+    _write("c1_multi", {
+        "_source": {"script": "web/scripts/make_fixtures.py", "case": "C1 golden + C3 两个分叉 + 一次叠加",
+                    "today": TODAY, "packs": [pack["pack_id"]],
+                    "notes": COMMON_NOTES + ["c1-v2 = 改假设（集成激光），c1-v3 = 预定义冲击（代工停产），"
+                                             "c1-v4 = 在 c1-v2 上再加同一个冲击；每个情景的 assessment 和 diff 都相对它的父版本"]},
+        "label": "C1 多情景（A / B / A+B）",
+        "event": "光子芯片采用快于预期",
+        "versions": versions,
+        "latest": list(versions)[-1],
+    })
+
+
 def abstain_run(ev, pack) -> None:
     """C4：真实的 discover 入口 + ScriptedReasoner 的弃权输出；没有图、没有提案。"""
     case = load_case("C4")["input"]
@@ -147,6 +190,7 @@ def main() -> None:
         f"today={BLOCKED_TODAY}，观测是编的：company_filings 覆盖整个窗口但没有设计中标记录，"
         "所以 cond.c1.els_design_wins 由代码判为 not_met，gate 由代码判为 BLOCKED"])
     abstain_run(ev, pack)
+    multi_run(ev, pack)
 
 
 if __name__ == "__main__":
