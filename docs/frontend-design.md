@@ -1,140 +1,140 @@
-# Catalyst — 前端设计（UI/UX 与前端工程）
+# Catalyst — Front-end design (UI/UX and front-end engineering)
 
 2026-10-18 · Mia
 
-## 一句话与设计原则
+## In one sentence, and the design principles
 
-前端是图快照的一个视图，不是第二个大脑：画布只渲染后端的 ClaimGraph 版本，用户在画布上的每一个动作都翻译成一个后端操作（ChangeAssumption / AddShock / confirm / commit），经校验器写入新快照后再回来重画。三个页面对应产品的六个站：Research Workspace（检验、条件、证据）、Sign-off（签字）、Scenario Diff（分叉）；发现（Discover）是 Workspace 的第一屏。
+The front end is one view of a graph snapshot. It is not a second brain. The canvas only renders a version of the back end's ClaimGraph. Every action the user takes on the canvas is translated into one back-end operation (ChangeAssumption / AddShock / confirm / commit). The validator writes a new snapshot, and then the canvas redraws from it. The three pages map to the product's six stations: Research Workspace (check, conditions, evidence), Sign-off (sign), Scenario Diff (fork). Discover is the first screen of the Workspace.
 
-四条原则，后面每个屏幕都能追溯：
+Four principles. Every screen below can be traced back to them:
 
-1.  **字少，一屏一个数字。** 每个页面只有一个大数字和一个主动作（Workspace 是条件的阈值，Diff 是“下一步查什么”的时限）；工程信息（版本号、写范围、哈希）不进主屏，放详情层。这是设计画布里 D 方向（苹果设计师）的结论。
+1.  **Few words, one number per screen.** Each page has only one big number and one main action (in the Workspace it is the condition's threshold, in the Diff it is the time limit for "what to check next"). Engineering information (version number, write scope, hash) stays off the main screen and goes in the detail layer. This is the conclusion of direction D (the Apple designer) on the design canvas.
 
-2.  **四层状态不混成一个徽章。** 情景假设了什么、证据支持不支持、条件能不能核实和有没有满足、用户有没有签，是四件事，UI 上各有自己的位置和颜色。
+2.  **Four layers of state are not merged into one badge.** What the scenario assumes, whether the evidence supports it, whether the condition can be verified and whether it is met, and whether the user has signed, are four separate things. Each has its own place and colour in the UI.
 
-3.  **不显示没有来源的数字。** 分叉后节点只标受挑战 / 未变 / 暂时到不了，不显示“-15%”这类传播出来的百分比；有引用的数字才显示，并带片段编号。
+3.  **Never show a number that has no source.** After a fork, a node is only marked challenged / unaffected / unresolved. It does not show a propagated percentage such as "-15%". A number is shown only if it has a citation, and it carries the excerpt id.
 
-4.  **画布只读，动作有限。** 用户不能改节点文字、不能随意连边；能做的是改一个假设的值、加一个冲击、确认或改一个阈值、签字。这是工程文档“写图只经 graph.commit”在前端的体现。
+4.  **The canvas is read-only, and actions are limited.** The user cannot edit node text or connect edges freely. What the user can do is change the value of one assumption, add a shock, confirm or change a threshold, and sign. This is how the engineering document's rule "the graph is written only through graph.commit" shows up on the front end.
 
-## 信息架构
+## Information architecture
 
-三个页面加一个输入屏，左侧导航固定：Analyze / Sign-off / Scenarios / Evidence；Monitoring 和 Projects 在三小时和 MVP 里置灰（慢环延期）。
+Three pages plus an input screen, with a fixed left navigation: Analyze / Sign-off / Scenarios / Evidence. Monitoring and Projects are greyed out in the three-hour version and the MVP (the slow loop is deferred).
 
-| 页面                     | 回答的问题                       | 主要元素                                                                                                                           | 对应的站                   |
-|--------------------------|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
-| 输入                     | 你相信什么会发生？               | 一行大字的 belief、可选的终点圆片（含“No target”）、一个按钮                                                                       | 第 1 站 事件               |
-| Research Workspace（B1） | 它怎么传到标的？什么会证明我错？ | 没有终点时先显示最多 3 张候选卡（带三类标签）或一句弃权；点一张进入画布 + 右侧面板（详情 / 证据 / 条件）；底部固定工具条“What if…” | 第 2–4 站 发现、检验、条件 |
-| Sign-off（B2）           | 我签哪几条？                     | 逐条假设表：假设、失效条件、证据状态、用户状态；底部是提案卡（WAIT / needs_review）和 Sign                                         | 第 6 站 提案与签字         |
-| Scenario Diff（B3）      | 改了一个假设，什么变了？         | 基线 v1 vs 情景 v2 切换；画布按三态着色；右侧“下一步查什么”+ 提案 v2                                                               | 第 5 站 分叉               |
-| Evidence                 | 我引了哪些材料？                 | 知识库 pack 列表、这一轮检索到的片段、每段的 stance 和被哪条边引用                                                                 | 证据先于推理的可见面       |
+| Page                     | The question it answers                         | Main elements                                                                                                                                                                                       | Station it maps to                    |
+|--------------------------|-------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
+| Input                    | What do you believe will happen?                | A one-line big-type belief, optional target chips (including "No target"), one button                                                                                                               | Station 1: event                      |
+| Research Workspace (B1)  | How does it reach the instrument? What would prove me wrong? | With no target, first show up to 3 candidate cards (with the three kinds of label) or one line of abstention; click a card to enter the canvas + right panel (details / evidence / conditions); a fixed bottom toolbar "What if…" | Stations 2–4: discover, check, conditions |
+| Sign-off (B2)            | Which ones do I sign?                           | A table of assumptions, one row each: assumption, invalidation condition, evidence status, user status; at the bottom the proposal card (WAIT / needs_review) and Sign                               | Station 6: proposal and sign-off      |
+| Scenario Diff (B3)       | I changed one assumption. What changed?         | A toggle between baseline v1 and scenario v2; the canvas coloured by the three states; on the right "what to check next" + proposal v2                                                              | Station 5: fork                       |
+| Evidence                 | What material did I cite?                       | The list of knowledge-base packs, the excerpts retrieved this round, each excerpt's stance and which edge cites it                                                                                  | The visible side of evidence before reasoning |
 
-参考稿是 Mia 在另一个对话里做的 B1 / B2 / B3 三张图（深蓝导航、白卡片、四色节点）；取它的布局，按本文第 3–5 节改它的内容。
+The reference drafts are three images (B1 / B2 / B3) that Mia made in another conversation (dark blue navigation, white cards, four-colour nodes). Take its layout, and change its content according to sections 3–5 of this document.
 
-## 画布规范
+## Canvas specification
 
-画布是 ClaimGraph 快照的直接渲染：节点 = Claim，边 = Mechanism，自动排版（ELK，从上到下），默认只展开 3 个主要阶段（max_visible_hops），中间节点折叠成一个可展开的组。
+The canvas is a direct rendering of a ClaimGraph snapshot: node = Claim, edge = Mechanism, automatic layout (ELK, top to bottom). By default only 3 main stages are expanded (max_visible_hops), and the middle nodes are folded into one expandable group.
 
-### 四种节点
+### Four kinds of node
 
-| 节点         | 来自                        | 卡片上显示                                                            | 颜色 |
-|--------------|-----------------------------|-----------------------------------------------------------------------|------|
-| Event        | 用户输入的 belief（根节点） | 原话 + 系统改写后的一句（两行，用户确认过打勾）                       | 蓝   |
-| Assumption   | 链中间的 Claim              | 一句陈述 + 证据状态小字（supported / contradicted / unknown）+ 引用数 | 绿   |
-| Outcome      | 终点，能解析到白名单标的    | 标的与方向                                                            | 紫   |
-| Risk / Shock | AddShock 加进来的外部冲击   | 一句话 + “assumed, not observed”虚线框                                | 橙   |
+| Node         | Comes from                          | Shown on the card                                                                           | Colour |
+|--------------|-------------------------------------|---------------------------------------------------------------------------------------------|--------|
+| Event        | The user's belief (root node)       | The user's own words + the one-line rewrite by the system (two lines; a tick once the user confirms) | blue   |
+| Assumption   | A Claim in the middle of the chain  | One statement + small text for the evidence status (supported / contradicted / unknown) + the number of citations | green  |
+| Outcome      | A terminal that resolves to a whitelisted instrument | The instrument and direction                                                  | purple |
+| Risk / Shock | An external shock added by AddShock | One sentence + a dashed frame "assumed, not observed"                                       | orange |
 
-关键依赖只有一个，用外发光的描边 + “Check first”小字标出；不给每个节点打 High / Medium / Low。边上显示机制一句话（悬停展开），有引用的边实线，model_only 的边虚线。
+There is only one key dependency. It is marked with a glowing outline + the small text "Check first". Nodes are not rated High / Medium / Low. An edge shows its one-line mechanism (expanded on hover). An edge with a citation is a solid line, and a model_only edge is dashed.
 
-### 状态着色（情景页）
+### State colouring (scenario page)
 
-| 状态                  | 来自                | 样式                |
-|-----------------------|---------------------|---------------------|
-| 受挑战 challenged     | Scenario Assessment | 橙色边框 + 橙色圆点 |
-| 未变 unaffected       | Scenario Assessment | 灰底 + 对勾         |
-| 暂时到不了 unresolved | Scenario Assessment | 灰底 + 虚线描边     |
+| State                      | Comes from          | Style                          |
+|----------------------------|---------------------|--------------------------------|
+| challenged                 | Scenario Assessment | orange border + orange dot     |
+| unaffected                 | Scenario Assessment | grey fill + tick               |
+| unresolved                 | Scenario Assessment | grey fill + dashed outline     |
 
-它们和证据状态是两层：一个受挑战的节点，证据状态仍然可以是 supported，卡片上两样都显示。
+These are a separate layer from the evidence status. A challenged node can still have the evidence status supported, and the card shows both.
 
-### 画布动作到后端操作的映射
+### Mapping canvas actions to back-end operations
 
-| 用户在画布上做的事                                   | 翻译成的操作                                | 谁裁决                                       |
-|------------------------------------------------------|---------------------------------------------|----------------------------------------------|
-| 点一个节点                                           | 只读：右侧面板显示详情                      | —                                            |
-| 在节点上改一个假设的值（如“开放日期”）               | ChangeAssumption（target, value）           | 代码算写范围，模型在范围内重评，校验器拒越界 |
-| 左栏拖一个 Risk 节点进来，或底部工具条输入“What if…” | AddShock（statement）；三小时内接入点预定义 | 同上                                         |
-| 改条件的阈值或截止                                   | confirm_condition（threshold, deadline）    | 校验器查类型和日期，不调模型                 |
-| 在签字页点 Confirm / Sign                            | confirm_claim / commit                      | 写入 user_judgment，不改图                   |
-| 改节点文字、删节点、随意连边                         | 不允许（POC 和 MVP 都禁用）                 | —                                            |
+| What the user does on the canvas                                           | Operation it is translated into                  | Who decides                                                                        |
+|----------------------------------------------------------------------------|--------------------------------------------------|------------------------------------------------------------------------------------|
+| Click a node                                                               | Read-only: the right panel shows the details     | —                                                                                  |
+| Change the value of an assumption on a node (such as the "opening date")   | ChangeAssumption (target, value)                 | The code computes the write scope, the model re-assesses inside the scope, the validator rejects anything out of bounds |
+| Drag a Risk node in from the left column, or type "What if…" in the bottom toolbar | AddShock (statement); within three hours the attachment points are predefined | Same as above                                                      |
+| Change a condition's threshold or deadline                                 | confirm_condition (threshold, deadline)          | The validator checks the type and the date; no model call                          |
+| Click Confirm / Sign on the sign-off page                                  | confirm_claim / commit                           | Writes user_judgment, does not change the graph                                    |
+| Edit node text, delete a node, connect edges freely                        | Not allowed (disabled in both the POC and the MVP) | —                                                                                |
 
-每个操作成功后后端返回新版本号，前端整体重画；前端不在本地改 store 里的节点数据。React Flow 模板自带的“拖节点改位置”保留，位置是纯展示状态，不进快照。
+After each successful operation the back end returns a new version number, and the front end redraws as a whole. The front end does not change node data in the local store. The "drag a node to change its position" that comes with the React Flow template is kept. Position is pure display state and does not go into the snapshot.
 
-## 右侧面板
+## Right panel
 
-点一个节点，右侧面板分三个标签：详情、证据、条件。面板是整个前端里字最多的地方，所以它默认收起，点节点才展开。
+Click a node and the right panel has three tabs: details, evidence, conditions. The panel is where there are the most words in the whole front end, so it is collapsed by default and opens only when a node is clicked.
 
-**详情**：陈述、原话（如果被改写过）、证据状态、在当前情景下的评估、进出的边和机制一句话。是关键依赖的节点多一行：“为什么先查这一步”。
+**Details**: the statement, the user's own words (if it was rewritten), the evidence status, the assessment under the current scenario, and the incoming and outgoing edges with their one-line mechanisms. A node that is the key dependency has one more line: "why check this step first".
 
-**证据**：两栈，Supporting (n) 和 Contradicting (n)，来自证据对象的 stance。每张证据卡：来源名、日期、片段编号（excerpt_id）、原文一段、它支持或反驳的是这条 Claim 的哪一句。没有证据的边显示“仅模型推断”，不显示空卡。模型对反方片段的回应（为什么不构成反驳）显示在那张卡下面。
+**Evidence**: two stacks, Supporting (n) and Contradicting (n), taken from the stance of the evidence objects. Each evidence card shows: the source name, the date, the excerpt id (excerpt_id), a paragraph of the original text, and which sentence of this Claim it supports or contradicts. An edge with no evidence shows "model inference only", and no empty card is shown. The model's response to a contradicting excerpt (why it does not amount to a rebuttal) is shown under that card.
 
-**条件**（“What would prove this wrong?”）：每条 Condition 一行大字 + 一行小字。大字是人话（“到第 7 天每天少于 20 艘”），小字把字段露出来：观测量或来源 · 起点（anchor）· 截止（deadline）· 阈值（未知就显示“你来定”并可点开填）· 可核实 / 未核实 · 已满足 / 未满足 / 未知。“可核实”和“已满足”是两个徽章，不合并。用户改阈值或截止是这里唯一的写动作（confirm_condition）。
+**Conditions** ("What would prove this wrong?"): each Condition takes one line of big text and one line of small text. The big text is plain language ("fewer than 20 a day by day 7"). The small text exposes the fields: observable or source · starting point (anchor) · deadline · threshold (if unknown, show "you decide", and it can be opened to fill in) · verifiable / not verified · met / not met / unknown. "Verifiable" and "met" are two badges, and are not merged. Changing a threshold or a deadline here is the only write action (confirm_condition).
 
-参考稿里的“Add”按钮在 POC 里不做：条件由模型提议、用户改数，不让用户从零写——这是和 Helm 那种“用户自写理由”有意不同的地方。
+The "Add" button in the reference draft is not built in the POC. Conditions are proposed by the model and the user edits the number. The user does not write them from scratch. This is a deliberate difference from products like Helm, where the user writes their own reasons.
 
-## 签字页与分叉页
+## Sign-off page and fork page
 
-### Sign-off（B2）
+### Sign-off (B2)
 
-一张表，一行一条假设，底下一张提案卡。列：假设、失效条件（人话 + 截止）、证据状态、用户状态、动作。两个状态列必须分开：
+One table, one row per assumption, and a proposal card underneath. Columns: assumption, invalidation condition (plain language + deadline), evidence status, user status, action. The two status columns must be kept apart:
 
-| 列       | 取值                                   | 谁写             |
-|----------|----------------------------------------|------------------|
-| 证据状态 | supported / contradicted / unknown     | 后端，由引用推进 |
-| 用户状态 | Not started / Needs review / Confirmed | 用户点 Confirm   |
+| Column          | Values                                  | Who writes it                    |
+|-----------------|-----------------------------------------|----------------------------------|
+| Evidence status | supported / contradicted / unknown      | The back end, advanced by citations |
+| User status     | Not started / Needs review / Confirmed  | The user clicks Confirm          |
 
-“Confirmed”的意思是“我认这条假设和它的失效条件”，不是“证据成立”；一条证据 unknown 的假设也可以被 Confirm，因为用户签的是条件。顶部进度“3 / 6 confirmed”保留。
+"Confirmed" means "I accept this assumption and its invalidation condition". It does not mean "the evidence holds". An assumption whose evidence is unknown can also be Confirmed, because what the user signs is the condition. The progress at the top, "3 / 6 confirmed", is kept.
 
-提案卡：标的与方向、成立条件（标明“且”）、失效条件（标明“或”）、状态。状态只有三个词：WAIT（先别动）、BLOCKED（受阻）、Ready for review；没有 Ready to execute。Sign 按钮下面一行小字：“签的是研究判断，不是下单”。签字后提案变成 draft 导出，UI 不提供任何执行按钮。
+Proposal card: the instrument and direction, the entry conditions (marked "and"), the invalidation conditions (marked "or"), the status. The status has only three words: WAIT, BLOCKED, Ready for review. There is no Ready to execute. Under the Sign button there is one line of small text: "What you sign is a research judgment, not an order". After signing, the proposal becomes a draft export, and the UI offers no execution button.
 
-### Scenario Diff（B3）
+### Scenario Diff (B3)
 
-顶部一个切换：基线 v1 / 情景 v2，情景名就是用户输入的那句话（“Iran is struck tomorrow”），旁边一个小徽章“假设，未观测”。画布按三态着色（第 3 节），冲击节点虚线框。
+At the top there is a toggle: baseline v1 / scenario v2. The scenario name is the sentence the user typed ("Iran is struck tomorrow"), with a small badge beside it: "assumed, not observed". The canvas is coloured by the three states (section 3), and the shock node has a dashed frame.
 
-右侧不是指标表，是三块：
+The right side is not a metrics table. It is three blocks:
 
-1.  **受挑战的前提**：哪几条、为什么（模型写的一句话）。
+1.  **Challenged premises**: which ones, and why (one sentence written by the model).
 
-2.  **下一步查什么**：一条事件型 Condition，大字是时限（“72 小时”），两个分支写清：观测到 → 继续等；窗口结束未观测到 → 基线继续。
+2.  **What to check next**: one event-type Condition. The big text is the time limit ("72 hours"), and the two branches are spelled out: if observed → keep waiting; if the window ends with nothing observed → the baseline continues.
 
-3.  **提案 v1 → v2**：状态变没变，哪个条件变了，追溯到哪个被改的假设。
+3.  **Proposal v1 → v2**: whether the status changed, which condition changed, and which changed assumption it traces back to.
 
-参考稿里的“CoWoS -20%、GPU shipments -15%、Revenue -8% vs base case”不做：那是把冲击沿图传播成百分比，工程文档已经把概率和数值传播删掉了。有引用的数字（材料里写了“延期六个月”）可以显示在冲击节点上，带片段编号。“Save Scenario”= 快照已经存了，按钮只是给它起名。
+The "CoWoS -20%, GPU shipments -15%, Revenue -8% vs base case" in the reference draft is not built. That propagates a shock along the graph into percentages, and the engineering document has already removed probability and numeric propagation. A number with a citation (the material says "delayed by six months") can be shown on the shock node, with the excerpt id. "Save Scenario" = the snapshot is already stored, and the button only gives it a name.
 
-## 前端工程
+## Front-end engineering
 
-选型：React Flow 的 [workflow editor 模板](https://reactflow.dev/ui/templates/workflow-editor)（Next.js + Tailwind + shadcn/ui + Zustand + ELKjs 自动排版）。编辑器是它的，节点和面板是我们的。模板页面没有写许可证，React Flow 本身是 MIT；用之前看 ZIP 里的 LICENSE。
+Choice: React Flow's [workflow editor template](https://reactflow.dev/ui/templates/workflow-editor) (Next.js + Tailwind + shadcn/ui + Zustand + ELKjs automatic layout). The editor is theirs, and the nodes and the panel are ours. The template page does not state a licence, and React Flow itself is MIT. Before using it, check the LICENSE in the ZIP.
 
-| 直接复用                                        | 自己写                                                             | 删掉                                    |
-|-------------------------------------------------|--------------------------------------------------------------------|-----------------------------------------|
-| 画布、拖拽、缩放、小地图、键盘操作              | 4 个节点组件（Event / Assumption / Outcome / Risk，各约 40–60 行） | Runner（“Run Workflow”顺序执行节点）    |
-| 左侧拖拽栏（只留 Risk 一种可拖）                | 1 个边组件（机制文字 + 实线 / 虚线）                               | Transform / Join / Branch / Output 节点 |
-| ELK 自动排版、深色模式、Zustand store 骨架      | 右侧面板（详情 / 证据 / 条件）、签字表、Diff 页的三块              | 节点文字编辑、自由连边、删节点          |
-| shadcn 的 Button / Badge / Table / Tabs / Sheet | API 客户端（读快照、发操作）                                       | —                                       |
+| Reuse directly                                                 | Write ourselves                                                                 | Delete                                          |
+|----------------------------------------------------------------|---------------------------------------------------------------------------------|-------------------------------------------------|
+| Canvas, drag, zoom, minimap, keyboard operation                | 4 node components (Event / Assumption / Outcome / Risk, about 40–60 lines each) | Runner ("Run Workflow" runs nodes in order)     |
+| Left drag bar (leave only Risk as draggable)                   | 1 edge component (mechanism text + solid / dashed line)                         | Transform / Join / Branch / Output nodes        |
+| ELK automatic layout, dark mode, the Zustand store skeleton    | Right panel (details / evidence / conditions), the sign-off table, the three blocks of the Diff page | Node text editing, free edge connection, deleting nodes |
+| shadcn Button / Badge / Table / Tabs / Sheet                   | API client (read snapshots, send operations)                                    | —                                               |
 
-### 数据契约
+### Data contract
 
-后端给前端两个接口，前端不自己维护图的真相：
+The back end gives the front end two interfaces. The front end does not keep its own truth about the graph:
 
-- `GET /graph/{version}` → 快照 JSON：nodes（id, kind, statement, original_statement, evidence_status, is_key_dependency, assessment）、edges（from, to, mechanism, evidence\[\] 含 stance / excerpt_id, model_only）、conditions（claim_id, kind, predicate, observable, anchor, deadline, threshold 可 null, verification_status, evaluation_status）、proposal（direction, entry\[\], exit\[\], status, support_status）、scenario（base_version, ops）、retrieved_excerpts\[\]。
+- `GET /graph/{version}` → snapshot JSON: nodes (id, kind, statement, original_statement, evidence_status, is_key_dependency, assessment), edges (from, to, mechanism, evidence\[\] including stance / excerpt_id, model_only), conditions (claim_id, kind, predicate, observable, anchor, deadline, threshold nullable, verification_status, evaluation_status), proposal (direction, entry\[\], exit\[\], status, support_status), scenario (base_version, ops), retrieved_excerpts\[\].
 
-- `POST /ops` → 一个操作（change_assumption / add_shock / confirm_condition / confirm_claim / commit），返回新版本号，或校验器的拒绝理由（前端原样显示）。
+- `POST /ops` → one operation (change_assumption / add_shock / confirm_condition / confirm_claim / commit), returning a new version number, or the validator's reason for rejecting it (the front end shows it as is).
 
-快照 →React Flow 的转换是一个纯函数 `toFlow(snapshot) → {nodes, edges}`：节点 data 里放 kind、状态、是否关键依赖；边 data 里放机制和是否 model_only。Zustand store 里只存“当前版本号 + 选中节点 + 对比的基线版本号 + 节点位置”；节点内容每次从快照重算，不在前端改。
+The conversion from snapshot to React Flow is a pure function `toFlow(snapshot) → {nodes, edges}`: a node's data holds kind, state and whether it is the key dependency; an edge's data holds the mechanism and whether it is model_only. The Zustand store keeps only "the current version number + the selected node + the baseline version number being compared + node positions". Node content is recomputed from the snapshot each time and is not changed on the front end.
 
-### 目录结构（建议）
+### Directory structure (suggested)
 
 ``` text
 web/
-  app/            页面：input / workspace / signoff / scenario / evidence
+  app/            pages: input / workspace / signoff / scenario / evidence
   components/
     nodes/        EventNode Assumption Node OutcomeNode RiskNode
     edges/        MechanismEdge
@@ -143,34 +143,34 @@ web/
     scenario/     DiffSummary
   lib/
     api.ts        getGraph / postOp
-    toFlow.ts     快照 → nodes/edges
-    status.ts     四层状态 → 颜色与文案（唯一的映射表）
-  store/          zustand：version, baseVersion, selectedNodeId, positions
+    toFlow.ts     snapshot → nodes/edges
+    status.ts     four layers of state → colour and wording (the only mapping table)
+  store/          zustand: version, baseVersion, selectedNodeId, positions
 ```
 
-后端仍是 Python（工程文档），前端通过这两个接口读写；POC 里前后端各一个进程，不做鉴权。
+The back end is still Python (engineering document), and the front end reads and writes through these two interfaces. In the POC the front end and back end are one process each, with no authentication.
 
-## POC 与 MVP 范围、时间与兜底
+## POC and MVP scope, time and fallback
 
-|               | POC（三小时里的 35–90 分钟）                                                         | MVP                                                  |
-|---------------|--------------------------------------------------------------------------------------|------------------------------------------------------|
-| 输入屏        | 一个输入框 + 终点圆片                                                                | 同左，加历史记录                                     |
-| Workspace     | 只读画布 + 右侧面板（详情 / 证据 / 条件）+ 底部 What-if 工具条；候选卡用最简单的列表 | 加左侧拖 Risk 节点、折叠 / 展开中间节点、Evidence 页 |
-| Sign-off      | 一张表 + 提案卡 + Sign                                                               | 加逐条 Confirm 的历史、导出                          |
-| Scenario Diff | 三态着色 + 右侧三块                                                                  | 加基线 / 情景并排、多情景                            |
-| 交互          | change_assumption、add_shock（预定义接入点）、confirm_condition、commit              | 加任意冲击、confirm_claim                            |
-| 时间          | 用 React Flow 模板约 90 分钟；从“排序精细度”和“UI 动画”里省                          | —                                                    |
+|               | POC (35–90 minutes of the three hours)                                                                    | MVP                                                         |
+|---------------|-----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| Input screen  | One input box + target chips                                                                              | Same, plus history                                          |
+| Workspace     | Read-only canvas + right panel (details / evidence / conditions) + bottom What-if toolbar; candidate cards as the simplest list | Add dragging a Risk node from the left, folding / expanding middle nodes, the Evidence page |
+| Sign-off      | One table + proposal card + Sign                                                                          | Add the history of each Confirm, export                     |
+| Scenario Diff | Three-state colouring + three blocks on the right                                                         | Add baseline / scenario side by side, multiple scenarios    |
+| Interaction   | change_assumption, add_shock (predefined attachment points), confirm_condition, commit                    | Add arbitrary shocks, confirm_claim                         |
+| Time          | About 90 minutes with the React Flow template; saved from "ranking refinement" and "UI animation"         | —                                                           |
 
-兜底：如果到第 115 分钟前端还没跑通，换成 Streamlit 一页：Graphviz 渲染图（按三态着色）+ 条件列表 + 提案卡 + 一个输入框。功能不少，只是不好看。这个判断点写进工程文档的时间表。
+Fallback: if the front end is still not running by minute 115, switch to one Streamlit page: a Graphviz-rendered graph (coloured by the three states) + a condition list + the proposal card + one input box. There is no great loss of function. It just does not look good. This decision point goes into the schedule in the engineering document.
 
-设计稿来源：设计画布里的 D 方向网页版（输入 / 论点 / 假如三屏）定字数和气质，Mia 的 B1 / B2 / B3 参考图定布局和导航。两者冲突时以本文第 1 节的四条原则为准。
+Source of the design drafts: direction D on the design canvas, the web version (the three screens input / argument / what-if), sets the word count and the mood. Mia's B1 / B2 / B3 reference images set the layout and navigation. If the two conflict, the four principles in section 1 of this document win.
 
-## 开放问题
+## Open questions
 
-- 候选卡（Discover 的 3 个方向）放在 Workspace 的第一屏，还是单独一页？现在定的是第一屏。
+- Do the candidate cards (Discover's 3 directions) go on the first screen of the Workspace, or on a separate page? The current decision is the first screen.
 
-- 折叠的中间节点展开后，关键依赖的高亮要不要跟着进折叠组内部？
+- When a folded middle node is expanded, should the highlight of the key dependency follow it into the folded group?
 
-- Sign-off 表里的“Needs review”是系统推的（证据 contradicted 或条件未核实）还是用户标的？建议系统推。
+- Is "Needs review" in the Sign-off table pushed by the system (evidence contradicted or condition not verified) or marked by the user? The suggestion is the system.
 
-- 模板的许可证未确认。
+- The template's licence is not confirmed.

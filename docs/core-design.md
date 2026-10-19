@@ -1,100 +1,100 @@
-# Catalyst 核心：schema、校验器与 harness
+# Catalyst core: schema, validators and harness
 
-2026-10-18 · 主线（core-schema 分支）
+2026-10-18 · main line (core-schema branch)
 
-本文只记录实现层的决定。产品与架构以 `docs/prd.md`、`docs/engineering-design.md` 为准，eval 的接口提议见 eval 分支的 `eval/INTERFACE.md`。
+This document records implementation-level decisions only. Product and architecture follow `docs/prd.md` and `docs/engineering-design.md`. For the eval's interface proposal, see `eval/INTERFACE.md` on the eval branch.
 
-## 模块
+## Modules
 
-| 模块 | 职责 | 谁写 |
+| Module | Responsibility | Written by |
 | --- | --- | --- |
-| `catalyst/schema.py` | 唯一数据契约：持久化对象（Graph、Condition、Scenario、TradeProposal…）与模型输出对象（`*Output`） | — |
-| `catalyst/validator.py` | 结构校验：图（id、无环、可达 terminal、证据或 model_only）、Condition（阈值说明、日期、窗口）、引用（excerpt 存在于当前资料包、model_only 不冒充、supported 有证据撑、反方片段被回应） | 代码 |
-| `catalyst/conditions.py` | 条件判定 met / not_met / unknown | 代码 |
-| `catalyst/gate.py` | 进场 AND 真值表、退出 ANY / ALL | 代码 |
-| `catalyst/fork.py` | 写范围计算、补丁应用（越界即拒）、Scenario 默认值 | 代码 |
-| `catalyst/branches.py` | 分支推导：独有部分、分叉点、kind（hypothetical / evidenced / model_only）、trunk | 代码 |
-| `catalyst/diff.py` | 两个版本的结构 diff（含 `changed_claim_ids`，供前端直接显示） | 代码 |
-| `catalyst/store.py` | 不可变快照 + 操作日志 + trace + 录音，一次运行一个目录 | 代码 |
-| `catalyst/reasoner.py` | Reasoner 边界：实时 / 录制 / 回放 | 模型 |
-| `catalyst/evidence.py` | Evidence Provider 边界：按 pack 载入资料 | — |
-| `catalyst/harness.py` | 受控生成：调模型 → 解析 → schema → 领域校验 → 带错误重写，最多重试 2 次 | 代码 |
-| `catalyst/entrypoints.py` | discover / inspect / fork 三个入口，加上批准（sign） | — |
-| `catalyst/__main__.py` | harness CLI：跑案例、录制、回放、提升 fixture | — |
+| `catalyst/schema.py` | The single data contract: persisted objects (Graph, Condition, Scenario, TradeProposal…) and model output objects (`*Output`) | — |
+| `catalyst/validator.py` | Structural validation: the graph (ids, no cycles, a terminal is reachable, evidence or model_only), Condition (threshold note, date, window), references (the excerpt exists in the current evidence pack, model_only does not pose as evidenced, supported has evidence behind it, contradicting excerpts are answered) | code |
+| `catalyst/conditions.py` | Condition evaluation: met / not_met / unknown | code |
+| `catalyst/gate.py` | Entry AND truth table, exit ANY / ALL | code |
+| `catalyst/fork.py` | Write-scope computation, patch application (rejected if out of scope), Scenario defaults | code |
+| `catalyst/branches.py` | Branch derivation: own part, divergence points, kind (hypothetical / evidenced / model_only), trunk | code |
+| `catalyst/diff.py` | Structural diff of two versions (including `changed_claim_ids`, for the front end to show directly) | code |
+| `catalyst/store.py` | Immutable snapshots + operation log + trace + recording, one directory per run | code |
+| `catalyst/reasoner.py` | The Reasoner boundary: live / record / replay | model |
+| `catalyst/evidence.py` | The Evidence Provider boundary: load material by pack | — |
+| `catalyst/harness.py` | Controlled generation: call the model → parse → schema → domain validation → rewrite with errors, at most 2 retries | code |
+| `catalyst/entrypoints.py` | The three entry points discover / inspect / fork, plus approval (sign) | — |
+| `catalyst/__main__.py` | Harness CLI: run a case, record, replay, promote a fixture | — |
 
-## 为什么不手写 fixture
+## Why fixtures are not hand-written
 
-图层面的 fixture 由 harness 跑真实案例录下来，再用 `promote` 提升到 `fixtures/`，UI 和测试共用这一份。
+Graph-level fixtures are recorded by the harness running real cases. They are then promoted to `fixtures/` with `promote`, and the UI and the tests share that one copy.
 
-- **录制**：`RecordingReasoner` 把每次请求的哈希和原始输出写进 `cassette.jsonl`，同时 `RunStore` 落下快照、提案、情景、trace 和操作日志。
-- **回放**：`ReplayReasoner` 按请求哈希返回录音，过程确定、零成本。prompt、资料包、schema 或输入任何一项变了，回放都会报 `CassetteMiss`，不会拿旧答案冒充。
-- **仍需人写的只有两类**：期望（gate 应是什么、C3 里哪些 claim 应受挑战），因为期望不能来自模型自己的输出，否则是循环论证；以及纯代码测试的最小输入（真值表里的几个 Condition）。
+- **Record**: `RecordingReasoner` writes the hash and the raw output of every request into `cassette.jsonl`. At the same time `RunStore` writes the snapshots, proposals, scenarios, trace and operation log.
+- **Replay**: `ReplayReasoner` returns the recording by request hash. The process is deterministic and costs nothing. If the prompt, the evidence pack, the schema or the input changes, replay raises `CassetteMiss`. It will not pass an old answer off as the new one.
+- **Only two things still need a person to write them**: the expectations (what the gate should be, which claims in C3 should be challenged), because an expectation must not come from the model's own output, or the reasoning is circular; and the minimal inputs of pure code tests (a few Conditions in the truth table).
 
-## 对 eval/INTERFACE.md 的决定
+## Decisions on eval/INTERFACE.md
 
-| # | 决定 |
+| # | Decision |
 | --- | --- |
-| D1 | 采纳：edge / condition 有 `id`，graph 带 `conditions`，node 带 `role`。 |
-| D2 | **改为 met。** evaluation_status 回答「这个条件是否成立」：`not_observed_by` 在窗口结束、来源覆盖整个窗口、窗口内没有记录时，「到期未发生」这个条件成立。窗口内看到了记录就给 not_met；其余一律 unknown。设计文档原文写的 not_met 需要同步改。 |
-| D3 | 采纳：not_met 优先于 unknown，结果是 BLOCKED。 |
-| D4 | 采纳：写范围 = 目标及其后代 + 这些节点的出边 + 挂在这些节点上的条件；起点在范围外的入边不在范围内。 |
-| D5 | assessment 由模型在补丁里提议，代码只接受范围内的 claim，范围外一律由代码写 unaffected。 |
-| D6–D9 | 采纳 eval 线的默认。 |
+| D1 | Adopted: edges and conditions have an `id`, the graph carries `conditions`, and nodes carry a `role`. |
+| D2 | **Changed to met.** evaluation_status answers "does this condition hold": for `not_observed_by`, when the window has ended, the source covers the whole window and there is no record in the window, the condition "the deadline passed with nothing happening" holds. If a record is seen in the window, give not_met. Everything else is unknown. The original text of the design document says not_met and needs updating to match. |
+| D3 | Adopted: not_met takes priority over unknown, and the result is BLOCKED. |
+| D4 | Adopted: write scope = the target and its descendants + the out-edges of those nodes + the conditions hanging on those nodes; an in-edge whose source is outside the scope is not in the scope. |
+| D5 | The model proposes the assessment in the patch. The code accepts only claims inside the scope, and for everything outside the scope the code writes unaffected. |
+| D6–D9 | Adopted the eval line's defaults. |
 
-## 其他实现决定
+## Other implementation decisions
 
-- **规范形式**：快照、API、diff 和哈希一律使用字段齐全（含默认值）的 `dump()`。E3 的哈希比对必须先把两边都经过 schema 规范化，不能直接哈希手写的原始 dict。
-- **提案状态拆成两个字段**：`status`（生命周期）和 `gate`（进场判定：WAIT / BLOCKED / READY_FOR_REVIEW），两者都只由代码写。gate 为 READY_FOR_REVIEW 时 status 是 needs_review，否则是 draft。
-- **只由代码写的提案字段**：`support_status` 由关键依赖与进场条件所在 claim、以及这条分支独有的 claim 的证据状态和情景 assessment 推导；`user_judgment` 里的 confirmed、confirmed_claim_ids、probability 只能由用户写（模型输出 schema 里根本没有这几个字段）。模型改写过原话时，`requires_user_confirmation` 一定是 true。
-- **条件判定随版本重算**：inspect 和 fork 产出的每个新版本，都按观测和日期重新判定全部条件。`conditions.evaluate` 永不抛异常，日期不合法时给 unknown。
-- **引用立场不能翻转**：引用片段时的 stance 必须与资料包里该片段的 stance 一致。立场有三种：supports、contradicts、neutral。neutral 是背景信息（如「数据每周才更新」），可以引用，但不让 claim 变成 supported，也不需要 rebuttal，`unanswered_contradictions` 也不管它。三种立场两两都不能互相翻转。
-- **证据只挂在边上**：没有入边的节点不能标 supported（inspect 阶段的检查）。节点级证据留到后续。
-- **fork 的引用校验**：补丁不能改证据引用，所以 fork 只校验 Stage 1 新增的边；基线图已有的引用在生成时已经校验过。Stage 1 的新边必须从新节点连到声明的 impacts。
-- **情景不推进证据**：补丁不能改 `evidence_status`，节点只允许改 statement / time_bucket / instruments。
-- **情景叠加**：在一个情景版本上再分叉时，新情景接着上一层算。
-  - `ops` = 父情景的 ops 加上这次的 op；`base_version` 是直接父版本，`root_version` 是最初的非情景基线（老快照没有这个字段，读到 None 时按 `base_version` 理解）。
-  - assessment 先继承父情景：写范围内的 claim 用模型这次给的值，范围外的保留父情景的值，不重置成 unaffected。
-  - 提案的 `scenario_ref.challenged_claim_ids` 和 `support_status` 按叠加后的 assessment 算。
-  - 上一层的「受挑战」不会因为这一层没涉及就被抹掉。要撤销一层情景，只能回到更早的版本。如果模型在写范围内把上一层的 challenged 改掉了，用模型的值，但给一条非阻断提示。
-  - `fork(scenario=...)` 传入基线版本的情景，不传就从 store 读。签字不改情景：情景版本签字后，新版本带着同一个情景，在签字版本上再分叉照样叠加。
-- **相对时间**：anchor 或 observation_window 写 `scenario:<事件>` 时合法，但在用户确认起点之前，判定结果一律是 unknown。
-- **结构化输出**：用 pydantic schema 转成严格的 JSON Schema（所有 object 都 `additionalProperties: false`、全部字段列入 required）。API 拒绝该 schema 时，退回到在提示词里约束 JSON，由校验器兜底；退回原因（API 错误原文）记进 meta 的 `schema_fallback_reason`，录音和 trace 里都能看到。
-- **Inspect 分两步**：一整份 `InspectOutput` 被 API 拒绝（`The compiled grammar is too large`）。实测语法预算大约只够 70 个平铺的字符串字段，可空字段和对象数组还要额外占用；InspectOutput 有 64 个字段、18 个可空字段，嵌套数组也多，就算去掉全部 union、enum 和 description 仍然超限，所以没法靠删字段解决。现在分两步：`inspect`（`InspectGraphOutput`：no_chain、nodes、edges）→ `inspect.plan`（`InspectPlanOutput`：conditions、proposal），两份 schema 都实测能被接受，每份的 union 数都在 API 上限 16 以内。第 2 步只在图通过校验后才跑，并把定稿的图放进提示词；错误只回给出错的那一步重写。`inspect()` 的返回形状不变，`attempts` 是两步之和。
-- **节点短标题**：Claim 有可选字段 `label`（10 个汉字或 4 个英文词以内），老快照没有这个字段也能解析。Inspect 必须写（缺了是阻断错误）；超长只给非阻断提示，代码不截断。分叉补丁可以改 label。
-- **anchor**：绝对时间窗口的 anchor 写今天或事件已发生的日期；只有相对于一个尚未发生、要用户确认起点的事件时才写 `scenario:`。全部条件都是 scenario anchor 时，inspect 给一条非阻断提示（这种提案在用户确认前只会停在 WAIT）。
-- **分叉的 assessment**：提示词列出「需要给出 assessment 的 claim id」（= 写范围的 nodes）。写了边、条件或范围外 claim 时，一次列出全部错误（「c1.e4 是边，不是 claim；assessment 只写这些 claim：[...]」），由模型重写；代码不静默丢掉非法条目。被改的假设本身和新加的冲击节点是情景输入，写 unresolved；challenged 只用于依赖它们的 claim。
-- **Discover 的弃权边界**：只有找不到任何合理机制时才弃权（只能靠「情绪」「政策不确定性」这类泛化渠道硬连，也算没有机制）。下面三种情况都不弃权：没有支持片段（标 hypothesis）；有未驳回的反方片段（这是 Inspect 阶段的校验）；需要用户确认日期或定义。
-- **模型默认值**：`claude-opus-5-5`，effort 设为 high，开启 server-side fallback。可用 `CATALYST_MODEL` / `CATALYST_EFFORT` 覆盖。
-- **重试**：每次重试是一个新的单轮请求，内容是原题、上次输出和错误清单，不改写历史消息。
+- **Canonical form**: snapshots, the API, diffs and hashes always use `dump()`, which has all fields (including defaults). The E3 hash comparison must first put both sides through schema normalisation. It must not hash a hand-written raw dict directly.
+- **Proposal status is split into two fields**: `status` (lifecycle) and `gate` (the entry decision: WAIT / BLOCKED / READY_FOR_REVIEW). Both are written by code only. When the gate is READY_FOR_REVIEW, status is needs_review. Otherwise it is draft.
+- **Proposal fields written by code only**: `support_status` is derived from the evidence status and the scenario assessment of the claims holding the key dependency and the entry conditions, and of the claims this branch owns. In `user_judgment`, confirmed, confirmed_claim_ids and probability can be written only by the user (the model output schema simply has no such fields). When the model has rewritten the user's own words, `requires_user_confirmation` is always true.
+- **Conditions are re-evaluated with each version**: for every new version that inspect and fork produce, all conditions are evaluated again against the observations and the date. `conditions.evaluate` never raises. If the date is invalid it gives unknown.
+- **A citation's stance cannot be flipped**: when an excerpt is cited, the stance must match the stance of that excerpt in the evidence pack. There are three stances: supports, contradicts, neutral. Neutral is background information (such as "the data is updated only weekly"). It can be cited, but it does not make a claim supported, it needs no rebuttal, and `unanswered_contradictions` ignores it. None of the three stances can be flipped into another.
+- **Evidence hangs on edges only**: a node with no in-edge cannot be marked supported (a check in the inspect stage). Node-level evidence is left for later.
+- **Reference validation in fork**: a patch cannot change evidence references, so fork validates only the edges added in Stage 1. The references already in the baseline graph were validated when it was generated. A new edge in Stage 1 must run from a new node to a declared impacts target.
+- **Scenarios do not advance evidence**: a patch cannot change `evidence_status`, and a node may change only statement / time_bucket / instruments.
+- **Stacked scenarios**: when a scenario version is forked again, the new scenario is computed on top of the previous layer.
+  - `ops` = the parent scenario's ops plus this op. `base_version` is the direct parent version, and `root_version` is the original non-scenario baseline (old snapshots do not have this field, and a None is read as `base_version`).
+  - The assessment inherits from the parent scenario first: for a claim inside the write scope, use the value the model gives this time; outside the scope, keep the parent scenario's value, and do not reset it to unaffected.
+  - The proposal's `scenario_ref.challenged_claim_ids` and `support_status` are computed from the stacked assessment.
+  - A "challenged" from the previous layer is not wiped out just because this layer does not touch it. To undo one scenario layer, you can only go back to an earlier version. If the model overwrites the previous layer's challenged inside the write scope, the model's value is used, and a non-blocking hint is given.
+  - `fork(scenario=...)` takes the baseline version's scenario. If none is passed, it is read from the store. Signing does not change the scenario: after a scenario version is signed, the new version carries the same scenario, and forking again from the signed version still stacks.
+- **Relative time**: it is legal for an anchor or observation_window to be written as `scenario:<event>`. But until the user confirms the starting point, the evaluation result is always unknown.
+- **Structured output**: the pydantic schema is converted into a strict JSON Schema (every object has `additionalProperties: false`, and all fields are listed in required). When the API rejects that schema, we fall back to constraining the JSON in the prompt, with the validator as the backstop. The reason for falling back (the original API error) is recorded in `schema_fallback_reason` in meta, and is visible in both the recording and the trace.
+- **Inspect is split into two steps**: a single whole `InspectOutput` was rejected by the API (`The compiled grammar is too large`). In practice the grammar budget covers only about 70 flat string fields, and nullable fields and arrays of objects take extra room. InspectOutput has 64 fields and 18 nullable fields, and many nested arrays. Even with all unions, enums and descriptions removed it was still over the limit, so cutting fields could not solve it. It is now split into two steps: `inspect` (`InspectGraphOutput`: no_chain, nodes, edges) → `inspect.plan` (`InspectPlanOutput`: conditions, proposal). Both schemas were verified to be accepted, and each one's union count is within the API limit of 16. Step 2 runs only after the graph passes validation, and the final graph is put into its prompt. Errors go back only to the step that produced them, for rewriting. The return shape of `inspect()` is unchanged, and `attempts` is the sum of the two steps.
+- **Short node titles**: Claim has an optional field `label` (at most 10 Chinese characters or 4 English words). Old snapshots without this field still parse. Inspect must write it (a missing one is a blocking error). Too long gives only a non-blocking hint, and the code does not truncate. A fork patch may change the label.
+- **anchor**: the anchor of an absolute time window is today, or the date the event happened. Write `scenario:` only when it is relative to an event that has not happened and whose starting point the user must confirm. When all conditions are scenario anchors, inspect gives a non-blocking hint (such a proposal will only stay at WAIT until the user confirms).
+- **Assessment in a fork**: the prompt lists "the claim ids that need an assessment" (= the nodes of the write scope). If the model writes edges, conditions or claims outside the scope, all the errors are listed at once ("c1.e4 is an edge, not a claim; write assessment only for these claims: [...]") and the model rewrites. The code does not silently drop illegal entries. The changed assumption itself and a newly added shock node are scenario inputs, and get unresolved. challenged is used only for the claims that depend on them.
+- **Where Discover abstains**: abstain only when no reasonable mechanism can be found (a connection that can be forced only through a generic channel such as "sentiment" or "policy uncertainty" also counts as no mechanism). In these three cases it does not abstain: there is no supporting excerpt (label it hypothesis); there is a contradicting excerpt that has not been rebutted (this is a validation in the Inspect stage); a date or definition needs the user's confirmation.
+- **Model default**: `claude-opus-5-5`, effort set to high, server-side fallback on. Override with `CATALYST_MODEL` / `CATALYST_EFFORT`.
+- **Retry**: each retry is a fresh single-turn request. Its content is the original question, the last output and the list of errors. History messages are not rewritten.
 
-## Critic（本期不启用）
+## Critic (not enabled in this phase)
 
-**要解决什么。** Inspect 的校验器只裁决结构：引用存不存在、立场有没有翻转、阈值有没有说明。它不裁决推理本身。有两类错误结构校验抓不到：
-- 关键依赖选错了。key_dependency 指向一个容易验证、但对结论影响不大的条件，真正会推翻论点的前提反而没被列出来。
-- 谄媚或过度怀疑。用户语气很确定时，模型顺着用户把链补齐了；或者反过来，只因为资料里有反方材料，就把一条站得住的链判弱了。
+**What it is meant to solve.** Inspect's validators decide structure only: whether a citation exists, whether a stance was flipped, whether a threshold has an explanation. They do not judge the reasoning itself. Two kinds of error get past the structural checks:
+- A wrongly chosen key dependency. The key_dependency points at a condition that is easy to verify but matters little to the conclusion, while the premise that would actually overturn the argument is not listed.
+- Sycophancy or excess skepticism. When the user sounds sure, the model fills in the chain to go along with the user. Or the reverse: only because the material contains counter-evidence, the model rates a sound chain as weak.
 
-Critic 是另一个 prompt，只检查用户选中的那一条链。它的输出是「对哪个 claim 提了什么质疑」，即 `CriticReport.items = [{claim_id, challenge}]`。它只提质疑，不改图，也不改 gate。
+The Critic is a separate prompt that checks only the one chain the user chose. Its output is "which claim was challenged, and with what", that is, `CriticReport.items = [{claim_id, challenge}]`. It only raises challenges. It does not change the graph or the gate.
 
-**为什么本期不做。** 设计文档把 Critic 列为可选项，并且是时间不足时第二个放弃的（排序精细度 → Critic → 市场参照 → UI 动画）。本期优先保证状态一致性、证据标注、拒绝机制和端到端流程。另外，Critic 本身也要有 eval 才能判断它是在帮忙还是在添乱，而目前 eval 里还没有针对 Critic 的案例。
+**Why it is not built in this phase.** The design document lists the Critic as optional, and the second thing to give up when time runs short (ranking refinement → Critic → market reference → UI animation). This phase puts state consistency, evidence labelling, the refusal mechanism and the end-to-end flow first. Also, the Critic needs its own eval before anyone can tell whether it helps or gets in the way, and the eval has no Critic case yet.
 
-**现在的占位。** 接口先定下来：
-- `TradeProposal.critic` 一律是 `{status: "disabled", reason: "未启用：不在本期范围", items: []}`，老快照没有这个字段时也按这个值解析。
-- `entrypoints.critic()` 直接返回 disabled，不调模型。`derive_proposal` 每次生成提案都会调用它，前端可以按这个字段显示「未启用」。
-- 将来实现时必须走 `run_stage`（解析 → schema → 领域校验 → 带错误重写），用独立的 prompt；claim_id 只能是选中链上的节点。模型失败时给 `status: "failed"`，不阻断提案。
+**The placeholder for now.** The interface is fixed first:
+- `TradeProposal.critic` is always `{status: "disabled", reason: "Not enabled: out of scope for this phase", items: []}`, and an old snapshot without this field is parsed to this value too.
+- `entrypoints.critic()` returns disabled directly and does not call the model. `derive_proposal` calls it every time it generates a proposal, and the front end can show "disabled" from this field.
+- When it is built later, it must go through `run_stage` (parse → schema → domain validation → rewrite with errors), with its own prompt; claim_id may only be a node on the chosen chain. If the model fails, give `status: "failed"`, and do not block the proposal.
 
-## 已知限制（POC）
+## Known limitations (POC)
 
-- 检索（BM25）没有实现：整个资料包直接进入上下文。检索由证据线补上。
-- AddShock 的 Stage 1 由调用方在 op 里给出 `impacts`、`new_nodes`、`new_edges`；用模型识别任意冲击留到后续。
-- 条件判定需要的观测数据（`Config.observations`）在 POC 里通常为空，所以条件大多是 unknown，进场判定大多是 WAIT。这是设计上的默认状态（先别动）。
-- 市场参照没有接入：`market_reference` 一律为 null，即 no_market。
+- Retrieval (BM25) is not implemented: the whole evidence pack goes into the context. The evidence line will add retrieval.
+- Stage 1 of AddShock has the caller supply `impacts`, `new_nodes` and `new_edges` in the op. Using the model to identify an arbitrary shock is left for later.
+- The observation data that condition evaluation needs (`Config.observations`) is usually empty in the POC, so most conditions are unknown and most entry decisions are WAIT. This is the default state by design (WAIT).
+- The market reference is not connected: `market_reference` is always null, that is, no_market.
 
-## HTTP 接口（`catalyst/api.py`）
+## HTTP interface (`catalyst/api.py`)
 
-前端用的薄 HTTP 层，不含业务逻辑：只把请求翻译成入口调用，再从 RunStore 读出版本。运行 `.venv/bin/python -m catalyst.api`，地址是 http://localhost:8000。设 `CATALYST_REPLAY=<录制目录>` 时用录音回放，不调用模型。
+A thin HTTP layer for the front end, with no business logic. It only translates requests into entry-point calls, and reads versions back from the RunStore. Run `.venv/bin/python -m catalyst.api`; the address is http://localhost:8000. When `CATALYST_REPLAY=<recording directory>` is set, it replays the recording and does not call the model.
 
-- 所有写操作都返回 `{ok, errors, version}`，前端拿到版本号后再 GET 这个版本。
-- `GET /api/runs/{id}/versions/{v}` 返回 `{graph, proposal, scenario, diff, excerpts}`。`diff` 相对父版本计算，`promote` 写出的 fixture 也是这个形状。
+- Every write operation returns `{ok, errors, version}`, and the front end then GETs that version with the version number.
+- `GET /api/runs/{id}/versions/{v}` returns `{graph, proposal, scenario, diff, excerpts}`. `diff` is computed against the parent version, and the fixture that `promote` writes has this shape too.
 - **sign = approve one plan.** No model call; produces a new version (`op.kind = "sign"`, `op.value.terminal_id` is the approved plan, or null).
   - Request body: `{version, terminal_id, clarified_statement?, criteria?, deadline?, note?, confirmed_claim_ids?, condition_overrides?}`.
     - `terminal_id` must be present. A missing key returns `{ok: false, errors}` instead of a KeyError turned into a 404.
@@ -103,7 +103,7 @@ Critic 是另一个 prompt，只检查用户选中的那一条链。它的输出
   - User-edited thresholds and deadlines are written into the conditions; an earlier deadline shrinks the observation window. Code re-evaluates the conditions and re-derives every plan.
   - The approved plan gets `user_judgment.confirmed = true`. The other plans in the version get confirmed=false (D-B4) and keep their confirmed_claim_ids.
   - Only threshold / threshold_note / comparator / deadline can be overridden at approval.
-- **fork** 以基线版本的全部计划和 observations 为输入，逐份重新派生；只有受影响的计划失效（见下节「方案 B」）。
+- **fork** takes all the plans and the observations of the baseline version as input, and re-derives them one by one. Only the affected plans become invalid (see "Plan B" below).
 
 ## Plan B: competing branches + approved plans (B-minimal, backend)
 
