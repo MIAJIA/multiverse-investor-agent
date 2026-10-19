@@ -23,6 +23,7 @@ export interface DesignData extends Record<string, unknown> {
   isChanged: boolean;
   assessment?: AssessmentStatus;
   expanded: boolean;
+  tint?: string; // 叠图时按情景上色（#rrggbb）；有 tint 时盖过 assessment 的颜色
 }
 
 const ROLE_TINT: Record<Claim['role'], string> = {
@@ -41,18 +42,18 @@ function Target() {
 }
 
 export default function DesignNode({ data, selected }: NodeProps<Node<DesignData>>) {
-  const { claim, label, look, s, isKey, isChanged, assessment, expanded, conditions } = data;
+  const { claim, label, look, s, isKey, isChanged, assessment, expanded, conditions, tint } = data;
   const challenged = assessment === 'challenged';
   const receded = assessment && !challenged && !isChanged && look.scenario === 'dim';
   const glyph = look.strength === 'ring' ? <Ring s={s} size={expanded ? 30 : 22} /> : <Bars s={s} />;
   const ticker = claim.instruments.length > 0 && <span className="pg-ticker">{claim.instruments.join(' ')}</span>;
 
-  const bg = challenged ? 'var(--pg-orange-bg)' : look.color === 'role' ? ROLE_TINT[claim.role] : 'var(--pg-surface)';
-  const border = challenged || isKey ? 'var(--pg-orange)' : isChanged ? 'var(--pg-blue)' : 'var(--pg-line)';
+  const bg = tint ? `${tint}1f` : challenged ? 'var(--pg-orange-bg)' : look.color === 'role' ? ROLE_TINT[claim.role] : 'var(--pg-surface)';
+  const border = tint ? tint : challenged || isKey ? 'var(--pg-orange)' : isChanged ? 'var(--pg-blue)' : 'var(--pg-line)';
   const style = {
     background: bg,
     borderColor: border,
-    borderWidth: challenged || isKey || isChanged ? 2 : 1,
+    borderWidth: tint || challenged || isKey || isChanged ? 2 : 1,
     borderStyle: s.modelOnly || claim.role === 'shock' ? 'dashed' : 'solid',
     opacity: receded ? 0.32 : 1,
     outline: selected ? '2px solid var(--pg-blue)' : undefined,

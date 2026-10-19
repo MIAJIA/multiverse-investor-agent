@@ -59,3 +59,10 @@
 - 证据面板多一组「背景」（neutral）；圆环上 neutral 是灰格，不算正方也不算反方；卡片小字写「背景 n」。C1 数据里没有 neutral 证据，所以用单元测试（复制一份图、把一条引用改成 neutral）验证。
 - 提案卡加一行「Critic 挑刺：未启用（下一期）」；failed 时显示原因，ok 时列出 items。
 - 重新生成 3 份 fixture，全部通过 `check_fixtures.py`（14 个枚举）。golden C1 图的 label 全是 null，所以节点卡片仍是截短的 statement。
+
+## 多情景 playground（/#scenarios）
+
+- 数据：`make_fixtures.py` 新增 `c1_multi.json`，全部走真实 `ep.fork`：c1-v2 = 改假设（集成激光），c1-v3 = 预定义冲击（代工停产），c1-v4 = 在 c1-v2 上叠加同一个冲击。`DemoReasoner` 改成只看「操作：」那一行判断操作类型（叠加时基线图自己的 op 会误导 ScriptedReasoner）。
+- 五个设计问题，各两种做法：情景列表（分段胶囊 / 版本树）、比较（叠色 / 并排）、叠加着色（相对上一层 / 相对基线）、情景摘要（大数字卡片 / 表盘点阵）、新建情景（灵动岛 / 侧边表单）。截图 `screenshots/sc1–sc5`。
+- 情景名是演示表；「相对基线」由前端把每层后端结果合起来演示，正式版需要后端给。
+- 发现的后端问题：叠加分叉（c1-v4）的提案 `support_status` 回到 supported——`derive_proposal` 只看这一层的 challenged，父情景 c1-v2 让激光路径受挑战这件事没有带下来。
