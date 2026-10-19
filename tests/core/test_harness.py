@@ -21,11 +21,11 @@ def _good(threshold=None, note="资料包没有过境恢复基准，阈值由用
     return {
         "no_chain": False, "no_chain_reason": None,
         "nodes": [
-            {"id": "h.open", "role": "event", "statement": "霍尔木兹海峡宣布对商船重新开放", "original_statement": "霍尔木兹海峡下周重开",
+            {"id": "h.open", "role": "event", "statement": "霍尔木兹海峡宣布对商船重新开放", "label": "宣布重新开放", "original_statement": "霍尔木兹海峡下周重开",
              "evidence_status": "unknown", "time_bucket": "2026-10", "instruments": []},
-            {"id": "h.transits", "role": "intermediate", "statement": "日过境量恢复", "original_statement": "日过境量恢复",
+            {"id": "h.transits", "role": "intermediate", "statement": "日过境量恢复", "label": "过境量恢复", "original_statement": "日过境量恢复",
              "evidence_status": "contradicted", "time_bucket": "2026-11", "instruments": []},
-            {"id": "h.brent", "role": "terminal", "statement": "Brent 近月走弱", "original_statement": "Brent 近月走弱",
+            {"id": "h.brent", "role": "terminal", "statement": "Brent 近月走弱", "label": "Brent 走弱", "original_statement": "Brent 近月走弱",
              "evidence_status": "unknown", "time_bucket": "2026-11", "instruments": ["BZ"]},
         ],
         "edges": [
@@ -52,15 +52,31 @@ def _good(threshold=None, note="资料包没有过境恢复基准，阈值由用
     }
 
 
+GRAPH_KEYS, PLAN_KEYS = ("no_chain", "no_chain_reason", "nodes", "edges"), ("conditions", "proposal")
+
+
 class Scripted:
+    """按顺序返回脚本化输出。Inspect 分两步（inspect → inspect.plan），脚本里仍写完整的 InspectOutput：
+    inspect 步取它的图部分，并把条件 / 提案部分留给紧接着的 inspect.plan；plan 重试时取下一份的条件 / 提案部分。"""
     name = "scripted"
 
     def __init__(self, outputs):
-        self.outputs, self.prompts = list(outputs), []
+        self.outputs, self.prompts, self.stages, self._plan = list(outputs), [], [], None
 
     def complete(self, *, stage, system, user, schema):
         self.prompts.append(user)
-        return Completion(json.dumps(self.outputs.pop(0), ensure_ascii=False), {"model": "scripted"})
+        self.stages.append(stage)
+        if stage == "inspect.plan" and self._plan is not None:
+            out, self._plan = self._plan, None
+        else:
+            out = self.outputs.pop(0)
+            if isinstance(out, dict) and "proposal" in out and "nodes" in out:
+                if stage == "inspect":
+                    self._plan = {k: out[k] for k in PLAN_KEYS if k in out}
+                    out = {k: out[k] for k in GRAPH_KEYS if k in out}
+                elif stage == "inspect.plan":
+                    out = {k: out[k] for k in PLAN_KEYS if k in out}
+        return Completion(json.dumps(out, ensure_ascii=False), {"model": "scripted"})
 
 
 @pytest.fixture
@@ -77,20 +93,22 @@ def test_retry_feeds_back_errors_then_succeeds(ev, tmp_path):
     bad = _good(note="")  # null 阈值没写说明 → 校验失败
     r = Scripted([bad, _good()])
     res = ep.inspect("霍尔木兹海峡下周重开", reasoner=r, evidence=ev, config=CFG, store=RunStore(tmp_path))
-    assert res["ok"] and res["attempts"] == 2
-    assert "cond.transits" in r.prompts[1] and "threshold_note" in r.prompts[1]
+    assert res["ok"] and res["attempts"] == 3  # 图 1 次 + 条件 / 提案 2 次
+    assert r.stages == ["inspect", "inspect.plan", "inspect.plan"]  # 只重写出错的那一步
+    assert "cond.transits" in r.prompts[2] and "threshold_note" in r.prompts[2]
     p = res["proposal"]
     assert p["gate"] == "WAIT" and p["status"] == "draft" and p["meta"]["approval_required"] is True
     assert p["entry_conditions"][0]["evaluation_status"] == "unknown"
     trace = (tmp_path / "trace.jsonl").read_text().splitlines()
-    assert [json.loads(l)["ok"] for l in trace] == [False, True]
+    assert [(json.loads(l)["stage"], json.loads(l)["ok"]) for l in trace] == [
+        ("inspect", True), ("inspect.plan", False), ("inspect.plan", True)]
     assert (tmp_path / "snapshots" / "d1-v1.json").exists()
 
 
 def test_failed_output_never_reaches_snapshot(ev, tmp_path):
     bad = _good(note="")
     res = ep.inspect("x", reasoner=Scripted([bad, bad, bad]), evidence=ev, config=CFG, store=RunStore(tmp_path))
-    assert not res["ok"] and res["graph"] is None and res["attempts"] == 3
+    assert not res["ok"] and res["graph"] is None and res["attempts"] == 4  # 图 1 次 + 条件 / 提案 3 次
     assert not (tmp_path / "snapshots").exists()
 
 

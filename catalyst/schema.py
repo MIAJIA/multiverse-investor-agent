@@ -25,7 +25,7 @@ Channel = Literal[
 ]
 Sign = Literal["+", "-"]
 Tier = Literal["T1", "T2", "T3"]
-Stance = Literal["supports", "contradicts"]
+Stance = Literal["supports", "contradicts", "neutral"]  # neutral：背景信息（如「数据每周才更新」），既不支持也不反驳
 ConditionKind = Literal["numeric", "document", "event"]
 Predicate = Literal["observed_by", "not_observed_by", "at_deadline"]
 Comparator = Literal[">=", "<=", ">", "<", "=="]
@@ -62,6 +62,7 @@ class Claim(Strict):
     id: str
     role: Role
     statement: str
+    label: Optional[str] = Field(default=None, description="节点短标题：10 个汉字或 4 个英文词以内，概括 statement")
     original_statement: str
     evidence_status: EvidenceStatus
     time_bucket: Optional[str] = None
@@ -73,8 +74,8 @@ class EvidenceRef(Strict):
     source_id: str
     excerpt_id: str
     stance: Stance
-    supports: str = Field(description="这条证据支持或反驳的是 claim 的哪一部分")
-    rebuttal: Optional[str] = Field(default=None, description="stance=contradicts 时：为什么不构成反驳；为空表示接受反驳")
+    supports: str = Field(description="这条证据支持、反驳或交代背景的是 claim 的哪一部分")
+    rebuttal: Optional[str] = Field(default=None, description="只用于 stance=contradicts：为什么不构成反驳；为空表示接受反驳。neutral 不需要")
 
 
 class Mechanism(Strict):
@@ -212,6 +213,25 @@ class ProposalMeta(Strict):
     approval_required: Literal[True] = True
 
 
+class CriticItem(Strict):
+    claim_id: str
+    challenge: str = Field(description="对这个 claim 提了什么质疑")
+
+
+CRITIC_DISABLED_REASON = "未启用：不在本期范围"
+
+
+class CriticReport(Strict):
+    """对用户选中那一条链的挑刺结果。本期不启用：一律 status=disabled，见 entrypoints.critic。"""
+    status: Literal["disabled", "ok", "failed"]
+    reason: str
+    items: list[CriticItem] = Field(default_factory=list)
+
+
+def _critic_disabled() -> CriticReport:
+    return CriticReport(status="disabled", reason=CRITIC_DISABLED_REASON, items=[])
+
+
 class TradeProposal(Strict):
     """派生分析 + 用户判断 + 图版本号。gate / status / meta 只由代码写。"""
     status: ProposalStatus = "draft"
@@ -227,6 +247,7 @@ class TradeProposal(Strict):
     support_status: SupportStatus
     graph_version: str
     meta: ProposalMeta
+    critic: CriticReport = Field(default_factory=_critic_disabled)  # 老快照没有这个字段时也按 disabled 解析
 
 
 # ---- 证据 ---------------------------------------------------------------
@@ -292,12 +313,28 @@ class Judgment(Strict):
 
 
 class InspectOutput(Strict):
+    """Inspect 的完整产出。结构化输出放不下这一整份 schema（API 报「compiled grammar is too large」），
+    所以实时调用分两步：InspectGraphOutput（图）→ InspectPlanOutput（条件与提案草稿），见 entrypoints.inspect。"""
     no_chain: bool
     no_chain_reason: Optional[str]
     nodes: list[Claim]
     edges: list[Mechanism]
     conditions: list[ModelCondition]
     proposal: Optional[ProposalDraft]
+
+
+class InspectGraphOutput(Strict):
+    """Inspect 第 1 步：只出因果图（节点与边），或者 no_chain。"""
+    no_chain: bool
+    no_chain_reason: Optional[str]
+    nodes: list[Claim]
+    edges: list[Mechanism]
+
+
+class InspectPlanOutput(Strict):
+    """Inspect 第 2 步：在已通过校验的图上挂判定条件，给出提案草稿。"""
+    conditions: list[ModelCondition]
+    proposal: ProposalDraft
 
 
 class JudgmentOutput(Strict):
@@ -328,6 +365,7 @@ class AssessmentItem(Strict):
 class ModelFieldUpdate(Strict):
     id: str
     statement: Optional[str] = None
+    label: Optional[str] = None
     mechanism: Optional[str] = None
     sign: Optional[Sign] = None
     lag_days: Optional[int] = None
