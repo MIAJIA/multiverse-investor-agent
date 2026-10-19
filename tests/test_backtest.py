@@ -106,10 +106,42 @@ def test_r2_low_threshold_needs_an_exit_on_july_12(evaluate):
     assert "backtest_wrong_call" not in with_exit["failure_types"], with_exit["backtest"]
 
 
-def test_conditions_that_match_no_outcome_data_are_undecidable(evaluate):
-    plan = _plan([_cond("c.vague", "event", "observed_by", source="news.general")])
+def test_unmatched_conditions_go_to_human_review_not_fail(evaluate):
+    """模型看不到事后数据的键名；对不上的条件不算失败，进人工复核。"""
+    plan = _plan([_cond("c.vague", "event", "observed_by", source="news.general", start="2026-06-21", end="2026-07-08")])
     r = _run("R2", FakeEntrypoints(plans=[plan]), evaluate=evaluate)
-    assert "condition_undecidable" in r["failure_types"]
+    assert "condition_undecidable" not in r["failure_types"] and "backtest_wrong_call" not in r["failure_types"]
+    p = r["backtest"]["plans"][0]
+    assert p["unmatched"] == ["c.vague"]
+    assert any("can condition c.vague" in h for h in r["human_review"])
+
+
+def test_keywords_match_model_named_series(evaluate):
+    """模型自起的序列名对不上，但 rule 里写了 transits，就按过境量数据判。"""
+    cond = _cond("c.t", "numeric", "observed_by", series="hormuz.vessel_count.daily", comparator=">=", threshold=40)
+    cond["rule"] = "Met when daily transits through the strait reach the threshold"
+    from eval.backtest import match_observation
+    obs, how = match_observation(cond, load_case("R2"))
+    assert obs["source"] == "hormuz.vessel_count.daily" and how == "keywords:portwatch.hormuz.daily_transits"
+    r = _run("R2", FakeEntrypoints(plans=[_plan([cond])]), evaluate=evaluate)
+    assert "backtest_wrong_call" in r["failure_types"], r["backtest"]  # 40 <= 51：6/24 进场，又没有离场 → 判错
+
+
+def test_event_conditions_never_match_numeric_data():
+    from eval.backtest import match_observation
+    cond = _cond("c.e", "event", "observed_by", source="shipping news", start="2026-06-21", end="2026-07-31")
+    cond["rule"] = "Met if transits stop because of a new attack on tankers"
+    obs, how = match_observation(cond, load_case("R2"))
+    assert how == "keywords:hormuz.closure_or_attack"
+
+
+def test_partly_matched_entry_is_undetermined(evaluate):
+    met = _cond("c.t", "numeric", "observed_by", series=TRANSITS, comparator=">=", threshold=40)
+    unmatched = _cond("c.x", "event", "observed_by", source="insurer notices", start="2026-06-21", end="2026-07-08")
+    unmatched["rule"] = "Met when war-risk insurers return"
+    r = _run("R2", FakeEntrypoints(plans=[_plan([met, unmatched])]), evaluate=evaluate)
+    p = r["backtest"]["plans"][0]
+    assert p["outcome"] == "undetermined" and "backtest_wrong_call" not in r["failure_types"]
 
 
 def test_r3_document_condition_not_met_by_may_20(evaluate):

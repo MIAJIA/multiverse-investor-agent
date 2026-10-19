@@ -58,7 +58,41 @@
           "end": "2026-05-20"
         },
         "records": [],
-        "note": "No H200 China revenue confirmed in filings through 5/20: a document condition is not observed in this window."
+        "note": "No H200 China revenue confirmed in filings through 5/20: a document condition is not observed in this window.",
+        "kind": "document",
+        "match": [
+          "revenue",
+          "recognized",
+          "recognised",
+          "sales to china",
+          "china sales",
+          "data-center revenue",
+          "data center revenue"
+        ]
+      },
+      {
+        "source": "bis.h200_case_by_case_rule",
+        "kind": "document",
+        "coverage": {
+          "start": "2026-01-01",
+          "end": "2026-06-30"
+        },
+        "records": [
+          {
+            "date": "2026-01-15",
+            "value": null,
+            "excerpt_id": "sc-029"
+          }
+        ],
+        "match": [
+          "federal register",
+          "bis",
+          "final rule",
+          "case-by-case",
+          "presumption of denial",
+          "rule"
+        ],
+        "note": "The BIS rule was published and took effect on 2026-01-15 (sc-029). A fact before the decision date."
       }
     ],
     "series_aliases": {
@@ -67,7 +101,9 @@
         "NVIDIA 10-K",
         "NVIDIA SEC filings"
       ]
-    }
+    },
+    "matching_note": "Conditions are matched to outcome data by name or alias first, then by the match keywords against the condition's series, source and rule text (same kind only). Unmatched conditions go to human review, not FAIL.",
+    "matching_gap": "No outcome entry for 'licensed shipments started': sc-051 says NVIDIA was licensed to ship small quantities to specific customers, with no revenue yet. Whether that satisfies a 'shipments have started' condition is a judgment call, so such conditions stay unmatched and go to human review."
   },
   "expected": {
     "gate": "WAIT",

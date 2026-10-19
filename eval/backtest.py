@@ -102,80 +102,133 @@ def leak_checks(case: dict, out: Any, allowed: set[str]) -> list[dict]:
 
 
 # ---- 事后回判 -------------------------------------------------------------------
+#
+# 模型看不到事后数据，不可能猜中我们给事后序列起的名字。所以对照分两步：
+# 1. 名字或别名完全一致（series_aliases）；
+# 2. 否则用事后数据项的 match 关键词去匹配条件的 series、source、rule 文本，取命中最多的一项；
+#    只在同类数据里找（数值条件对数值序列，事件 / 文件条件对事件序列）。
+# 一条都对不上的条件不算失败：结果是「判定不了」，进人工复核，问「这条条件能否用某某事后数据判定」。
+# 只有对上了、并且按真实结局判错了（例如该先别动时进了场），才算 FAIL。
 
 def _d(v: str) -> _dt.date:
     return _dt.date.fromisoformat(v)
 
 
-def _observations_for(cond: dict, case: dict) -> list[dict]:
-    """把事后观测按序列名（含别名）对到这条条件上。对不上返回 []。"""
+def _obs_kind(obs: dict) -> str:
+    if obs.get("kind"):
+        return "numeric" if obs["kind"] == "numeric" else "event"
+    has_value = any(r.get("value") is not None for r in obs.get("records", []))
+    return "numeric" if has_value else "event"
+
+
+def _cond_kind(cond: dict) -> str:
+    return "numeric" if get(cond, "kind") == "numeric" else "event"
+
+
+def match_observation(cond: dict, case: dict) -> tuple[dict | None, str]:
+    """返回（改好 source 的事后观测, 匹配方式）。对不上返回 (None, "")。"""
+    key = get(cond, "series") or get(cond, "source")
+    if not key:
+        return None, ""
+    observations = [o for o in case["outcome"]["observations"] if _obs_kind(o) == _cond_kind(cond)]
     names = {str(x).lower() for x in (get(cond, "series"), get(cond, "source")) if x}
     aliases = case["outcome"].get("series_aliases", {})
-    matched = []
-    for obs in case["outcome"]["observations"]:
-        keys = {obs["source"].lower(), *(a.lower() for a in aliases.get(obs["source"], []))}
-        if names & keys:
-            o = copy.deepcopy(obs)
-            o["source"] = get(cond, "series") or get(cond, "source")
-            o.pop("note", None)
-            matched.append(o)
-    return matched
+    chosen, how = None, ""
+    for obs in observations:
+        if names & {obs["source"].lower(), *(a.lower() for a in aliases.get(obs["source"], []))}:
+            chosen, how = obs, "name"
+            break
+    if chosen is None:
+        text = " ".join(str(x) for x in (get(cond, "series"), get(cond, "source"), get(cond, "rule")) if x).lower()
+        best = 0
+        for obs in observations:
+            hits = sum(1 for k in obs.get("match", []) if k.lower() in text)
+            if hits > best:
+                chosen, best, how = obs, hits, "keywords"
+    if chosen is None:
+        return None, ""
+    o = copy.deepcopy(chosen)
+    o["source"] = key
+    for k in ("note", "match", "kind"):
+        o.pop(k, None)
+    return o, f"{how}:{chosen['source']}"
 
 
-def _status(cond: dict, case: dict, evaluate: ConditionEvaluator, on: str) -> tuple[str, bool]:
-    obs = _observations_for(cond, case)
-    return (evaluate(cond, obs, _d(on)) if obs else "unknown"), bool(obs)
+def _status(cond: dict, case: dict, evaluate: ConditionEvaluator, on: str) -> str | None:
+    """met / not_met / unknown；对不上任何事后数据时返回 None（判定不了）。"""
+    obs, _ = match_observation(cond, case)
+    return evaluate(cond, [obs], _d(on)) if obs else None
 
 
-def entered_by(plan: Any, case: dict, evaluate: ConditionEvaluator, on: str) -> tuple[bool, list[str]]:
-    """进场 AND：每一条进场条件在 on 当天都判定为 met 才算进场；unknown 不算（系统会一直先别动）。"""
+def entry_not_met(plan: Any, case: dict, evaluate: ConditionEvaluator, on: str) -> tuple[bool | None, list]:
+    """进场 AND。True = 到 on 为止没进场；False = 进场了；None = 判定不了。
+
+    对上了的条件里有一条不是 met（not_met 或 unknown），AND 就不成立，确定没进场；
+    对上了的都是 met、但还有对不上的条件时，判定不了。
+    """
     conds = plan_conditions(plan, "entry")
     statuses = [_status(c, case, evaluate, on) for c in conds]
-    return bool(conds) and all(s == "met" for s, _ in statuses), [s for s, _ in statuses]
+    if not conds or any(st is not None and st != "met" for st in statuses):
+        return True, statuses
+    if all(st == "met" for st in statuses):
+        return False, statuses
+    return None, statuses
 
 
-def exited_by(plan: Any, case: dict, evaluate: ConditionEvaluator, on: str) -> tuple[bool, list[str]]:
+def exit_met(plan: Any, case: dict, evaluate: ConditionEvaluator, on: str) -> tuple[bool | None, list]:
+    """离场。True = 到 on 为止触发了；False = 没触发；None = 判定不了。"""
     conds = plan_conditions(plan, "exit")
-    statuses = [_status(c, case, evaluate, on)[0] for c in conds]
+    statuses = [_status(c, case, evaluate, on) for c in conds]
     if not conds:
-        return False, []
-    hit = all(s == "met" for s in statuses) if get(plan, "exit_logic") == "ALL" else any(s == "met" for s in statuses)
-    return hit, statuses
+        return False, statuses
+    if get(plan, "exit_logic") == "ALL":
+        if any(st is not None and st != "met" for st in statuses):
+            return False, statuses
+        return (True if all(st == "met" for st in statuses) else None), statuses
+    if any(st == "met" for st in statuses):
+        return True, statuses
+    return (False if all(st is not None for st in statuses) else None), statuses
 
 
-def grade_outcome(case: dict, plans: list, evaluate: ConditionEvaluator) -> tuple[list[dict], dict]:
-    """按 expected.backtest.pass_if_any 回判每份计划；任一规则成立即该计划通过，全部计划通过才算通过。
+def grade_outcome(case: dict, plans: list, evaluate: ConditionEvaluator) -> tuple[list[dict], dict, list[str]]:
+    """按 expected.backtest.pass_if_any 回判每份计划。
 
-    另外单独记「条件能不能被事后数据判定」：一份计划没有一条条件对得上事后观测，记 condition_undecidable。
+    返回（检查, 明细, 人工复核项）。每份计划三种结果：pass（有一条规则确定成立）、
+    fail（所有规则都确定不成立）、undetermined（有规则判定不了）。只有 fail 让案例 FAIL；
+    undetermined 列进人工复核。
     """
     rules = case["expected"]["backtest"].get("pass_if_any", [])
-    per_plan, failed, undecidable = [], [], []
+    sources = [o["source"] for o in case["outcome"]["observations"]]
+    per_plan, failed, review = [], [], []
     for p in plans:
         tid = str(get(p, "terminal_id") or "?")
         results = {}
         for rule in rules:
             kind, on = rule.split(":", 1)
             if kind == "entry_not_met_by":
-                entered, statuses = entered_by(p, case, evaluate, on)
-                results[rule] = {"pass": not entered, "statuses": statuses}
+                verdict, statuses = entry_not_met(p, case, evaluate, on)
             elif kind == "exit_met_by":
-                hit, statuses = exited_by(p, case, evaluate, on)
-                results[rule] = {"pass": hit, "statuses": statuses}
+                verdict, statuses = exit_met(p, case, evaluate, on)
             else:
                 raise ValueError(f"unknown grading rule: {rule}")
-        ok = any(r["pass"] for r in results.values()) if results else False
-        decidable = any(_observations_for(c, case) for c in plan_conditions(p))
-        per_plan.append({"terminal_id": tid, "pass": ok, "rules": results, "decidable": decidable})
-        if not ok:
+            results[rule] = {"verdict": verdict, "statuses": statuses}
+        verdicts = [r["verdict"] for r in results.values()]
+        outcome = "pass" if True in verdicts else ("fail" if verdicts and all(v is False for v in verdicts) else "undetermined")
+        matches = {str(get(c, "id")): match_observation(c, case)[1] or None for c in plan_conditions(p)}
+        unmatched = [cid for cid, m in matches.items() if m is None]
+        conditions = [{k: get(c, k) for k in ("id", "kind", "predicate", "series", "source", "comparator", "threshold",
+                                              "rule")} for c in plan_conditions(p)]
+        per_plan.append({"terminal_id": tid, "outcome": outcome, "pass": outcome == "pass", "rules": results,
+                         "matches": matches, "unmatched": unmatched, "decidable": outcome != "undetermined",
+                         "conditions": conditions})
+        if outcome == "fail":
             failed.append(tid)
-        if not decidable:
-            undecidable.append(tid)
-    checks = [
-        check("backtest_outcome", "Backtest", bool(plans) and not failed,
-              f"plans that fail against the real outcome: {failed}" if failed else ("" if plans else "no plans to grade"),
-              "backtest_wrong_call"),
-        check("backtest_conditions_decidable", "Backtest", bool(plans) and not undecidable,
-              f"plans whose conditions match no outcome data and cannot be decided: {undecidable}" if undecidable else "",
-              "condition_undecidable"),
-    ]
-    return checks, {"rules": rules, "plans": per_plan}
+        elif outcome == "undetermined":
+            for c in plan_conditions(p):
+                if str(get(c, "id")) in unmatched:
+                    review.append(f"Backtest {case['id']} / {tid}: can condition {get(c, 'id')} "
+                                  f"(\"{str(get(c, 'rule') or '')[:100]}\") be decided with the outcome data {sources}?")
+    checks = [check("backtest_outcome", "Backtest", not failed,
+                    f"plans that made the wrong call against the real outcome: {failed}" if failed else
+                    ("" if plans else "no plans to grade"), "backtest_wrong_call")]
+    return checks, {"rules": rules, "plans": per_plan}, review

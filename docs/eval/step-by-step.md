@@ -95,3 +95,9 @@ Check off each step when it is done. Working directory `~/Downloads/multiverse-i
 - [x] Docs in English (eval-plan, test-plan, implementation-plan, test-set-plan, step-by-step, review sheet, INTERFACE, SOURCE)
 - [x] K3: case file written against the evidence line's verified pack (packs/opec2022.json, evidence 2553a9f); tests skip until that pack is merged, and pass with it in place (checked with a temporary copy)
 - [ ] Real Haiku runs after Plan B and the research loop merge (main session)
+
+## 13. Backtest matching (after the first Haiku run)
+- [x] Outcome entries carry `kind` and `match` keywords; conditions match by name / alias first, then keywords in series, source and rule text, same kind only
+- [x] Three-way grading per rule (true / false / undetermined); only a matched and wrong call is FAIL; unmatched conditions go to human review
+- [x] Outcome data refined: R2 adds the 6/20 reopening notice; R3 adds the 1/15 BIS rule and narrows the revenue keywords (no 'shipments started' entry on purpose); K3 adds the 12/1 published output decline
+- [x] haiku-p6m re-scored by replay with core 0497efa: R2 pass, R3 and K3 pending review; nothing else changed

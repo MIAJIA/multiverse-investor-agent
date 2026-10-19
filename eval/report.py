@@ -147,8 +147,9 @@ def backtest_section(results: list[dict]) -> str:
         leak_text = "-" if not leaks else ("leak" if any(not c["passed"] for c in leaks) else "no leak")
         bt = r.get("backtest")
         if bt:
-            plans = "; ".join(f"{p['terminal_id']}: {'pass' if p['pass'] else 'fail'}"
-                              + ("" if p["decidable"] else " (undecidable)") for p in bt["plans"]) or "no plans"
+            plans = "; ".join(f"{p['terminal_id']}: {p.get('outcome') or ('pass' if p['pass'] else 'fail')}"
+                              + (f" (unmatched: {', '.join(p['unmatched'])})" if p.get("unmatched") else "")
+                              for p in bt["plans"]) or "no plans"
             grade = f"{plans} [rules: {', '.join(bt['rules'])}]"
         else:
             grade = "not graded"
