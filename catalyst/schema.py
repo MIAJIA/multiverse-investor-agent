@@ -39,6 +39,8 @@ CandidateLabel = Literal["grounded", "hypothesis", "not_recommended"]
 OpKind = Literal["generate", "discover", "inspect", "change_assumption", "add_shock", "sign"]
 ExitLogic = Literal["ANY", "ALL"]
 Side = Literal["long", "short"]
+BranchKind = Literal["hypothetical", "evidenced", "model_only"]
+TrunkKind = Literal["evidenced", "model_only"]
 
 
 class Strict(BaseModel):
@@ -196,6 +198,7 @@ class UserJudgment(Strict):
     requires_user_confirmation: bool = True
     confirmed: bool = False
     confirmed_claim_ids: list[str] = Field(default_factory=list)
+    note: Optional[str] = None  # the user's note at approval; user-written only, absent from ModelUserJudgment
 
 
 class MarketReference(Strict):
@@ -212,7 +215,7 @@ class ScenarioRef(Strict):
 
 
 class ProposalMeta(Strict):
-    proposal_version: str
+    proposal_version: str = Field(description="f\"{graph_version}.{terminal_id}\", unique among the plans of a version")
     prompt_version: str
     model: str
     approval_required: Literal[True] = True
@@ -238,7 +241,19 @@ def _critic_disabled() -> CriticReport:
 
 
 class TradeProposal(Strict):
-    """派生分析 + 用户判断 + 图版本号。gate / status / meta 只由代码写。"""
+    """The plan for one terminal: derived analysis + user judgment + graph version. Exactly one per terminal per
+    version (the bundle's proposals). gate / status / support_status / meta / approval_reset / rival_changed are
+    written by code only.
+
+    user_judgment.confirmed means "approved": at most one plan per version is true (approving one revokes the others).
+    approval_reset and rival_changed describe what happened in this version relative to its parent. They are
+    recomputed on every derivation and never inherited; only fork writes true, inspect / sign always write false.
+    - approval_reset: the plan was approved in the parent version and this fork's write scope touched it
+      (docs/changes 4.3); the approval is revoked and needs to be given again.
+    - rival_changed: this plan was not affected by the fork, but another plan in the same version was. It only says
+      "another plan was affected" and does not judge whether the two compete: terminals that benefit side by side
+      (e.g. C1) trigger it too."""
+    terminal_id: str
     status: ProposalStatus = "draft"
     gate: Gate
     direction: Direction
@@ -253,6 +268,24 @@ class TradeProposal(Strict):
     graph_version: str
     meta: ProposalMeta
     critic: CriticReport = Field(default_factory=_critic_disabled)  # 老快照没有这个字段时也按 disabled 解析
+    approval_reset: bool = False
+    rival_changed: bool = False
+
+
+# ---- Branches (derived by code in catalyst/branches.py, never labelled by the model) ----
+
+class Branch(Strict):
+    """One branch per terminal. kind by priority: hypothetical > evidenced > model_only (rules in branches.py)."""
+    terminal_id: str
+    divergence_node_ids: list[str] = Field(description="divergence nodes among this branch's ancestors: nodes whose "
+                                                       "out-edges reach different sets of terminals")
+    own_node_ids: list[str] = Field(description="(ancestors(t) ∪ {t}) − all ancestors of the other terminals")
+    own_edge_ids: list[str] = Field(description="edges whose target is in own_node_ids")
+    kind: BranchKind
+    trunk: TrunkKind = Field(description="strength of the shared upstream (ancestors outside the own part, and the "
+                                         "edges into them)")
+    synthetic_evidence: bool = Field(description="an own edge cites an excerpt from a synthetic placeholder pack: "
+                                                 "kind is never evidenced, the UI says the material is a placeholder")
 
 
 # ---- 证据 ---------------------------------------------------------------
@@ -304,6 +337,9 @@ class ModelUserJudgment(Strict):
 
 
 class ProposalDraft(Strict):
+    """The plan draft for one terminal. Exactly one per terminal; direction.instrument must be one of that
+    terminal's instruments."""
+    terminal_id: str
     direction: Direction
     entry_condition_ids: list[str]
     exit_condition_ids: list[str]
@@ -325,7 +361,7 @@ class InspectOutput(Strict):
     nodes: list[Claim]
     edges: list[Mechanism]
     conditions: list[ModelCondition]
-    proposal: Optional[ProposalDraft]
+    proposals: list[ProposalDraft]
 
 
 class InspectGraphOutput(Strict):
@@ -337,9 +373,9 @@ class InspectGraphOutput(Strict):
 
 
 class InspectPlanOutput(Strict):
-    """Inspect 第 2 步：在已通过校验的图上挂判定条件，给出提案草稿。"""
+    """Inspect step 2: attach decision conditions to the validated graph and give one plan draft per terminal."""
     conditions: list[ModelCondition]
-    proposal: ProposalDraft
+    proposals: list[ProposalDraft]
 
 
 class JudgmentOutput(Strict):
@@ -388,6 +424,22 @@ class ForkOutput(Strict):
     next_checks: list[str]
 
 
+# ---- Version bundle (GET /api/runs/{id}/versions/{v}; promote writes the same shape) ----
+
+class VersionBundle(Strict):
+    """The full view of one version. proposals follow the graph's terminal order, one per terminal ([] when none).
+    branches, node_kinds and edge_kinds are derived together from the graph and the scenario by
+    catalyst/branches.py (derive_views); the UI only looks them up: every node and every edge has a kind."""
+    graph: Graph
+    proposals: list[TradeProposal]
+    branches: list[Branch]
+    node_kinds: dict[str, BranchKind]
+    edge_kinds: dict[str, BranchKind]
+    scenario: Optional[Scenario]
+    diff: Optional[dict[str, Any]]
+    excerpts: list[Excerpt]
+
+
 # ---- 便捷解析（eval 的 tests/_adapter.py 会自动用上）---------------------
 
 def _strip_private(data: dict) -> dict:
@@ -404,3 +456,28 @@ def parse_condition(data: dict | Condition) -> Condition:
 
 def parse_pack(data: dict | EvidencePack) -> EvidencePack:
     return data if isinstance(data, EvidencePack) else EvidencePack.model_validate(_strip_private(data))
+
+
+class LegacyProposalError(ValueError):
+    pass
+
+
+def parse_proposals(data: list | dict | None, graph: dict | Graph) -> list[TradeProposal]:
+    """Read the plans of a version. The current format is a list; files written before plan B hold a single dict,
+    which becomes a one-item list. A legacy proposal without terminal_id gets the one terminal whose instruments
+    contain direction.instrument; if there is none, or more than one, this raises instead of guessing."""
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return [p if isinstance(p, TradeProposal) else TradeProposal.model_validate(_strip_private(p)) for p in data]
+    d = _strip_private(dict(data))
+    if not d.get("terminal_id"):
+        g = parse_graph(graph)
+        inst = (d.get("direction") or {}).get("instrument")
+        hits = [n.id for n in g.nodes if n.role == "terminal" and inst in n.instruments]
+        if len(hits) != 1:
+            raise LegacyProposalError(
+                f"[{inst}] legacy proposal has no terminal_id and instrument {inst} matches {len(hits)} terminals "
+                f"{hits} in graph {g.version}; cannot decide")
+        d["terminal_id"] = hits[0]
+    return [TradeProposal.model_validate(d)]

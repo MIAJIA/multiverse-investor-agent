@@ -13,12 +13,13 @@
 | `catalyst/conditions.py` | 条件判定 met / not_met / unknown | 代码 |
 | `catalyst/gate.py` | 进场 AND 真值表、退出 ANY / ALL | 代码 |
 | `catalyst/fork.py` | 写范围计算、补丁应用（越界即拒）、Scenario 默认值 | 代码 |
+| `catalyst/branches.py` | 分支推导：独有部分、分叉点、kind（hypothetical / evidenced / model_only）、trunk | 代码 |
 | `catalyst/diff.py` | 两个版本的结构 diff（含 `changed_claim_ids`，供前端直接显示） | 代码 |
 | `catalyst/store.py` | 不可变快照 + 操作日志 + trace + 录音，一次运行一个目录 | 代码 |
 | `catalyst/reasoner.py` | Reasoner 边界：实时 / 录制 / 回放 | 模型 |
 | `catalyst/evidence.py` | Evidence Provider 边界：按 pack 载入资料 | — |
 | `catalyst/harness.py` | 受控生成：调模型 → 解析 → schema → 领域校验 → 带错误重写，最多重试 2 次 | 代码 |
-| `catalyst/entrypoints.py` | discover / inspect / fork 三个入口 | — |
+| `catalyst/entrypoints.py` | discover / inspect / fork 三个入口，加上批准（sign） | — |
 | `catalyst/__main__.py` | harness CLI：跑案例、录制、回放、提升 fixture | — |
 
 ## 为什么不手写 fixture
@@ -44,7 +45,7 @@
 
 - **规范形式**：快照、API、diff 和哈希一律使用字段齐全（含默认值）的 `dump()`。E3 的哈希比对必须先把两边都经过 schema 规范化，不能直接哈希手写的原始 dict。
 - **提案状态拆成两个字段**：`status`（生命周期）和 `gate`（进场判定：WAIT / BLOCKED / READY_FOR_REVIEW），两者都只由代码写。gate 为 READY_FOR_REVIEW 时 status 是 needs_review，否则是 draft。
-- **只由代码写的提案字段**：`support_status` 由关键依赖与进场条件所在 claim 的证据状态和情景 assessment 推导；`user_judgment` 里的 confirmed、confirmed_claim_ids、probability 只能由用户写（模型输出 schema 里根本没有这几个字段）。模型改写过原话时，`requires_user_confirmation` 一定是 true。
+- **只由代码写的提案字段**：`support_status` 由关键依赖与进场条件所在 claim、以及这条分支独有的 claim 的证据状态和情景 assessment 推导；`user_judgment` 里的 confirmed、confirmed_claim_ids、probability 只能由用户写（模型输出 schema 里根本没有这几个字段）。模型改写过原话时，`requires_user_confirmation` 一定是 true。
 - **条件判定随版本重算**：inspect 和 fork 产出的每个新版本，都按观测和日期重新判定全部条件。`conditions.evaluate` 永不抛异常，日期不合法时给 unknown。
 - **引用立场不能翻转**：引用片段时的 stance 必须与资料包里该片段的 stance 一致。立场有三种：supports、contradicts、neutral。neutral 是背景信息（如「数据每周才更新」），可以引用，但不让 claim 变成 supported，也不需要 rebuttal，`unanswered_contradictions` 也不管它。三种立场两两都不能互相翻转。
 - **证据只挂在边上**：没有入边的节点不能标 supported（inspect 阶段的检查）。节点级证据留到后续。
@@ -94,8 +95,62 @@ Critic 是另一个 prompt，只检查用户选中的那一条链。它的输出
 
 - 所有写操作都返回 `{ok, errors, version}`，前端拿到版本号后再 GET 这个版本。
 - `GET /api/runs/{id}/versions/{v}` 返回 `{graph, proposal, scenario, diff, excerpts}`。`diff` 相对父版本计算，`promote` 写出的 fixture 也是这个形状。
-- **sign** 不调用模型，产出一个新版本（`op.kind = "sign"`）：
-  - 用户改的阈值和截止写进条件；截止提前时，观测窗口跟着收。
-  - 重新判定条件、重新派生提案，`user_judgment.confirmed = true`。
-  - 签字只能改 threshold / threshold_note / comparator / deadline 这几个字段。
-- **fork** 以基线版本的提案（含签字）和 observations 为输入，所以签字结果在分叉后不会丢失。
+- **sign = approve one plan.** No model call; produces a new version (`op.kind = "sign"`, `op.value.terminal_id` is the approved plan, or null).
+  - Request body: `{version, terminal_id, clarified_statement?, criteria?, deadline?, note?, confirmed_claim_ids?, condition_overrides?}`.
+    - `terminal_id` must be present. A missing key returns `{ok: false, errors}` instead of a KeyError turned into a 404.
+    - `terminal_id: null` approves no plan (no trade); the judgment fields must then be empty.
+    - The text fields and `note` keep the plan's values when omitted, so sign cannot clear them.
+  - User-edited thresholds and deadlines are written into the conditions; an earlier deadline shrinks the observation window. Code re-evaluates the conditions and re-derives every plan.
+  - The approved plan gets `user_judgment.confirmed = true`. The other plans in the version get confirmed=false (D-B4) and keep their confirmed_claim_ids.
+  - Only threshold / threshold_note / comparator / deadline can be overridden at approval.
+- **fork** 以基线版本的全部计划和 observations 为输入，逐份重新派生；只有受影响的计划失效（见下节「方案 B」）。
+
+## Plan B: competing branches + approved plans (B-minimal, backend)
+
+Source: `docs/changes/2026-10-18-branches-and-plans.md`, section 4, plus four additions from the frontend design review (kind tables, revoking approval, the note, and one statement per version).
+
+- **Data model**:
+  - `ProposalDraft` / `TradeProposal` carry `terminal_id`; `Direction` stays required.
+  - `InspectPlanOutput.proposals` is a list. The structured output was accepted by the live API (Haiku, 2 calls, no fallback; 12 unions against the limit of 16).
+  - The version bundle is `schema.VersionBundle`, switched in one go to `proposals`; there is no `proposal` field.
+  - `UserJudgment.note` is user-only. `ModelUserJudgment` has no such field.
+- **Plan order**: plans follow the graph's terminal order, so the default plan never depends on the model's output order.
+- **Legacy files**:
+  - A `proposals/<v>.json` holding a single dict is read by `parse_proposals` as a one-item list. Its `terminal_id` is the one terminal whose instruments contain `direction.instrument`; none or several matches raise `LegacyProposalError` instead of guessing.
+  - `observations/<v>.json` gains `synthetic` (this version used a synthetic placeholder pack); a missing field reads as false.
+- **Branch derivation** (`branches.derive_views`, shared by store.bundle, promote, and the inspect / fork results):
+  - Own part: `(ancestors(t) ∪ {t}) − ⋃ ancestors(other terminals)`; own edges are the edges ending in it.
+  - Divergence node: a node whose out-edges reach different terminal sets. Each branch lists the divergence nodes among its ancestors.
+  - kind, by priority:
+    1. hypothetical: `ancestors(t) ∪ {t}` contains a role=shock node, a scenario-added node, or a changed assumption (a changed terminal counts too).
+    2. evidenced: at least one own edge, every own edge non-model_only with supports evidence, no contradicted own node, and no synthetic excerpt cited by an own edge.
+    3. model_only: everything else.
+  - A branch with no own edges is never evidenced. `synthetic_evidence` flags "an own edge cites a synthetic excerpt" and is independent of kind.
+  - trunk: the ancestors outside the own part and the edges into them, scored by the same rule. With no edges (only the starting event shared), it is evidenced.
+  - `node_kinds` / `edge_kinds`:
+    - hypothetical inputs → hypothetical;
+    - own-part nodes → their branch's kind;
+    - shared nodes → the weakest trunk among the branches containing them (model_only < evidenced);
+    - edges → the kind of their target node.
+- **Plan validation** (`validator.validate_plans`):
+  - Blocking:
+    - the plan terminals equal the graph's terminals exactly (missing, duplicate and non-terminal targets are all reported);
+    - each instrument belongs to its plan's terminal;
+    - every reference exists;
+    - each plan has at least one entry condition;
+    - every plan has an identical `original_statement` and `clarified_statement`. There is one reading of the user's words per graph; the model rewrites, code never picks one.
+  - Non-blocking: an entry condition on a claim that is not upstream. Exit conditions get no hint, because the prompt encourages mirrored exit conditions on a rival branch.
+- **Which plans a changed assumption invalidates** (`entrypoints.plan_affected`, write scope only):
+  - A plan is affected when its terminal is in scope, or one of its entry / exit conditions sits on an in-scope claim, or its key_dependency points into the scope.
+  - Affected plans get confirmed=false and lose in-scope confirmed_claim_ids. The others keep their approval.
+  - `approval_reset`: the plan was approved and is now affected.
+  - `rival_changed`: this plan was not affected, but another plan in the version was. It does not judge whether the two compete; C1's side-by-side terminals trigger it too.
+  - Both flags are recomputed on every derivation; inspect and sign always write false.
+- **Follow-up research hook**: a comment in `inspect` marks the point where the graph and plans are built but not yet persisted. The agent loop plugs in there and finds gaps via `kind == "model_only"`.
+- **Prompt p5** (INSPECT and both step prompts are now in English):
+  - competing branches only at genuine disputes;
+  - every event that has not happened yet is role=shock;
+  - one plan per terminal, with mirrored conditions encouraged;
+  - the same statements in every plan.
+
+  All old recordings are invalidated and need re-recording.

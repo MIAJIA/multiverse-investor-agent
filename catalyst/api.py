@@ -6,10 +6,12 @@
 接口（所有写操作都返回 {ok, errors, version}，前端再 GET 这个版本）：
   POST /api/runs                          {event, target?, packs?, online?}
                                           → 返回体另有 web: {online, status, excerpts, message…}：联网开 / 关、拿到几段或失败原因
-  GET  /api/runs/{run_id}/versions/{v}    → {graph, proposal, scenario, diff, excerpts}
+  GET  /api/runs/{run_id}/versions/{v}    → {graph, proposals, branches, scenario, diff, excerpts}（schema.VersionBundle）
   POST /api/runs/{run_id}/fork            {base_version, op}
-  POST /api/runs/{run_id}/sign            {version, clarified_statement, criteria, deadline,
-                                           confirmed_claim_ids, condition_overrides}
+  POST /api/runs/{run_id}/sign            {version, terminal_id, clarified_statement?, criteria?, deadline?, note?,
+                                           confirmed_claim_ids?, condition_overrides?}
+                                          sign approves the plan on terminal_id; terminal_id=null approves none
+                                          (no trade). Optional fields keep the plan's values when omitted.
 """
 from __future__ import annotations
 
@@ -90,21 +92,30 @@ def fork_run(run_id: str, body: dict) -> dict:
     bundle = store.bundle(base_v)
     meta = json.loads((store.root / "case.json").read_text())
     cfg = ep.Config(packs=meta.get("packs", []), today=meta["today"], run_prefix="r")
-    pack = {"pack_id": f"observed:{base_v}", "excerpts": bundle["excerpts"]} if bundle["excerpts"] else None
+    synthetic = store.get_observations(base_v)["synthetic"]
+    pack = {"pack_id": f"observed:{base_v}", "synthetic": synthetic, "excerpts": bundle["excerpts"]} \
+        if bundle["excerpts"] else None
     res = ep.fork(bundle["graph"], body["op"], reasoner=_reasoner(store), evidence=None, config=cfg, pack=pack,
-                  proposal=bundle["proposal"], scenario=bundle["scenario"], store=store)
+                  proposals=bundle["proposals"], scenario=bundle["scenario"], store=store)
     return {**res, "version": res["graph"]["version"] if res.get("graph") else None}
 
 
 def sign_run(run_id: str, body: dict) -> dict:
+    """Approve one plan, or none with terminal_id=null. A missing key yields {ok: false, errors} instead of a
+    KeyError (which the handler would turn into a 404). terminal_id must be present; null is a valid value."""
     store = _store(run_id)
+    missing = [k for k in ("version", "terminal_id") if k not in body or (k == "version" and not body[k])]
+    if missing:
+        return {"ok": False, "errors": [f"[{k}] required (terminal_id may be null to approve no plan)"
+                                        for k in missing], "version": None}
     bundle = store.bundle(body["version"])
-    if not bundle["proposal"]:
-        return {"ok": False, "errors": [f"[{body['version']}] 这个版本没有提案，不能签字"], "version": None}
+    if not bundle["proposals"]:
+        return {"ok": False, "errors": [f"[{body['version']}] 这个版本没有计划，不能批准"], "version": None}
     meta = json.loads((store.root / "case.json").read_text())
-    return ep.sign(bundle["graph"], bundle["proposal"], clarified_statement=body["clarified_statement"],
-                   criteria=body.get("criteria"), deadline=body.get("deadline"),
-                   confirmed_claim_ids=body.get("confirmed_claim_ids", []),
+    return ep.sign(bundle["graph"], bundle["proposals"], terminal_id=body["terminal_id"],
+                   clarified_statement=body.get("clarified_statement"),
+                   criteria=body.get("criteria"), deadline=body.get("deadline"), note=body.get("note"),
+                   confirmed_claim_ids=body.get("confirmed_claim_ids") or [],
                    condition_overrides=body.get("condition_overrides") or {},
                    config=ep.Config(today=meta["today"]), store=store)
 
