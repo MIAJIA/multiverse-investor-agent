@@ -197,5 +197,66 @@ def unanswered_contradictions(graph: Graph | dict, evidence_pack: EvidencePack |
             for x in pack.excerpts if x.stance == "contradicts" and x.excerpt_id not in cited]
 
 
+# ---- Plans (exactly one per terminal) ------------------------------------------------
+
+def validate_plans(graph: Graph | dict, drafts: list) -> list[Issue]:
+    """Plan drafts (ProposalDraft, or TradeProposal with the same fields) against the graph. Blocking:
+    - the set of plan terminals equals the set of terminals in the graph: one plan each, no more, no less;
+    - direction.instrument belongs to that terminal's instruments;
+    - referenced conditions and claims exist; at least one entry condition;
+    - all plans share one reading of the user's words: user_judgment.original_statement and clarified_statement are
+      identical across plans (the UI confirms it once for the whole graph; code never picks one of several).
+    Non-blocking: an entry condition on a claim that is not upstream of the plan's terminal (conditions may be
+    shared). Exit conditions get no hint: the prompt encourages mirror exit conditions that sit on a rival branch."""
+    from catalyst.branches import ancestors  # branches only imports schema; local import keeps module order simple
+
+    g = parse_graph(graph)
+    out: list[Issue] = []
+    nodes = {n.id: n for n in g.nodes}
+    conds = {c.id: c for c in g.conditions}
+    terminals = [n.id for n in g.nodes if n.role == "terminal"]
+    seen: list[str] = [d.terminal_id for d in drafts]
+    for t in sorted({t for t in seen if seen.count(t) > 1}):
+        out.append(Issue(t, f"terminal {t} has {seen.count(t)} plans; write exactly one plan per terminal"))
+    for t in sorted(set(seen) - set(terminals)):
+        what = "is not a terminal node" if t in nodes else "is not in the graph"
+        out.append(Issue(t, f"plan terminal_id {t} {what}; plans may only target these terminals: {terminals}"))
+    for t in terminals:
+        if t not in seen:
+            out.append(Issue(t, f"terminal {t} has no plan; every terminal in the graph needs one plan with a "
+                                "direction and an instrument"))
+    for field in ("original_statement", "clarified_statement"):
+        values = {getattr(d.user_judgment, field) for d in drafts}
+        if len(values) > 1:
+            out.append(Issue("proposals", f"user_judgment.{field} differs across plans ({sorted(values)}); "
+                                          "it is one reading of the user's words for the whole graph, so write the "
+                                          "same text in every plan"))
+    for d in drafts:
+        t = d.terminal_id
+        if hasattr(d, "entry_condition_ids"):
+            entry, exit_ = list(d.entry_condition_ids), list(d.exit_condition_ids)
+        else:
+            entry, exit_ = [c.id for c in d.entry_conditions], [c.id for c in d.exit_conditions]
+        out += [Issue(i, f"plan {t} references unknown condition {i}") for i in entry + exit_ if i not in conds]
+        if not entry:
+            out.append(Issue(t, f"plan {t} needs at least one entry condition (an empty set never passes, and it "
+                                "says nothing about what is still needed)"))
+        kd = d.key_dependency
+        if kd and kd.condition_id and kd.condition_id not in conds:
+            out.append(Issue(kd.condition_id, f"key_dependency of plan {t} references an unknown condition"))
+        if kd and kd.claim_id and kd.claim_id not in nodes:
+            out.append(Issue(kd.claim_id, f"key_dependency of plan {t} references an unknown claim"))
+        if t in nodes and nodes[t].role == "terminal":
+            if d.direction.instrument not in nodes[t].instruments:
+                out.append(Issue(t, f"plan {t} trades {d.direction.instrument}, which is not an instrument of this "
+                                    f"terminal: {nodes[t].instruments}"))
+            upstream = ancestors(g, t) | {t}
+            for i in dict.fromkeys(entry):
+                if i in conds and conds[i].claim_id not in upstream:
+                    out.append(Issue(i, f"entry condition {i} of plan {t} sits on {conds[i].claim_id}, which is not "
+                                        f"upstream of {t}", blocking=False))
+    return out
+
+
 def blocking(issues: list[Issue]) -> list[Issue]:
     return [i for i in issues if i.blocking]

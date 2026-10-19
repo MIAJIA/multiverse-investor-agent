@@ -1,0 +1,114 @@
+{
+  "id": "R3",
+  "type": "backtest",
+  "layer": "R",
+  "title": "Backtest: 'US eases H200 exports to China, NVDA China revenue recovers'",
+  "entry": "inspect",
+  "as_of": "2026-01-16",
+  "input": {
+    "event": "The US moved H200 exports to China to case-by-case review, so NVDA's China data-center revenue will recover",
+    "target": "NVDA",
+    "today": "2026-01-16",
+    "evidence_packs": [
+      "semiconductor"
+    ]
+  },
+  "online": false,
+  "online_locked": true,
+  "allowed_excerpts": [
+    "sc-022",
+    "sc-023",
+    "sc-024",
+    "sc-025",
+    "sc-026",
+    "sc-027",
+    "sc-028",
+    "sc-029",
+    "sc-030",
+    "sc-031",
+    "sc-032",
+    "sc-042",
+    "sc-044",
+    "sc-045",
+    "sc-050"
+  ],
+  "allowed_exceptions": {},
+  "excluded": {
+    "sc-051": "outcome(2026-05-20)",
+    "sc-047": "policy change after as_of(2026-03-13)",
+    "sc-048": "policy change after as_of(2026-05-31)",
+    "sc-049": "policy change after as_of(2026-07-10)",
+    "sc-046": "published after as_of(2026-05-12)",
+    "sc-011": "published after as_of(2026-02-25)，unrelated",
+    "sc-012": "same as above",
+    "sc-013": "same as above",
+    "sc-014": "same as above",
+    "sc-015": "same as above"
+  },
+  "outcome": {
+    "excerpt_ids": [
+      "sc-051"
+    ],
+    "truth": "As of 2026-05-20 (FY2027 Q1 10-Q), NVIDIA had licences for only small H200 shipments to specific Chinese customers, the licensing program had produced no revenue yet, and shipments carry a 25% tariff (sc-051).",
+    "observations": [
+      {
+        "source": "nvidia.sec_filings.china_h200_revenue",
+        "coverage": {
+          "start": "2026-01-16",
+          "end": "2026-05-20"
+        },
+        "records": [],
+        "note": "No H200 China revenue confirmed in filings through 5/20: a document condition is not observed in this window."
+      }
+    ],
+    "series_aliases": {
+      "nvidia.sec_filings.china_h200_revenue": [
+        "NVIDIA 10-Q",
+        "NVIDIA 10-K",
+        "NVIDIA SEC filings"
+      ]
+    }
+  },
+  "expected": {
+    "gate": "WAIT",
+    "behavior": "The key dependency is licences actually granted and revenue confirmed, not the rule change itself. The entry condition is a document (a filing that discloses H200 China revenue) with a deadline. Raise the frictions in sc-030 (performance thresholds), sc-031 (50% cap, third-party testing, no crowding out US capacity), sc-032 (D:5 and Macau still presumed denied); sc-050 (H20 licence and $5.5B charge) can serve as a precedent for policy reversals.",
+    "key_dependency_should_be": "licences actually granted and revenue confirmed in filings",
+    "backtest": {
+      "entry_resolution": "The document entry condition is not met through 2026-05-20, so the plan should stay WAIT",
+      "counter_excerpts_to_address": [
+        "sc-030",
+        "sc-031",
+        "sc-032"
+      ],
+      "pass_if_any": [
+        "entry_not_met_by:2026-05-20"
+      ]
+    }
+  },
+  "contamination_probe": "Without any documents: after the US moved H200 exports to China to case-by-case review in January 2026, what happened to NVIDIA's H200 revenue from China by May 2026?",
+  "evals": [
+    "E1",
+    "E2",
+    "Backtest"
+  ],
+  "auto_checks": [
+    "online_forced_off",
+    "only_allowed_excerpts_cited",
+    "gate_per_plan",
+    "backtest_condition_resolution",
+    "contamination_probe"
+  ],
+  "human_review": [
+    "Backtest: is the key dependency revenue confirmation or the rule change",
+    "E1: are sc-030, sc-031, sc-032 addressed"
+  ],
+  "notes": "Backtests must run offline: the runner refuses --online for layer R; the pack holds only allowed_excerpts, outcome excerpts are used for grading only; the contamination probe runs first; citing anything outside allowed_excerpts counts as a leak.",
+  "pack_rule": "Point-in-time pack = every excerpt public by as_of, not just the relevant ones: the product puts the whole pack in context, so hand-picking would make the task easier than reality.",
+  "contamination_markers": [
+    "no revenue",
+    "not yet generated revenue",
+    "25% tariff",
+    "25 percent",
+    "small quantities"
+  ]
+}

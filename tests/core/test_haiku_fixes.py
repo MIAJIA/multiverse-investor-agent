@@ -88,7 +88,7 @@ def test_inspect_runs_two_stages_with_schemas_under_the_union_limit(ev):
 def test_plan_stage_sees_the_validated_graph_and_graph_errors_skip_it(ev):
     r = Scripted([_good()])
     ep.inspect("x", reasoner=r, evidence=ev, config=CFG)
-    assert '"h.transits"' in r.prompts[1] and "第 2 步" in r.prompts[1]
+    assert '"h.transits"' in r.prompts[1] and "Step 2" in r.prompts[1]
 
     bad = _good()
     bad["edges"][0]["evidence"][0]["excerpt_id"] = "hz-999"
@@ -100,7 +100,7 @@ def test_plan_stage_sees_the_validated_graph_and_graph_errors_skip_it(ev):
 def test_no_chain_stops_after_graph_stage(ev):
     r = Scripted([{"no_chain": True, "no_chain_reason": "资料包与事件无关", "nodes": [], "edges": []}])
     res = ep.inspect("x", reasoner=r, evidence=ev, config=CFG)
-    assert res["ok"] and res["no_chain"] and res["proposal"] is None and r.stages == ["inspect"]
+    assert res["ok"] and res["no_chain"] and res["proposals"] == [] and r.stages == ["inspect"]
 
 
 # ---- 2. 条件的 anchor -------------------------------------------------------

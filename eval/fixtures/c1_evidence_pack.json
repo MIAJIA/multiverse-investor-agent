@@ -1,15 +1,71 @@
 {
   "pack_id": "semiconductor",
   "synthetic": true,
-  "note": "结构测试用的手写占位片段，不是 TrendForce 原文，不能当证据引用。真实 Semiconductor Pack 由证据线交付；这里只保证 excerpt_id、stance 与 C1 golden 图一致。",
+  "note": "Hand-written placeholder excerpts for structural tests; not TrendForce text and not citable evidence. The real Semiconductor Pack is delivered by the evidence line; this file only keeps excerpt_id and stance consistent with the C1 golden graph.",
   "excerpts": [
-    {"source_id": "fixture-sc-a", "excerpt_id": "sc-001", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-09-15", "stance": "supports", "text": "占位：多家云厂商把 CPO 交换机的导入时间从 2028 年提前到 2027 年下半年。"},
-    {"source_id": "fixture-sc-a", "excerpt_id": "sc-002", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-09-15", "stance": "supports", "text": "占位：主要云厂商在最近一季财报中维持 2027 年 AI 资本开支指引。"},
-    {"source_id": "fixture-sc-b", "excerpt_id": "sc-003", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-08-20", "stance": "supports", "text": "占位：每台 CPO 交换机需要若干个外置激光光源模块，光源需求与 CPO 端口数同步增长。"},
-    {"source_id": "fixture-sc-b", "excerpt_id": "sc-004", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-08-20", "stance": "supports", "text": "占位：现阶段量产的 CPO 方案以外置光源（ELS）为主，便于维修与散热。"},
-    {"source_id": "fixture-sc-c", "excerpt_id": "sc-005", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-07-30", "stance": "contradicts", "text": "占位（反方）：部分厂商在开发集成激光方案，若成熟将减少对外置光源的需求。"},
-    {"source_id": "fixture-sc-c", "excerpt_id": "sc-006", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-07-30", "stance": "supports", "text": "占位：硅光代工产线利用率在 CPO 订单带动下预计升至 85% 以上。"},
-    {"source_id": "fixture-sc-d", "excerpt_id": "sc-007", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-09-01", "stance": "supports", "text": "占位：激光器供应商表示数据中心光源订单能见度延长到四个季度。"},
-    {"source_id": "fixture-sc-d", "excerpt_id": "sc-008", "source": "fixture（占位，模拟行业研究机构文章）", "date": "2026-09-01", "stance": "supports", "text": "占位：硅光代工营收占比随 CPO 量产逐季上升。"}
+    {
+      "source_id": "fixture-sc-a",
+      "excerpt_id": "sc-001",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-09-15",
+      "stance": "supports",
+      "text": "Placeholder: several cloud providers moved CPO switch deployment from 2028 to 2H27."
+    },
+    {
+      "source_id": "fixture-sc-a",
+      "excerpt_id": "sc-002",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-09-15",
+      "stance": "supports",
+      "text": "Placeholder: major cloud providers kept their 2027 AI capex guidance in the latest quarter."
+    },
+    {
+      "source_id": "fixture-sc-b",
+      "excerpt_id": "sc-003",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-08-20",
+      "stance": "supports",
+      "text": "Placeholder: each CPO switch needs several external light-source modules, so light-source demand grows with CPO port count."
+    },
+    {
+      "source_id": "fixture-sc-b",
+      "excerpt_id": "sc-004",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-08-20",
+      "stance": "supports",
+      "text": "Placeholder: CPO designs in volume production today mainly use external light sources (ELS), which are easier to service and cool."
+    },
+    {
+      "source_id": "fixture-sc-c",
+      "excerpt_id": "sc-005",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-07-30",
+      "stance": "contradicts",
+      "text": "Placeholder (counter-evidence): some vendors are developing integrated-laser designs that, if mature, would reduce demand for external light sources."
+    },
+    {
+      "source_id": "fixture-sc-c",
+      "excerpt_id": "sc-006",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-07-30",
+      "stance": "supports",
+      "text": "Placeholder: silicon-photonics foundry lines are expected to exceed 85% utilization on CPO orders."
+    },
+    {
+      "source_id": "fixture-sc-d",
+      "excerpt_id": "sc-007",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-09-01",
+      "stance": "supports",
+      "text": "Placeholder: laser vendors say visibility on data-center light-source orders now extends four quarters."
+    },
+    {
+      "source_id": "fixture-sc-d",
+      "excerpt_id": "sc-008",
+      "source": "fixture (placeholder, mimics an industry research article)",
+      "date": "2026-09-01",
+      "stance": "supports",
+      "text": "Placeholder: silicon-photonics share of foundry revenue rises quarter by quarter as CPO ramps."
+    }
   ]
 }

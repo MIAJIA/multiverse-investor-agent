@@ -1,108 +1,108 @@
-# Eval 脚手架 · 实现计划
+# Eval scaffold · implementation plan
 
-2026-10-18 · eval 线（分支 `eval-scaffold`）
+2026-10-18 · eval line (branch `eval-scaffold`)
 
-依据：`docs/engineering-design.md`「核心数据模型」「Agent loop 与 harness」「可验证：Eval 设计」「三小时映射」「验收清单」；`docs/prd.md` 主文。字段名一律沿用设计文档；设计文档没定的地方在 [`eval/INTERFACE.md`](../../eval/INTERFACE.md) 里写成提议，由主 session 确认或改。
+Based on: `docs/engineering-design.md` "Core data model", "Agent loop and harness", "Verifiable: Eval design", "Three-hour mapping", "Acceptance checklist"; the main text of `docs/prd.md`. Field names always follow the design docs. Where the design docs do not decide something, it is written as a proposal in [`eval/INTERFACE.md`](../../eval/INTERFACE.md), for the main session to confirm or change.
 
-## 边界
+## Boundaries
 
-- 本线只拥有 `eval/`、`tests/`、`docs/eval/`、根目录 `requirements-dev.txt`。不创建、不修改 `catalyst/`，不改两份设计文档。
-- 不真实调用模型，不读任何 API key。Reasoner 一律注入，测试用 fake。
-- 「模型提议，代码裁决」在 eval 里的对应：能由代码裁决的（E3 Non-interference、进场真值表、条件时间语义、引用存在）写成确定性测试；不能由代码裁决的（E1 因果是否成立、E2 条件是否有意义、E4 的理由是否点中陷阱）进人工复核表，不交给 LLM judge。
+- This line owns only `eval/`, `tests/`, `docs/eval/`, and `requirements-dev.txt` at the repo root. It does not create or modify `catalyst/`, and does not change the two design docs.
+- No real model calls, no reading of any API key. The Reasoner is always injected; tests use a fake.
+- How "the model proposes, code decides" maps onto eval: what code can decide (E3 Non-interference, entry truth table, condition time semantics, reference existence) is written as deterministic tests; what code cannot decide (whether E1 causality holds, whether E2 conditions are meaningful, whether the E4 rationale hits the trap) goes into the human review sheet, and is not handed to an LLM judge.
 
-## 目录结构
+## Directory structure
 
 ```
 eval/
-  INTERFACE.md          对核心包的接口提议（函数签名、字段、错误类型）
+  INTERFACE.md          Interface proposal for the core package (function signatures, fields, error types)
   __init__.py
-  loader.py             读案例与 fixture（纯 JSON，不 import catalyst）
-  scoring.py            自动判定：标签比对、E3 Expected Impact 集合比对、检索命中、失败类型、失败判据
-  runner.py             两个组：pipeline / baseline；Reasoner、Evidence、入口函数全部可注入
-  report.py             逐例 markdown 报告（不报百分比）
-  fakes.py              fake reasoner / evidence / 核心入口（测试与 sample_results 用）
-  review_sheet.md       E1 / E2 / E4 人工复核表模板
-  sample_results.json   假结果，只用来验证报告生成器
+  loader.py             Reads cases and fixtures (plain JSON, does not import catalyst)
+  scoring.py            Automatic judgment: label comparison, E3 Expected Impact set comparison, retrieval hit, failure types, failure criteria
+  runner.py             Two groups: pipeline / baseline; Reasoner, Evidence and entry functions are all injectable
+  report.py             Per-case markdown report (no percentages)
+  fakes.py              fake reasoner / evidence / core entry points (for tests and sample_results)
+  review_sheet.md       Template for the E1 / E2 / E4 human review sheet
+  sample_results.json   Fake results, only for validating the report generator
   cases/
-    causalt5k/T1.json … T6.json   CausalT5k D3 原样摘录 + 本项目的期望行为
-    causalt5k/SOURCE.md           来源 URL、commit hash、选例规则、数据质量备注
-    C1.json C2.json C3.json C4.json D1.json   自建案例规格
+    causalt5k/T1.json … T6.json   Verbatim CausalT5k D3 excerpts + this project's expected behavior
+    causalt5k/SOURCE.md           Source URL, commit hash, selection rules, data quality notes
+    C1.json C2.json C3.json C4.json D1.json   Specs for self-built cases
   fixtures/
-    c1_graph_v1.json              C1 基线图（golden）
-    c1_evidence_pack.json         C1 图引用的半导体片段（手写占位，结构测试用）
-    c3_change_assumption.json     ChangeAssumption：op、期望写范围、范围内 / 越界补丁、应受挑战集合
-    c3_add_shock.json             预定义 AddShock：Stage 1 查表结果、期望写范围、补丁、应受挑战集合
-    d1_hormuz.json                D1：Hormuz 小包占位片段 + 提案进场条件（阈值 null + 说明）+ 期望 WAIT
-    gate_truth_table.json         进场 AND 真值表
-    condition_cases.json          条件时间语义与 Condition 校验用例
-    reference_cases.json          Reference Validator 用例
-  cases/causalt5k/extract.py      从固定 commit 的 CausalT5k 下载里原样摘出 T1–T6
+    c1_graph_v1.json              C1 baseline graph (golden)
+    c1_evidence_pack.json         Semiconductor excerpts cited by the C1 graph (hand-written placeholders, for structural tests)
+    c3_change_assumption.json     ChangeAssumption: op, expected write scope, in-scope / out-of-scope patches, set that should be challenged
+    c3_add_shock.json             Predefined AddShock: Stage 1 lookup result, expected write scope, patches, set that should be challenged
+    d1_hormuz.json                D1: placeholder excerpts for the small Hormuz pack + proposal entry conditions (threshold null + note) + expected WAIT
+    gate_truth_table.json         Entry AND truth table
+    condition_cases.json          Cases for condition time semantics and Condition validation
+    reference_cases.json          Reference Validator cases
+  cases/causalt5k/extract.py      Extracts T1–T6 verbatim from the CausalT5k download at a fixed commit
 tests/
-  conftest.py           把仓库根加进 sys.path
-  _graph.py             测试侧图工具：规范化哈希、写范围参考实现（不 import catalyst）
-  _adapter.py           唯一 import catalyst 的地方；catalyst 不存在时 importorskip
-  test_gate.py          进场真值表、verifiable ≠ met（依赖核心）
-  test_conditions.py    not_observed_by 时间语义、null 阈值、deadline ≥ anchor（依赖核心）
-  test_fork.py          E3 Non-interference：写范围、越界拒绝、哈希不变、基线仍在（依赖核心）
-  test_validator.py     Reference Validator（依赖核心）
-  test_fixtures.py      golden fixture 自洽（不依赖核心）
-  test_cases.py         案例文件与 CausalT5k 选例规则（不依赖核心）
-  test_scoring.py       自动判定与失败判据（不依赖核心）
-  test_runner_report.py fake reasoner 跑 runner、假结果跑报告（不依赖核心）
-  test_runner_core.py   ScriptedReasoner + 真实核心入口跑 T1–T6、C3、C4：runner 与核心的契约（依赖核心）
+  conftest.py           Adds the repo root to sys.path
+  _graph.py             Test-side graph tools: normalized hashing, reference implementation of the write scope (does not import catalyst)
+  _adapter.py           The only place that imports catalyst; importorskip when catalyst does not exist
+  test_gate.py          Entry truth table, verifiable ≠ met (depends on the core)
+  test_conditions.py    not_observed_by time semantics, null threshold, deadline ≥ anchor (depends on the core)
+  test_fork.py          E3 Non-interference: write scope, out-of-scope rejection, hashes unchanged, baseline still there (depends on the core)
+  test_validator.py     Reference Validator (depends on the core)
+  test_fixtures.py      golden fixture self-consistency (does not depend on the core)
+  test_cases.py         Case files and CausalT5k selection rules (does not depend on the core)
+  test_scoring.py       Automatic judgment and failure criteria (does not depend on the core)
+  test_runner_report.py fake reasoner runs the runner, fake results run the report (does not depend on the core)
+  test_runner_core.py   ScriptedReasoner + real core entry points run T1–T6, C3, C4: contract between runner and core (depends on the core)
 docs/eval/
   implementation-plan.md  test-plan.md  eval-plan.md  step-by-step.md
 requirements-dev.txt      pytest
 ```
 
-## 模块职责
+## Module responsibilities
 
-| 模块 | 职责 | 不做什么 |
+| Module | Responsibility | Does not |
 | --- | --- | --- |
-| `eval/loader.py` | 读 `cases/` 与 `fixtures/` 的 JSON，返回 dict；列出全部案例 | 不做校验逻辑（校验在测试和核心） |
-| `eval/scoring.py` | 纯函数：`judge_label`、`expected_impact`、`retrieval_hit`、`classify_e1_failure`、`failure_criteria` | 不判断因果是否成立；不调模型 |
-| `eval/runner.py` | `run_case(case, group, reasoner, evidence, entrypoints)` → `CaseResult`；pipeline 组走 `discover / inspect / fork`，baseline 组把同一资料拼成一次 prompt 交给同一个 reasoner；捕获异常记为 ERROR | 不 import catalyst 的顶层；入口函数由调用方注入，只在 CLI 里懒加载 |
-| `eval/report.py` | `render_report(results)` → markdown：每组一张逐例表 + 两组对照表 + 失败判据结论 + 待复核清单 | 不算百分比、不算平均分 |
-| `tests/_adapter.py` | 把核心的返回值归一成测试需要的形状（字符串枚举、集合、错误列表）；核心字段变化只改这里 | 不实现任何核心逻辑 |
+| `eval/loader.py` | Reads the JSON in `cases/` and `fixtures/`, returns dicts; lists all cases | Does no validation logic (validation lives in tests and the core) |
+| `eval/scoring.py` | Pure functions: `judge_label`, `expected_impact`, `retrieval_hit`, `classify_e1_failure`, `failure_criteria` | Does not judge whether causality holds; does not call the model |
+| `eval/runner.py` | `run_case(case, group, reasoner, evidence, entrypoints)` → `CaseResult`; the pipeline group goes through `discover / inspect / fork`, the baseline group puts the same material into one prompt for the same reasoner; catches exceptions and records them as ERROR | Does not import catalyst at top level; entry functions are injected by the caller and lazily loaded only in the CLI |
+| `eval/report.py` | `render_report(results)` → markdown: one per-case table per group + a table comparing the two groups + failure criteria verdict + pending review list | Does not compute percentages or average scores |
+| `tests/_adapter.py` | Normalizes the core's return values into the shapes tests need (string enums, sets, error lists); when core fields change, only this file changes | Implements no core logic |
 
-## 对核心包的依赖（摘要，详见 `eval/INTERFACE.md`）
+## Dependencies on the core package (summary; details in `eval/INTERFACE.md`)
 
-| 依赖 | 用在 |
+| Dependency | Used in |
 | --- | --- |
 | `catalyst.gate.evaluate_entry(conditions) -> "WAIT" / "BLOCKED" / "READY_FOR_REVIEW"` | test_gate |
 | `catalyst.conditions.evaluate(condition, observations, now) -> "met" / "not_met" / "unknown"` | test_conditions |
-| `catalyst.validator.validate_condition(condition) -> list[error]` | test_conditions（null 阈值说明、deadline ≥ anchor） |
+| `catalyst.validator.validate_condition(condition) -> list[error]` | test_conditions (null threshold note, deadline ≥ anchor) |
 | `catalyst.validator.validate_references(graph, evidence_pack) -> list[error]` | test_validator |
 | `catalyst.fork.compute_write_scope(graph, op) -> (node_ids, edge_ids)` | test_fork |
-| `catalyst.fork.apply_patch(graph, patch, scope) -> Graph`，越界抛 `catalyst.fork.ScopeViolation` | test_fork |
-| `catalyst.diff.diff(g1, g2)` | test_fork、runner（C3） |
-| 入口：`discover(event, target=None, ...)`、`inspect(...)`、`fork(...)` | runner pipeline 组 |
+| `catalyst.fork.apply_patch(graph, patch, scope) -> Graph`, raises `catalyst.fork.ScopeViolation` when out of scope | test_fork |
+| `catalyst.diff.diff(g1, g2)` | test_fork, runner (C3) |
+| Entry points: `discover(event, target=None, ...)`, `inspect(...)`, `fork(...)` | runner pipeline group |
 
-## 数据文件格式
+## Data file formats
 
-所有 fixture 与案例都是 UTF-8 JSON，字段名用设计文档原词。
+All fixtures and cases are UTF-8 JSON, with field names taken verbatim from the design docs.
 
-**Graph**（`c1_graph_v1.json`）：`version`、`parent_version`、`op`、`nodes`、`edges`、`conditions`、`model_output_ref`、`observations_ref`。
-- node（Claim）：`id`、`statement`、`original_statement`、`evidence_status`（supported / contradicted / unknown）、`time_bucket`、`instruments`（只有终点有）；额外 `role`（event / assumption / intermediate / terminal，提议字段，方便定位 ChangeAssumption 的目标）。
-- edge（Mechanism）：`id`（提议字段，写范围要用）、`from`、`to`、`channel`、`sign`、`lag_days`、`mechanism`、`evidence: [{tier, source_id, excerpt_id, stance, supports}]` 或 `model_only: true`。
-- condition：`id`（提议字段）、`claim_id`、`kind`、`predicate`、`series` 或 `source`、`comparator`、`threshold`、`threshold_note`、`anchor`、`deadline`、`observation_window: {start, end}`、`rule`、`verification_status`、`evaluation_status`。
+**Graph** (`c1_graph_v1.json`): `version`, `parent_version`, `op`, `nodes`, `edges`, `conditions`, `model_output_ref`, `observations_ref`.
+- node (Claim): `id`, `statement`, `original_statement`, `evidence_status` (supported / contradicted / unknown), `time_bucket`, `instruments` (terminals only); plus `role` (event / assumption / intermediate / terminal; a proposed field, to make it easy to locate the ChangeAssumption target).
+- edge (Mechanism): `id` (proposed field, needed for the write scope), `from`, `to`, `channel`, `sign`, `lag_days`, `mechanism`, `evidence: [{tier, source_id, excerpt_id, stance, supports}]` or `model_only: true`.
+- condition: `id` (proposed field), `claim_id`, `kind`, `predicate`, `series` or `source`, `comparator`, `threshold`, `threshold_note`, `anchor`, `deadline`, `observation_window: {start, end}`, `rule`, `verification_status`, `evaluation_status`.
 
-**Evidence Pack**：`{pack_id, synthetic, excerpts: [{source_id, excerpt_id, source, date, text, stance}]}`。fixture 里的片段文本是手写占位（`synthetic: true`），只用于结构测试；真实 Semiconductor Pack 与 Hormuz 小包由证据线交付。
+**Evidence Pack**: `{pack_id, synthetic, excerpts: [{source_id, excerpt_id, source, date, text, stance}]}`. Excerpt text in fixtures is hand-written placeholder text (`synthetic: true`), used only for structural tests. The real Semiconductor Pack and the small Hormuz pack are delivered by the evidence line.
 
-**Op**：`{kind: change_assumption | add_shock, target, value}`；AddShock 额外带 Stage 1 查表结果 `impacts`（既有节点 id）与 `new_edges`、`new_nodes`。
+**Op**: `{kind: change_assumption | add_shock, target, value}`; AddShock also carries the Stage 1 lookup results `impacts` (existing node ids), `new_edges` and `new_nodes`.
 
-**Patch**（提议）：`{base_version, node_updates: [{id, fields}], edge_updates: [{id, fields}], condition_updates: [{id, fields}], node_adds: [...], edge_adds: [...]}`。
+**Patch** (proposed): `{base_version, node_updates: [{id, fields}], edge_updates: [{id, fields}], condition_updates: [{id, fields}], node_adds: [...], edge_adds: [...]}`.
 
-**Observations**（提议，条件判定用）：`[{source, coverage: {start, end}, records: [{date, value, excerpt_id}]}]`。`coverage` 是来源实际覆盖到的区间，用来判断「窗口已结束且来源覆盖该窗口」。
+**Observations** (proposed, for condition evaluation): `[{source, coverage: {start, end}, records: [{date, value, excerpt_id}]}]`. `coverage` is the range the source actually covers, used to decide "the window has ended and the source covers the window".
 
-**案例文件**：`{id, type, title, entry, input, material, expected, evals, auto_checks, human_review, notes}`；CausalT5k 案例另带 `source`（原样摘录 + clean id + 原 id + commit）。
+**Case file**: `{id, type, title, entry, input, material, expected, evals, auto_checks, human_review, notes}`; CausalT5k cases also carry `source` (verbatim excerpt + clean id + original id + commit).
 
-**CaseResult**（runner 输出 / report 输入）：`{case_id, group, case_type, expected, actual, status: PASS | FAIL | PENDING_REVIEW | ERROR, failure_types: [...], retrieval: {expected, retrieved, hit} | null, checks: [{name, eval, passed, detail}], human_review: [...]}`。
+**CaseResult** (runner output / report input): `{case_id, group, case_type, expected, actual, status: PASS | FAIL | PENDING_REVIEW | ERROR, failure_types: [...], retrieval: {expected, retrieved, hit} | null, checks: [{name, eval, passed, detail}], human_review: [...]}`.
 
-## 运行方式
+## How to run
 
 ```
-python -m eval.runner --group pipeline --group baseline --out eval/out/results.json   # 需要核心与真实 reasoner，本线不跑
-python -m eval.report eval/sample_results.json > eval/out/sample_report.md            # 本线可跑
+python -m eval.runner --group pipeline --group baseline --out eval/out/results.json   # needs the core and a real reasoner; this line does not run it
+python -m eval.report eval/sample_results.json > eval/out/sample_report.md            # this line can run it
 pytest -q
 ```

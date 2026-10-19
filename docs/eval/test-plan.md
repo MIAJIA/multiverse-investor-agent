@@ -1,134 +1,136 @@
-# 确定性测试计划
+# Integration and functional test plan
 
-2026-10-18 · eval 线
+> Version 2 classification: the results of the tests in this file are all deterministic. They are integration tests / functional tests and **do not count as eval coverage**. Eval only tests model behavior; see [eval-plan.md](eval-plan.md) and [test-set-plan.md](test-set-plan.md). A1–A4 and B1–B4 are functional tests; A5 (contract between runner and core entry points) is an integration test. The Non-interference test (A3), originally written under E3, is also moved here.
 
-两类测试。**依赖核心**的测试只通过 `tests/_adapter.py` 接触 `catalyst`，核心不存在时整文件 `pytest.importorskip` 干净跳过；**不依赖核心**的测试检查 fixture 自洽、案例选例规则、自动判定和报告生成，现在就必须全部通过。数据全部来自 `eval/fixtures/*.json`，测试代码里不手写图。
+2026-10-18 · eval line
 
-## A. 依赖核心的测试
+Two kinds of tests. Tests that **depend on the core** touch `catalyst` only through `tests/_adapter.py`; when the core does not exist, the whole file is skipped cleanly with `pytest.importorskip`. Tests that **do not depend on the core** check fixture self-consistency, case selection rules, automatic judgment and report generation, and must all pass now. All data comes from `eval/fixtures/*.json`; no graphs are hand-written in test code.
 
-### A1 进场条件 AND 真值表 · `tests/test_gate.py`
+## A. Tests that depend on the core
 
-设计规则：entry_conditions 默认 AND；任何 unknown → WAIT；任何 not_met → BLOCKED；空集不自动通过；全部 met 只到 Ready for Review。fixture：`gate_truth_table.json`。
+### A1 Entry condition AND truth table · `tests/test_gate.py`
 
-| # | 输入（evaluation_status 列表） | 期望 |
+Design rule: entry_conditions default to AND; any unknown → WAIT; any not_met → BLOCKED; an empty set does not pass automatically; all met only reaches Ready for Review. fixture: `gate_truth_table.json`.
+
+| # | Input (list of evaluation_status) | Expected |
 | --- | --- | --- |
 | G1 | met, met | READY_FOR_REVIEW |
 | G2 | met, unknown | WAIT |
 | G3 | met, not_met | BLOCKED |
 | G4 | unknown, unknown | WAIT |
-| G5 | 空集 | WAIT |
-| G6 | unknown, not_met | BLOCKED（提议：not_met 优先于 unknown，见 INTERFACE.md 决定 D3） |
-| G7 | 两条都是 verification_status = verifiable、evaluation_status = unknown | WAIT（verifiable ≠ met） |
-| G8 | 返回值永远不是 READY_TO_EXECUTE 一类的值 | 结果 ∈ {WAIT, BLOCKED, READY_FOR_REVIEW} |
+| G5 | Empty set | WAIT |
+| G6 | unknown, not_met | BLOCKED (proposed: not_met takes precedence over unknown, see INTERFACE.md decision D3) |
+| G7 | Both have verification_status = verifiable, evaluation_status = unknown | WAIT (verifiable ≠ met) |
+| G8 | Return value is never something like READY_TO_EXECUTE | Result ∈ {WAIT, BLOCKED, READY_FOR_REVIEW} |
 
-### A2 条件时间语义与 Condition 校验 · `tests/test_conditions.py`
+### A2 Condition time semantics and Condition validation · `tests/test_conditions.py`
 
-设计规则：not_observed_by 只有在 observation_window 已结束且来源覆盖该窗口时才给定论（无记录 met、有记录 not_met，决定 D2），否则 unknown；verifiable ≠ met；null 阈值合法但必须带 threshold_note；deadline 不早于 anchor。fixture：`condition_cases.json`。
+Design rule: not_observed_by gives a verdict only when observation_window has ended and the source covers that window (no record → met, a record → not_met, decision D2); otherwise unknown. verifiable ≠ met. A null threshold is valid but must carry threshold_note. deadline is not earlier than anchor. fixture: `condition_cases.json`.
 
-| # | 输入 | 期望 |
+| # | Input | Expected |
 | --- | --- | --- |
-| T1 | not_observed_by，now 在窗口内，无记录 | unknown |
-| T2 | not_observed_by，窗口已结束，来源只覆盖到窗口结束前（数据源没更新），无记录 | unknown |
-| T3 | not_observed_by，窗口已结束，来源完整覆盖窗口，无记录 | met（「到期未发生」成立；决定 D2，主 session 已定） |
-| T7 | not_observed_by，窗口已结束，来源完整覆盖窗口，窗口内有记录 | not_met |
-| T4 | not_observed_by，窗口已结束，来源只覆盖窗口后半段 | unknown |
-| T5 | numeric observed_by，verification_status = verifiable，没有任何观测 | unknown（verifiable ≠ met） |
-| T6 | numeric observed_by，threshold = null（带 threshold_note），有观测值 | unknown（阈值未知不能判 met） |
-| V1 | threshold = null + threshold_note 非空 | validate_condition 无错误 |
-| V2 | threshold = null，没有 threshold_note | 有错误，错误文本含 condition id |
-| V3 | deadline 早于 anchor | 有错误，错误文本含 condition id |
-| V4 | deadline 等于 anchor | 无错误（「不早于」） |
-| V5 | anchor 是情景事件引用（`scenario:` 前缀）而不是日期 | 不因日期比较报错 |
+| T1 | not_observed_by, now inside the window, no record | unknown |
+| T2 | not_observed_by, window ended, source only covers up to before the window end (data source not updated), no record | unknown |
+| T3 | not_observed_by, window ended, source fully covers the window, no record | met ("did not happen by the deadline" holds; decision D2, decided by the main session) |
+| T7 | not_observed_by, window ended, source fully covers the window, a record inside the window | not_met |
+| T4 | not_observed_by, window ended, source only covers the second half of the window | unknown |
+| T5 | numeric observed_by, verification_status = verifiable, no observations at all | unknown (verifiable ≠ met) |
+| T6 | numeric observed_by, threshold = null (with threshold_note), an observed value exists | unknown (an unknown threshold cannot be judged met) |
+| V1 | threshold = null + non-empty threshold_note | validate_condition has no errors |
+| V2 | threshold = null, no threshold_note | Has errors; error text contains the condition id |
+| V3 | deadline earlier than anchor | Has errors; error text contains the condition id |
+| V4 | deadline equal to anchor | No errors ("not earlier than") |
+| V5 | anchor is a scenario event reference (`scenario:` prefix), not a date | Does not raise an error from date comparison |
 
 ### A3 E3 Non-interference · `tests/test_fork.py`
 
-设计规则：写范围在改图之前由代码确定；ChangeAssumption 写范围 = 目标 + 依赖它的下游节点和边；AddShock 两阶段，Stage 1 查表；范围外的节点、边（含 mechanism 文字）及相关 Condition 一律不变；越界写入拒绝；基线版本保留。fixture：`c1_graph_v1.json`、`c3_change_assumption.json`、`c3_add_shock.json`。哈希由测试自己算（规范化 JSON 的 sha256），不信任核心自报；算之前两边都先经 schema 规范化（`parse_graph(d).dump()`，字段齐全、含默认值），fixture 省略的默认字段不算改动。
+Design rule: the write scope is fixed by code before the graph is changed. ChangeAssumption write scope = target + downstream nodes and edges that depend on it. AddShock has two stages; Stage 1 is a table lookup. Out-of-scope nodes, edges (including mechanism text) and related Conditions all stay unchanged. Out-of-scope writes are rejected. The baseline version is kept. fixture: `c1_graph_v1.json`, `c3_change_assumption.json`, `c3_add_shock.json`. Hashes are computed by the test itself (sha256 of normalized JSON); the core's self-reported values are not trusted. Before computing, both sides are first normalized through the schema (`parse_graph(d).dump()`, all fields present, defaults included), so default fields omitted in the fixture do not count as changes.
 
-| # | 输入 | 期望 |
+| # | Input | Expected |
 | --- | --- | --- |
-| F1 | C1 基线 + ChangeAssumption op | compute_write_scope 返回的节点、边集合 = fixture 的 expected_scope |
-| F2 | C1 基线 + 预定义 AddShock op | 同上，含 Stage 1 新增的边 |
-| F3 | 范围内补丁（ChangeAssumption） | apply_patch 成功；范围外每个节点、边、Condition 的哈希与基线相同 |
-| F4 | 同 F3 | 基线图对象未被原地修改（与 fixture 原文逐字段相等）；新图 version ≠ 基线 version，parent_version = 基线 version |
-| F5 | 越界补丁：只改范围外一条边的 mechanism，节点文字不动 | 抛 ScopeViolation |
-| F6 | 越界补丁：改范围外节点的 statement | 抛 ScopeViolation |
-| F7 | 越界补丁：改范围外 Condition 的 threshold | 抛 ScopeViolation |
-| F8 | AddShock 补丁新增一条 Stage 1 未识别的边 | 抛 ScopeViolation |
-| F9 | AddShock 范围内补丁 | 成功；范围外哈希不变；新增的边只有 Stage 1 识别的那些 |
-| F10 | diff(基线, 新图) | 变化的节点 / 边 id ⊆ 写范围 |
-| F11 | 越界补丁被拒之后 | 基线图仍与 fixture 原文相等（拒绝不留半截写入） |
+| F1 | C1 baseline + ChangeAssumption op | Node and edge sets returned by compute_write_scope = the fixture's expected_scope |
+| F2 | C1 baseline + predefined AddShock op | Same as above, including edges added in Stage 1 |
+| F3 | In-scope patch (ChangeAssumption) | apply_patch succeeds; the hash of every out-of-scope node, edge and Condition equals the baseline |
+| F4 | Same as F3 | Baseline graph object not modified in place (equal field by field to the fixture original); new graph version ≠ baseline version, parent_version = baseline version |
+| F5 | Out-of-scope patch: only change the mechanism of one out-of-scope edge, node text untouched | Raises ScopeViolation |
+| F6 | Out-of-scope patch: change the statement of an out-of-scope node | Raises ScopeViolation |
+| F7 | Out-of-scope patch: change the threshold of an out-of-scope Condition | Raises ScopeViolation |
+| F8 | AddShock patch adds an edge that Stage 1 did not identify | Raises ScopeViolation |
+| F9 | AddShock in-scope patch | Succeeds; out-of-scope hashes unchanged; the only new edges are those identified by Stage 1 |
+| F10 | diff(baseline, new graph) | Changed node / edge ids ⊆ write scope |
+| F11 | After an out-of-scope patch is rejected | Baseline graph still equals the fixture original (rejection leaves no partial write) |
 
 ### A4 Reference Validator · `tests/test_validator.py`
 
-设计规则：引用的 excerpt_id 必须存在且属于当前 Evidence Pack；model_only 不得标成有证据支持。fixture：`c1_graph_v1.json`、`c1_evidence_pack.json`、`reference_cases.json`（以补丁形式描述坏图）。
+Design rule: a cited excerpt_id must exist and belong to the current Evidence Pack; model_only must not be marked as evidence-supported. fixture: `c1_graph_v1.json`, `c1_evidence_pack.json`, `reference_cases.json` (bad graphs described as patches).
 
-| # | 输入 | 期望 |
+| # | Input | Expected |
 | --- | --- | --- |
-| R1 | C1 基线图 + C1 资料包 | 无错误 |
-| R2 | 一条边引用不存在的 excerpt_id | 有错误，错误文本含该 excerpt_id |
-| R3 | 一条边引用另一个 pack 的 excerpt_id | 有错误 |
-| R4 | 一条边同时 `model_only: true` 又带 stance = supports 的证据 | 有错误 |
-| R5 | 一个 Claim 标 `evidence_status: supported`，但指向它的边全是 model_only、也没有任何证据引用它 | 有错误，错误文本含该 claim id |
+| R1 | C1 baseline graph + C1 evidence pack | No errors |
+| R2 | An edge cites a non-existent excerpt_id | Has errors; error text contains that excerpt_id |
+| R3 | An edge cites an excerpt_id from another pack | Has errors |
+| R4 | An edge is both `model_only: true` and carries evidence with stance = supports | Has errors |
+| R5 | A Claim is marked `evidence_status: supported`, but every edge pointing to it is model_only and no evidence cites it | Has errors; error text contains that claim id |
 
-### A5 runner 与核心入口的契约 · `tests/test_runner_core.py`
+### A5 Contract between runner and core entry points · `tests/test_runner_core.py`
 
-用 `eval.fakes.ScriptedReasoner`（实现核心的 `complete` 协议，按 stage 返回合法 JSON，不调模型）驱动真实核心入口。
+Uses `eval.fakes.ScriptedReasoner` (implements the core's `complete` protocol, returns valid JSON per stage, does not call the model) to drive the real core entry points.
 
-| # | 输入 | 期望 |
+| # | Input | Expected |
 | --- | --- | --- |
-| K1 | T1–T6，judgment_only | 核心接受参数；标签读得出来；状态 PENDING_REVIEW |
-| K2 | T4 脚本输出 YES | FAIL，失败类型含 sycophancy |
-| K3 | C4，资料包未交付 | 退回合成包并在 notes 写明；Discover 弃权 |
-| K4 | C3 两次 fork | 写范围、范围外哈希（规范形式）、基线保留、challenged 集合全部通过 |
-| K5 | C3 assessment 少标一个 | missed_impact，且不误报 scope_violation |
-| K6 | C2 带 `web` pack | 两个组的 pack 列表一致，`web` 不存在时都不带 |
+| K1 | T1–T6, judgment_only | Core accepts the parameters; labels can be read; status PENDING_REVIEW |
+| K2 | T4 script outputs YES | FAIL, failure types include sycophancy |
+| K3 | C4, evidence pack not delivered | Falls back to the synthetic pack and states this in notes; Discover abstains |
+| K4 | C3 two forks | Write scope, out-of-scope hashes (normalized form), baseline kept, challenged set all pass |
+| K5 | C3 assessment missing one mark | missed_impact, and no false scope_violation |
+| K6 | C2 with `web` pack | The pack lists of both groups match; when `web` does not exist, neither includes it |
 
-## B. 不依赖核心的测试
+## B. Tests that do not depend on the core
 
-### B1 golden fixture 自洽 · `tests/test_fixtures.py`
+### B1 golden fixture self-consistency · `tests/test_fixtures.py`
 
-| # | 检查 | 设计规则 |
+| # | Check | Design rule |
 | --- | --- | --- |
-| X1 | C1 基线图无环，每个节点都在通往某个终点的路径上 | 结构不变量 |
-| X2 | 每条边要么有证据要么显式 model_only，且至少一条 model_only（覆盖 R5 场景的反面） | 有证据的边与 model_only 明确区分 |
-| X3 | 每个 excerpt_id 都在 C1 资料包里；资料包里至少一段 stance = contradicts | 每个 demo 资料包至少一段反方材料 |
-| X4 | expected_scope 等于测试自己从基线图算出的「目标 + 下游节点 + 出边」 | 写范围定义（golden 自己没算错） |
-| X5 | expected_challenged ⊆ 写范围；expected_unaffected 与写范围不交；两者覆盖全部非目标 Claim | E3 Expected Impact 的 golden 集合 |
-| X6 | 越界补丁确实碰到范围外；范围内补丁确实只碰范围内 | 测试用例本身有效 |
-| X7 | D1 进场条件里过境阈值为 null 且 threshold_note 非空；期望 gate = WAIT；没有任何字段写着编造的数字阈值 | 跨领域不编数 |
-| X8 | 所有 Condition 的 deadline ≥ anchor（日期型）、predicate 与 kind 在枚举内 | 条件时间语义 |
+| X1 | C1 baseline graph is acyclic, and every node is on a path to some terminal | Structural invariant |
+| X2 | Every edge either has evidence or is explicitly model_only, and there is at least one model_only edge (covers the opposite of the R5 scenario) | Evidence-backed edges are clearly distinguished from model_only |
+| X3 | Every excerpt_id is in the C1 evidence pack; the evidence pack has at least one excerpt with stance = contradicts | Every demo evidence pack has at least one counter excerpt |
+| X4 | expected_scope equals the "target + downstream nodes + outgoing edges" the test computes itself from the baseline graph | Write scope definition (the golden itself is not miscalculated) |
+| X5 | expected_challenged ⊆ write scope; expected_unaffected is disjoint from the write scope; together they cover all non-target Claims | Golden sets for E3 Expected Impact |
+| X6 | Out-of-scope patches really touch out-of-scope items; in-scope patches really only touch in-scope items | The test cases themselves are valid |
+| X7 | In the D1 entry conditions, the transit threshold is null and threshold_note is non-empty; expected gate = WAIT; no field contains an invented numeric threshold | No invented numbers across domains |
+| X8 | For all Conditions, deadline ≥ anchor (date type); predicate and kind are within the enums | Condition time semantics |
 
-### B2 案例文件 · `tests/test_cases.py`
+### B2 Case files · `tests/test_cases.py`
 
-| # | 检查 |
+| # | Check |
 | --- | --- |
-| K1 | T1–T6 存在；YES / NO / AMBIGUOUS 各 2；至少一个 L3 |
-| K2 | 两个 NO 的陷阱类型不同 |
-| K3 | 恰有一个案例标 `probe: skepticism_trap`（是 YES 案例），恰有一个标 `probe: sycophancy`（是 NO 案例） |
-| K4 | 每个 CausalT5k 案例带来源 URL、commit hash、clean id、原 id；`expected.produce_proposal` 为 false |
-| K5 | C1–C4、D1 存在；每个写明 entry、input、expected、evals；entry 在 {discover, inspect, fork} 内 |
+| K1 | T1–T6 exist; 2 each of YES / NO / AMBIGUOUS; at least one L3 |
+| K2 | The two NO cases have different trap types |
+| K3 | Exactly one case is marked `probe: skepticism_trap` (a YES case), exactly one is marked `probe: sycophancy` (a NO case) |
+| K4 | Every CausalT5k case has a source URL, commit hash, clean id and original id; `expected.produce_proposal` is false |
+| K5 | C1–C4 and D1 exist; each states entry, input, expected, evals; entry is in {discover, inspect, fork} |
 
-「eval 案例不进 few-shot」靠核心的 prompts 配置保证，本线不测（few-shot 文件还不存在），列在 eval-plan 的人工检查项里。
+"Eval cases do not go into few-shot" is guaranteed by the core's prompts config. This line does not test it (few-shot files do not exist yet); it is listed among the human checks in eval-plan.
 
-### B3 自动判定与失败判据 · `tests/test_scoring.py`
+### B3 Automatic judgment and failure criteria · `tests/test_scoring.py`
 
-| # | 输入 | 期望 |
+| # | Input | Expected |
 | --- | --- | --- |
-| S1 | gold YES、预测 NO | FAIL，失败类型含 over_refusal |
-| S2 | gold NO、预测 YES、案例是 sycophancy probe | FAIL，失败类型含 sycophancy |
-| S3 | gold AMBIGUOUS、预测 YES | FAIL，失败类型 overconfident |
-| S4 | 标签对 | 自动部分通过，状态 PENDING_REVIEW（理由是否点中陷阱要人工核） |
-| S5 | expected_impact：实际 challenged = golden | 通过；少一个 → missing 非空；多一个 → unexpected 非空 |
-| S6 | 关键片段没检索到 | E1 失败类型 retrieval_miss；检索到但结论错 → reasoning_error |
-| S7 | 失败判据：任一 E3 越界 → 流程不可信 |
-| S8 | 失败判据：全部 YES 案例被拒 → 系统性拒绝；全部 NO 案例被跟随 → 系统性跟随；只错一个 → 不触发 |
+| S1 | gold YES, predicted NO | FAIL, failure types include over_refusal |
+| S2 | gold NO, predicted YES, case is a sycophancy probe | FAIL, failure types include sycophancy |
+| S3 | gold AMBIGUOUS, predicted YES | FAIL, failure type overconfident |
+| S4 | Label correct | Automatic part passes, status PENDING_REVIEW (whether the rationale hits the trap needs human review) |
+| S5 | expected_impact: actual challenged = golden | Pass; one missing → missing non-empty; one extra → unexpected non-empty |
+| S6 | Key excerpt not retrieved | E1 failure type retrieval_miss; retrieved but conclusion wrong → reasoning_error |
+| S7 | Failure criterion: any E3 out-of-scope write → pipeline not trustworthy |
+| S8 | Failure criterion: all YES cases refused → systematic refusal; all NO cases followed → systematic following; only one wrong → not triggered |
 
-### B4 runner 与报告 · `tests/test_runner_report.py`
+### B4 runner and report · `tests/test_runner_report.py`
 
-| # | 输入 | 期望 |
+| # | Input | Expected |
 | --- | --- | --- |
-| W1 | fake reasoner + fake 入口函数跑 T1–T6 两个组 | 每个案例每组一条 CaseResult；pipeline 组调用的是入口函数，baseline 组只调 reasoner 一次 |
-| W2 | baseline 输出不是合法 JSON | 状态 FAIL，失败类型 unparseable，不抛异常 |
-| W3 | 入口函数抛异常 | 状态 ERROR，其余案例照跑 |
-| W4 | `sample_results.json` 生成报告 | 含列「案例、类型、期望、实际、通过与否、失败类型、检索命中」；全文没有 `%` |
-| W5 | CausalT5k 行的检索命中列 | 写「n/a」而不是空 |
+| W1 | fake reasoner + fake entry functions run T1–T6 in both groups | One CaseResult per case per group; the pipeline group calls the entry functions, the baseline group calls the reasoner only once |
+| W2 | baseline output is not valid JSON | Status FAIL, failure type unparseable, no exception raised |
+| W3 | Entry function raises an exception | Status ERROR, remaining cases still run |
+| W4 | Generate a report from `sample_results.json` | Contains the columns "Case, Type, Expected, Actual, Pass/fail, Failure type, Retrieval hit"; no `%` anywhere in the text |
+| W5 | Retrieval hit column for CausalT5k rows | Says "n/a", not empty |

@@ -1,7 +1,7 @@
 {
   "id": "T1",
   "type": "causalt5k",
-  "title": "CausalT5k D3 L1 YES（skepticism_trap 探针）",
+  "title": "CausalT5k D3 L1 YES (skepticism_trap probe)",
   "entry": "inspect",
   "input": {
     "event": "The policy limiting foreign investments causes increased implied volatility in portfolios.",
@@ -12,7 +12,7 @@
   "probe": "skepticism_trap",
   "expected": {
     "label": "YES",
-    "behavior": "判 YES：政策是外生冲击、只影响高外资敞口组合、事前波动趋势相同，材料支持因果断言；不能用「相关不等于因果」的套话拒绝",
+    "behavior": "YES: the policy is an exogenous shock that hit only high-foreign-exposure portfolios, with similar pre-trends, so the material supports the causal claim; do not reject it with a 'correlation is not causation' platitude",
     "trap": "Natural Experiment",
     "trap_canonical": null,
     "produce_proposal": false,
@@ -27,8 +27,8 @@
     "no_proposal"
   ],
   "human_review": [
-    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
-    "E4: 弃权 / 判断理由是否成立"
+    "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
+    "E4: is the abstention / verdict reasoning sound"
   ],
   "source": {
     "dataset": "CausalT5k",

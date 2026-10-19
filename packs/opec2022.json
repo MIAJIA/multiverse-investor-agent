@@ -1,0 +1,54 @@
+{
+  "pack_id": "opec2022",
+  "synthetic": false,
+  "note": "Backtest pack for the 2022-10-05 OPEC+ decision (33rd ONOMM). Thesis: the OPEC+ headline cut of 2 million b/d brings an actual supply tightening of about 2 million b/d and pushes Brent higher. Stance is relative to this thesis: supports = backs a link (the cut was announced and is large, prices rose on it, analysts expected a price rebound); contradicts = weakens it (members already producing below quota, so the effective cut is smaller than the headline; observed output fell by less than the headline; Brent ended below the decision-day level); neutral = background only (pre-meeting reports of what would be considered). Excerpts dated on or before 2022-10-05 were public at decision time; later excerpts are outcome data for scoring only and must not enter the model context for this case.",
+  "_provenance": {
+    "built": "2026-10-18 by the evidence line (evidence branch) at the eval line's request (K3 backtest case)",
+    "candidate_list": "~/Downloads/multiverse-investor-agent-eval/docs/eval/backtest-classic-cases.md, case 3",
+    "method": "Every excerpt is verbatim from the original page, downloaded and searched on 2026-10-18 (… marks omitted words). Dates come from each page's datePublished / article:published_time metadata, except op-013 and op-014, which carry the EIA page release date (2026-10-15) with the observation dates stated in the text. No source is non-English.",
+    "decision_time": "2022-10-05: op-001 to op-009 are dated on or before it; op-010 to op-014 are after it.",
+    "dropped": {
+      "Argaam quota table (articledetail/id/1592696)": "page metadata says 05/10/2022 but the body says 'OPEC+ clarified today, Oct. 6', so the publication date cannot be pinned to the decision day",
+      "QCI November survey (opec-output-down-700-000-bpd-in-november...)": "paywalled; the Reuters survey text was taken from the Oman Observer reprint instead",
+      "OPEC press release (press_room/7021.htm)": "HTTP 402 / 403",
+      "S&P Global Platts September survey, IEA October OMR": "403 per the candidate list; not retried",
+      "Bloomberg column via Deccan Herald (10% real, 90% illusion)": "opinion piece; not needed for scoring and not re-read"
+    },
+    "excerpt_notes": {
+      "op-001": "Argus is one of seven secondary sources OPEC+ uses for compliance; Argus's own survey put the August shortfall at 3.41 million bpd.",
+      "op-006": "QCI timestamp 2022-10-05 17:36 +01:00, after the meeting concluded.",
+      "op-013": "EIA daily Brent spot (RBRTE); 2022-10-05 was 94.35.",
+      "op-014": "Other drivers moved Brent in this window (demand outlook, China COVID policy, the Russian price cap); the fall is not attributable to the cut alone."
+    }
+  },
+  "excerpts": [
+    {"source_id": "qci-20220919-august-shortfall", "excerpt_id": "op-001", "source": "Quantum Commodity Intelligence (T3 trade media, citing Argus and OPEC data) · paragraph 1", "date": "2022-09-19", "stance": "contradicts", "url": "https://qcintel.com/article/opec-misses-august-target-by-record-3-58-million-bpd-report-8553.html",
+     "text": "Production from the OPEC+ alliance fell short of its target level in August by a record 3.58 million bpd, according to a report published by Argus Media, one of the producer group's official data suppliers."},
+    {"source_id": "qci-20220919-august-shortfall", "excerpt_id": "op-002", "source": "Quantum Commodity Intelligence (T3 trade media, citing OPEC data) · paragraphs 2 and 7", "date": "2022-09-19", "stance": "contradicts", "url": "https://qcintel.com/article/opec-misses-august-target-by-record-3-58-million-bpd-report-8553.html",
+     "text": "The coalition's 10 participating core OPEC members accounted for 1.399 million bpd of the August shortfall, while their non-OPEC allies underproduced by 2.185 million bpd, according to OPEC data. … Underproduction from Russia, constrained by western sanctions, but not exempted from its OPEC+ commitments, amounted to 1.252 million bpd in August"},
+    {"source_id": "qci-20220927-ubs", "excerpt_id": "op-003", "source": "Quantum Commodity Intelligence (T3 trade media, citing a UBS note) · paragraph 1", "date": "2022-09-27", "stance": "supports", "url": "https://qcintel.com/article/only-an-opec-output-cut-can-halt-short-term-brent-losses-ubs-8715.html",
+     "text": "Only a cut in OPEC+ production levels of at least 500,000 bpd can stop the current bearish sentiment in crude oil markets, investment bank UBS said in a note on Tuesday."},
+    {"source_id": "qci-20220927-ubs", "excerpt_id": "op-004", "source": "Quantum Commodity Intelligence (T3 trade media) · final paragraph", "date": "2022-09-27", "stance": "contradicts", "url": "https://qcintel.com/article/only-an-opec-output-cut-can-halt-short-term-brent-losses-ubs-8715.html",
+     "text": "Analysts said that small increments of 100,000 bpd up or down have little impact on actual production levels given that the group is collectively missing targets by nearly 3 million bpd, although it would send a signal to the market on broader policy."},
+    {"source_id": "reuters-20221002-opec-consider-cut", "excerpt_id": "op-005", "source": "Reuters (T2 wire, via BOE Report reprint) · lead", "date": "2022-10-02", "stance": "neutral", "url": "https://boereport.com/2022/10/02/opec-to-consider-oil-output-cut-of-more-than-1-million-bpd/",
+     "text": "OPEC+ will consider an oil output cut of more than a million barrels per day (bpd) when it meets on Oct. 5, OPEC sources told Reuters on Sunday. The figure is slightly above estimates for a cut given last week, which ranged between 500,000 bpd and 1 million bpd."},
+    {"source_id": "qci-20221005-headline-cut", "excerpt_id": "op-006", "source": "Quantum Commodity Intelligence (T3 trade media) · paragraphs 1 and 3", "date": "2022-10-05", "stance": "supports", "url": "https://qcintel.com/article/opec-slashes-headline-output-by-2-million-bpd-from-november-8880.html",
+     "text": "OPEC+ announced Wednesday a production cut of 2 million barrels per day from November, which was at the higher end of market expectations heading into the week. … Dec22 Brent was trading around $93/b shortly after the meeting concluded, up around $8/b from Friday's settle."},
+    {"source_id": "qci-20221005-headline-cut", "excerpt_id": "op-007", "source": "Quantum Commodity Intelligence (T3 trade media, citing a Goldman Sachs investor note) · paragraph 7", "date": "2022-10-05", "stance": "contradicts", "url": "https://qcintel.com/article/opec-slashes-headline-output-by-2-million-bpd-from-november-8880.html",
+     "text": "\"Due to widespread capacity limits within OPEC+, a headline (\"paper\") cut is likely to overstate significantly the effective (\"physical\") curtailment of production. The effective cut is likely to be only circa 50% of the headline quota figures,\" Goldman Sachs said in an investor note."},
+    {"source_id": "qci-20221005-headline-cut", "excerpt_id": "op-008", "source": "Quantum Commodity Intelligence (T3 trade media) · paragraph 6", "date": "2022-10-05", "stance": "contradicts", "url": "https://qcintel.com/article/opec-slashes-headline-output-by-2-million-bpd-from-november-8880.html",
+     "text": "However, in real terms, the total reduction will be around 50% of the headline figure, with most members of the alliance remaining within compliance even at reduced quotas, as the wider group continues to miss the target by over 3.5 million bpd."},
+    {"source_id": "qci-20221005-headline-cut", "excerpt_id": "op-009", "source": "Quantum Commodity Intelligence (T3 trade media, citing UBS) · paragraph 4", "date": "2022-10-05", "stance": "supports", "url": "https://qcintel.com/article/opec-slashes-headline-output-by-2-million-bpd-from-november-8880.html",
+     "text": "\"The OPEC+ cut could help Brent prices rebound to $110/bbl by year-end,\" said UBS bank, commenting on the size of the cut. The 2 million bpd cut is the largest reduction since the group slashed quotas by 9.7 million bpd at the height of the Covid pandemic in 2020."},
+    {"source_id": "reuters-20221201-opec-survey", "excerpt_id": "op-010", "source": "Reuters survey (T2 wire, via Oman Observer reprint) · paragraphs 2 and 4", "date": "2022-12-01", "stance": "contradicts", "url": "https://www.omanobserver.om/article/1129165/business/opec-oil-output-drops-in-nov-after-cut-pledged",
+     "text": "The Organization of the Petroleum Exporting Countries (OPEC) pumped 29.01 million barrels per day (bpd) this month, the survey found, down 710,000 bpd from October. … Their decision for November called for a 2 million bpd cut in the OPEC+ output target, of which about 1.27 million bpd was meant to come from the 10 participating OPEC countries."},
+    {"source_id": "reuters-20221201-opec-survey", "excerpt_id": "op-011", "source": "Reuters survey (T2 wire, via Oman Observer reprint) · paragraphs 6-7", "date": "2022-12-01", "stance": "contradicts", "url": "https://www.omanobserver.om/article/1129165/business/opec-oil-output-drops-in-nov-after-cut-pledged",
+     "text": "Output from the 10 members fell by 720,000 bpd month-on-month, the survey found, leaving actual production 800,000 bpd below the group's November output target. … As a result of production being below target, OPEC over-delivered on its pledged cuts with a compliance rate of 163% in November, the survey found."},
+    {"source_id": "reuters-20221201-opec-survey", "excerpt_id": "op-012", "source": "Reuters survey (T2 wire, via Oman Observer reprint) · paragraph 9", "date": "2022-12-01", "stance": "supports", "url": "https://www.omanobserver.om/article/1129165/business/opec-oil-output-drops-in-nov-after-cut-pledged",
+     "text": "In November, Saudi Arabia has cut output by 500,000 bpd versus October, the survey found, virtually all of the pledged amount. The United Arab Emirates and Kuwait made the next largest curbs."},
+    {"source_id": "eia-rbrte-daily", "excerpt_id": "op-013", "source": "EIA Europe Brent Spot Price FOB, daily (T1 official data) · weeks of 2022-10-03 and 2022-11-07", "date": "2026-10-15", "stance": "supports", "url": "https://www.eia.gov/dnav/pet/hist/RBRTED.htm",
+     "text": "Europe Brent Spot Price FOB (Dollars per Barrel): 94.35 on 2022-10-05, 98.88 on 2022-10-07, 99.87 on 2022-11-07."},
+    {"source_id": "eia-rbrte-daily", "excerpt_id": "op-014", "source": "EIA Europe Brent Spot Price FOB, daily (T1 official data) · weeks of 2022-11-28 and 2022-12-05", "date": "2026-10-15", "stance": "contradicts", "url": "https://www.eia.gov/dnav/pet/hist/RBRTED.htm",
+     "text": "Europe Brent Spot Price FOB (Dollars per Barrel): 86.28 on 2022-12-01, 76.37 on 2022-12-09, against 94.35 on 2022-10-05."}
+  ]
+}

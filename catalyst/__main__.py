@@ -2,7 +2,7 @@
 
   python -m catalyst run D1 --live                 # 实时调用模型，录音 + 快照落到 runs/D1/<时间戳>/
   python -m catalyst run D1 --replay runs/D1/<ts>  # 用录音回放：零成本、确定性，prompt 变了会报错
-  python -m catalyst run case.json --live --online # 先在白名单网站联网检索，冻结成资料包再推理
+  python -m catalyst run case.json --live --online # web retrieval on allow-listed sites first, frozen as a pack
   python -m catalyst run C3 --live --base runs/C1/<ts>   # 在录制的 C1 图上分叉
   python -m catalyst promote runs/D1/<ts> d1       # 生成 fixtures/d1.json：UI 与测试共用这一份
   python -m catalyst show runs/D1/<ts>             # 打印摘要
@@ -23,17 +23,41 @@ from catalyst import entrypoints as ep
 from catalyst.evidence import EvidenceProvider
 from catalyst.reasoner import RecordingReasoner, ReplayReasoner, default_reasoner
 from catalyst.store import RunStore
+from catalyst.research import ResearchLoop
 from catalyst.websearch import WebResult, run_web_stage
 
 
 def attach_web(event: str, target: str | None, *, cfg, ev: EvidenceProvider, store: RunStore, reasoner,
                replay_dir=None) -> WebResult:
-    """开着联网时，在入口之前跑检索，把冻结的 web 资料包注册进 provider 并加进 cfg.packs。CLI 与 API 共用。"""
+    """With web retrieval on, run round 1 before the entry points, register the frozen web pack and add it to
+    cfg.packs. Shared by the CLI and the API."""
     web = run_web_stage(event, target, cfg=cfg, store=store, reasoner=reasoner, replay_dir=replay_dir)
     if web.pack is not None:
         ev.register(web.pack)
         cfg.packs = [*cfg.packs, web.pack.pack_id]
     return web
+
+
+def research_for(event: str, target: str | None, *, cfg, ev: EvidenceProvider, web: WebResult,
+                 replay_dir=None) -> ResearchLoop | None:
+    """With web retrieval on, Inspect gets the research loop (code decides from the gaps whether round 2 runs);
+    off returns None and nothing changes."""
+    return ResearchLoop(event, target, evidence=ev, round1=web, replay_dir=replay_dir) if cfg.online else None
+
+
+def web_summary(web: WebResult, research: ResearchLoop | None) -> dict:
+    """The web field of case.json and the API response; per-round details and follow-up info once the loop ran."""
+    return research.dump() if research is not None and research.rounds else web.dump()
+
+
+def _record_web(store: RunStore, web: WebResult, research: ResearchLoop | None) -> None:
+    """Write per-round results back to case.json (replay uses it to know a round was empty or failed)."""
+    path = store.root / "case.json"
+    meta = json.loads(path.read_text())
+    meta["web"] = web_summary(web, research)
+    if research is not None and research.rounds:
+        meta["packs"] = [*[p for p in meta["packs"] if p not in research.packs], *research.packs]
+    path.write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -91,11 +115,13 @@ def _summary(res: dict) -> list[str]:
         mo = sum(e["model_only"] for e in g["edges"])
         lines.append(f"graph {g['version']}: {len(g['nodes'])} nodes, {len(g['edges'])} edges ({mo} model_only), "
                      f"{len(g['conditions'])} conditions")
-    if p := res.get("proposal"):
+    kinds = {b["terminal_id"]: b["kind"] for b in res.get("branches") or []}
+    for p in res.get("proposals") or []:
         nulls = [c["id"] for c in p["entry_conditions"] + p["exit_conditions"] if c["kind"] == "numeric" and c["threshold"] is None]
-        lines.append(f"proposal: {p['direction']['side']} {p['direction']['instrument']} gate={p['gate']} "
-                     f"status={p['status']} support={p['support_status']} null_thresholds={nulls} "
-                     f"confirm={p['user_judgment']['requires_user_confirmation']}")
+        lines.append(f"plan {p['terminal_id']} [{kinds.get(p['terminal_id'], '?')}]: {p['direction']['side']} "
+                     f"{p['direction']['instrument']} gate={p['gate']} status={p['status']} support={p['support_status']} "
+                     f"null_thresholds={nulls} confirm={p['user_judgment']['requires_user_confirmation']}"
+                     + (" approval_reset" if p.get("approval_reset") else "") + (" rival_changed" if p.get("rival_changed") else ""))
     if d := res.get("diff"):
         lines.append("diff: " + json.dumps({k: v for k, v in d.items() if v}, ensure_ascii=False))
     if s := res.get("scenario"):
@@ -112,7 +138,7 @@ def cmd_run(a) -> None:
         rec = Path(a.replay)
         recorded = json.loads((rec / "case.json").read_text())
         recorded_today = recorded.get("today")  # 回放必须用录制当天的日期
-        online = bool(recorded.get("online"))  # 联网与否由录制决定，回放读冻结的资料包，不上网
+        online = bool(recorded.get("online"))  # online follows the recording; replay reads frozen packs, no network
         store = RunStore(rec.parent / f"{rec.name}.replay-{_dt.datetime.now():%H%M%S}")
         reasoner = ReplayReasoner(rec / "cassette.jsonl")
     else:
@@ -131,6 +157,9 @@ def cmd_run(a) -> None:
     print(web.message())
     for n in notes:
         print(f"! {n}")
+    research = None
+    if case.get("type") != "causalt5k" and case.get("entry") != "fork":
+        research = research_for(inp["event"], inp.get("target"), cfg=cfg, ev=ev, web=web, replay_dir=a.replay)
 
     if case.get("type") == "causalt5k":
         res = ep.inspect(inp["event"], inp.get("target"), material=inp["material"], judgment_only=True,
@@ -145,11 +174,15 @@ def cmd_run(a) -> None:
             pick = next((c for c in cands if c["label"] == "grounded"), cands[0])
             print(f"→ inspect 候选 {pick['id']}")
             res = ep.inspect(inp["event"], None, candidate_id=pick["id"], candidate=pick, reasoner=reasoner,
-                             evidence=ev, config=cfg, store=store)
+                             evidence=ev, config=cfg, store=store, research=research)
         else:
             res = None
     else:
-        res = ep.inspect(inp["event"], inp.get("target"), reasoner=reasoner, evidence=ev, config=cfg, store=store)
+        res = ep.inspect(inp["event"], inp.get("target"), reasoner=reasoner, evidence=ev, config=cfg, store=store,
+                         research=research)
+    if research is not None and research.rounds:
+        _record_web(store, web, research)
+        print(research.message())
     if res is not None:
         print("\n".join(_summary(res)))
     print(f"\nrun: {store.root}")
@@ -159,15 +192,15 @@ def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
     """C3：在基线图上依次执行案例列出的每个分叉。基线默认用案例指定的 golden 图（Expected Impact
     只能对 golden 图自动比对）；--base 给出录制目录时改用录制的图。每个分叉都从同一基线出发。"""
     fx_dir = cases_dir.parent / "fixtures"
-    proposal, pack, scenario = None, None, None
+    proposals, pack, scenario = None, None, None
     if a.base:
         rec = RunStore(a.base)
         version = rec.latest_version()
-        base_graph, proposal = rec.get_snapshot(version), rec.get_proposal(version)
+        base_graph, proposals = rec.get_snapshot(version), rec.get_proposals(version)
         scenario = rec.bundle(version)["scenario"]  # 录制的基线本身是情景版本时，分叉叠加在它之上
-        obs = rec.root / "observations" / f"{version}.json"
-        if obs.exists():
-            pack = {"pack_id": f"recorded:{version}", "excerpts": json.loads(obs.read_text())["excerpts"]}
+        obs = rec.get_observations(version)
+        if obs["excerpts"]:
+            pack = {"pack_id": f"recorded:{version}", "synthetic": obs["synthetic"], "excerpts": obs["excerpts"]}
     else:
         base_graph = json.loads((fx_dir / case["input"]["base_graph_fixture"]).read_text())
         cited = {ev_["excerpt_id"] for e in base_graph["edges"] for ev_ in e.get("evidence", [])}
@@ -178,7 +211,7 @@ def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
         fx = json.loads((fx_dir / name).read_text())
         print(f"→ fork {name}: {fx['op']['kind']} {fx['op'].get('target') or fx['op'].get('impacts')}")
         res = ep.fork(base_graph, fx["op"], reasoner=reasoner, evidence=ev, config=cfg, pack=pack,
-                      proposal=proposal, scenario=scenario, store=store)
+                      proposals=proposals, scenario=scenario, store=store)
         print("\n".join(_summary(res)))
         if res.get("scope") and "expected_scope" in fx:
             ok = all(set(res["scope"][k]) == set(fx["expected_scope"][k]) for k in ("nodes", "edges"))
@@ -201,7 +234,8 @@ def cmd_promote(a) -> None:
                            "notes": case["notes"], "cassette": "cassette.jsonl"},
                "versions": {}}
     for snap in sorted((store.root / "snapshots").glob("*.json")):
-        fixture["versions"][snap.stem] = store.bundle(snap.stem)  # 与 GET /versions/{v} 同形
+        # same shape as GET /versions/{v} (schema.VersionBundle): proposals list + branches / kind tables
+        fixture["versions"][snap.stem] = store.bundle(snap.stem)
     fixture["latest"] = version
     out = Path(a.fixtures_dir) / f"{a.name}.json"
     out.parent.mkdir(exist_ok=True)
@@ -226,7 +260,7 @@ def main(argv=None) -> None:
     mode.add_argument("--replay", metavar="RUN_DIR")
     r.add_argument("--base", metavar="RUN_DIR")
     r.add_argument("--online", action="store_true",
-                   help="入口之前在白名单网站里联网检索，结果作为一个资料包加进来（默认关；回放时由录制决定）")
+                   help="web retrieval on allow-listed sites before the entry points, added as a pack (off by default; replay follows the recording)")
     r.add_argument("--today")
     r.add_argument("--cases-dir", default=os.environ.get("CATALYST_CASES_DIR", str(ROOT / "eval" / "cases")))
     r.add_argument("--packs-dir", default=str(ROOT / "packs"))

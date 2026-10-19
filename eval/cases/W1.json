@@ -1,0 +1,55 @@
+{
+  "id": "W1",
+  "type": "custom",
+  "layer": "W",
+  "title": "Online + follow-up research: Fed October cut -> long-duration Treasury ETF",
+  "entry": "inspect",
+  "input": {
+    "event": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+    "target": "TLT",
+    "today": "2026-10-18",
+    "evidence_packs": []
+  },
+  "run_variants": [
+    "online"
+  ],
+  "expected": {
+    "behavior": "The local packs do not cover this domain, so all evidence must come from the research loop. On today's date the cut has not happened, so it should be role=shock and the related branches hypothetical. Branch only where there is a real dispute (for example, the cut is already priced in; long-end yields need not follow the short end); one branch is fine if there is none. Conditions cite official sources found online (FOMC statement, meeting calendar); meeting dates and thresholds are not invented. Each research round includes at least one query aimed at counter-evidence.",
+    "gate": "WAIT",
+    "approval_required": true,
+    "online_metrics": [
+      "round1_model_only_edges",
+      "round2_model_only_edges",
+      "round1_null_threshold_conditions",
+      "round2_null_threshold_conditions",
+      "followup_triggered",
+      "new_excerpts_by_round"
+    ]
+  },
+  "evals": [
+    "E1",
+    "E2",
+    "Branch quality"
+  ],
+  "auto_checks": [
+    "gate_per_plan",
+    "null_threshold_has_note",
+    "online_metrics"
+  ],
+  "human_review": [
+    "E1: do the cited web excerpts support the mechanism",
+    "E1: did each round include a query aimed at counter-evidence",
+    "Branch quality: are the branches real competitors",
+    "Branch quality: is the not-yet-happened cut marked role=shock",
+    "E2: do conditions cite verifiable official sources and dates"
+  ],
+  "recording": {
+    "path": "~/Downloads/multiverse-investor-agent-websearch/runs/W1/20261018-223507",
+    "status": "Stale: recorded before the agent loop (follow-up round) and plan B (PROMPT_VERSION bump), with a single research round and a Chinese input. Re-record once with Haiku after both are merged, then replay.",
+    "summary": "online on, 16 excerpts, 5 searches, 2 fetches, 2 dropped"
+  },
+  "source": {
+    "origin": "websearch session's runs/_cases/W1.json (originally titled as a new question outside the eval cases); moved into eval/cases on 2026-10-18"
+  },
+  "notes": "Replaying an online recording is deterministic; only re-recording changes results. Stability is judged by re-recording (3 times, only when needed)."
+}

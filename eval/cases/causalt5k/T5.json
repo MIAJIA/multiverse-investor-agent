@@ -12,7 +12,7 @@
   "probe": null,
   "expected": {
     "label": "AMBIGUOUS",
-    "behavior": "判 AMBIGUOUS：同业未宣布分红也上涨、宏观改善与公告的先后未知，证据不足以确定",
+    "behavior": "AMBIGUOUS: peers without a dividend announcement also rose, and the timing of the macro improvement relative to the announcement is unknown, so the evidence cannot settle it",
     "trap": null,
     "trap_canonical": null,
     "produce_proposal": false,
@@ -27,8 +27,8 @@
     "no_proposal"
   ],
   "human_review": [
-    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
-    "E4: 弃权 / 判断理由是否成立"
+    "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
+    "E4: is the abstention / verdict reasoning sound"
   ],
   "source": {
     "dataset": "CausalT5k",

@@ -142,3 +142,17 @@ def core_evidence_provider(packs_dir=None):
     """packs_dir 指向空目录时，所有 pack 都走 runner 的合成包回退（register）。"""
     evidence = _core("catalyst.evidence")
     return evidence.EvidenceProvider(packs_dir) if packs_dir is not None else evidence.default_provider()
+
+
+def require_plan_b():
+    """方案 B（每个 terminal 一份计划、返回体是 proposals 列表）落地前，读 proposals 的契约测试跳过。"""
+    schema = _core("catalyst.schema")
+    fields = getattr(getattr(schema, "TradeProposal", None), "model_fields", {})
+    if "terminal_id" not in fields:
+        pytest.skip("核心还没有方案 B 的 proposals 契约（TradeProposal.terminal_id）")
+
+
+def core_condition_evaluator():
+    """回测按事后真相回判用核心的条件判定（和 CLI 里 eval.runner.load_core_condition_evaluator 一样）。"""
+    conditions = _core("catalyst.conditions")
+    return conditions.evaluate

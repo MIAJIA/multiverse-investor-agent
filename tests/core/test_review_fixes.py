@@ -31,32 +31,32 @@ def _met_cfg():
 
 def test_p0_fork_reevaluates_conditions_and_gate(ev):
     base = ep.inspect("x", reasoner=Scripted([_good(threshold=10)]), evidence=ev, config=_met_cfg())
-    assert base["proposal"]["gate"] == "READY_FOR_REVIEW" and base["proposal"]["status"] == "needs_review"
+    assert base["proposals"][0]["gate"] == "READY_FOR_REVIEW" and base["proposals"][0]["status"] == "needs_review"
     patch = {"node_updates": [], "edge_updates": [], "next_checks": [],
              "condition_updates": [{"id": "cond.transits", "threshold": 30}],
              "assessment": [{"claim_id": "h.transits", "status": "challenged", "reason": "门槛提高"},
                             {"claim_id": "h.brent", "status": "unresolved", "reason": "上游未定"}]}
     op = {"kind": "change_assumption", "target": "h.transits", "value": "需要更高的过境量"}
-    res = ep.fork(base["graph"], op, reasoner=Scripted([patch]), evidence=ev, config=_met_cfg(), proposal=base["proposal"])
+    res = ep.fork(base["graph"], op, reasoner=Scripted([patch]), evidence=ev, config=_met_cfg(), proposals=base["proposals"])
     assert res["ok"]
-    assert res["proposal"]["entry_conditions"][0]["evaluation_status"] == "unknown"  # 15 < 30，窗口未结束
-    assert res["proposal"]["gate"] == "WAIT" and res["proposal"]["status"] == "draft"
+    assert res["proposals"][0]["entry_conditions"][0]["evaluation_status"] == "unknown"  # 15 < 30，窗口未结束
+    assert res["proposals"][0]["gate"] == "WAIT" and res["proposals"][0]["status"] == "draft"
 
 
 def test_p0_model_cannot_confirm_for_user(ev):
     out = _good()
-    out["proposal"]["user_judgment"] = {"original_statement": "霍尔木兹海峡下周重开",
+    out["proposals"][0]["user_judgment"] = {"original_statement": "霍尔木兹海峡下周重开",
                                         "clarified_statement": "2026-11-30 前过境恢复", "criteria": None,
                                         "deadline": "2026-11-30", "requires_user_confirmation": False}
     res = ep.inspect("x", reasoner=Scripted([out]), evidence=ev, config=CFG)
-    uj = res["proposal"]["user_judgment"]
+    uj = res["proposals"][0]["user_judgment"]
     assert uj["confirmed"] is False and uj["confirmed_claim_ids"] == [] and uj["probability"] is None
     assert uj["requires_user_confirmation"] is True  # 原话被改写过
 
 
 def test_p0_model_output_with_confirmation_fields_is_rejected(ev):
     out = _good()
-    out["proposal"]["user_judgment"].update(confirmed=True, probability=0.7)  # 模型输出 schema 没有这些字段
+    out["proposals"][0]["user_judgment"].update(confirmed=True, probability=0.7)  # 模型输出 schema 没有这些字段
     res = ep.inspect("x", reasoner=Scripted([out] * 3), evidence=ev, config=CFG)
     assert not res["ok"] and any("confirmed" in e for e in res["errors"])
 

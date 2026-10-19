@@ -1,0 +1,38 @@
+{
+  "id": "B5",
+  "type": "custom",
+  "layer": "B",
+  "title": "Plans after a fork: C3's two forks, carrying the C1 golden plans",
+  "entry": "fork",
+  "input": {
+    "base_graph_fixture": "c1_graph_v1.json",
+    "proposals_fixture": "c1_plans_v1.json",
+    "forks": [
+      "c3_change_assumption.json",
+      "c3_add_shock.json"
+    ],
+    "fork_pack_fixture": "c1_evidence_pack.json",
+    "fork_note": "C3 checks Expected Impact on the golden graph without plans. B5 runs the same forks with one plan per terminal (c1_plans_v1.json, the laser plan approved) to see how the plans come back."
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "The fork returns one plan per terminal. Plans whose terminal or conditions sit in the write scope are re-derived and their approval is reset by code (functional test territory); here the human checks whether the model's condition and assessment updates answer the changed assumption, and that unaffected plans keep their content.",
+    "plans_per_terminal": true,
+    "expected_impact_from_fixture": true
+  },
+  "evals": [
+    "E3"
+  ],
+  "auto_checks": [
+    "fork_plans_per_terminal",
+    "challenged_matches_golden"
+  ],
+  "human_review": [
+    "E3: do the model's updates to affected plans answer the changed assumption",
+    "E3: does the diff text present the scenario as an observation",
+    "E3: do unaffected plans keep their content"
+  ],
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py). Needs the plan B fork (proposals in, proposals out); the contract test skips until the core has it."
+}

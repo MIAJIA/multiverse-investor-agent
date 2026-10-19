@@ -11,6 +11,9 @@ FIXTURES_DIR = EVAL_DIR / "fixtures"
 
 CAUSALT5K_IDS = ["T1", "T2", "T3", "T4", "T5", "T6"]
 CUSTOM_IDS = ["C1", "C2", "C3", "C4", "D1"]
+B_IDS = ["B1", "B2", "B3", "B4", "B5", "B6"]   # 关键场景（runner 的部分检查待实现）
+R_IDS = ["R2", "R3", "K3"]                     # 回测（K3 的资料包 packs/opec2022.json 在 evidence 分支）
+W_IDS = ["W1"]                                 # 联网 + 补查（--online）
 
 
 def load_json(path: Path | str) -> Any:

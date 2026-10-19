@@ -1,0 +1,40 @@
+{
+  "id": "B1",
+  "type": "custom",
+  "layer": "B",
+  "title": "Should be no_chain: CPO ramp -> memory makers",
+  "entry": "inspect",
+  "input": {
+    "event": "The ramp of co-packaged optics (CPO) will lift demand for memory chip makers",
+    "target": "MU",
+    "evidence_packs": [
+      "semiconductor"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "The only memory-related excerpt is sc-013 (NVIDIA lists SK hynix, Micron and Samsung as memory suppliers, stance neutral); nothing says CPO lifts memory demand. Expect no_chain with a reason, or a path whose CPO -> memory-demand hop is model_only so no branch is evidenced. sc-013 must not be cited as supporting evidence.",
+    "no_chain_preferred": true,
+    "must_not_cite_as_support": [
+      "sc-013"
+    ],
+    "key_excerpts": [
+      "sc-013"
+    ]
+  },
+  "evals": [
+    "E1",
+    "E4"
+  ],
+  "auto_checks": [
+    "no_chain_or_unevidenced_branches",
+    "no_support_citation_of_listed_excerpts"
+  ],
+  "human_review": [
+    "E4: is the no_chain reason sound (does it name the missing link)",
+    "E1: if a chain is built, does it treat a supplier list as demand evidence"
+  ],
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py)."
+}

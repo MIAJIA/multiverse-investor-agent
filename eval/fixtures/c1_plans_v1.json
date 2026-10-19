@@ -1,0 +1,242 @@
+{
+  "_note": "One plan per terminal for the C1 golden graph (B5). The three terminals are parallel beneficiaries, not rivals. The laser plan is approved (user_judgment.confirmed) so a fork that touches its write scope should reset that approval.",
+  "proposals": [
+    {
+      "terminal_id": "c1.term.laser_vendor",
+      "status": "draft",
+      "gate": "WAIT",
+      "direction": {
+        "instrument": "LITE",
+        "side": "long",
+        "horizon_days": 180,
+        "note": null
+      },
+      "entry_conditions": [
+        {
+          "id": "cond.c1.cpo_shipments",
+          "claim_id": "c1.cpo_ramp",
+          "kind": "numeric",
+          "predicate": "observed_by",
+          "series": "trendforce.cpo_switch_shipments_quarterly",
+          "source": null,
+          "comparator": ">=",
+          "threshold": null,
+          "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+          "anchor": "2026-10-18",
+          "deadline": "2027-06-30",
+          "observation_window": {
+            "start": "2026-10-18",
+            "end": "2027-06-30"
+          },
+          "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+          "verification_status": "unverified",
+          "evaluation_status": "unknown"
+        },
+        {
+          "id": "cond.c1.els_design_wins",
+          "claim_id": "c1.laser_demand",
+          "kind": "document",
+          "predicate": "observed_by",
+          "series": null,
+          "source": "company_filings",
+          "comparator": null,
+          "threshold": null,
+          "threshold_note": "Document condition, no numeric threshold",
+          "anchor": "2026-10-18",
+          "deadline": "2027-03-31",
+          "observation_window": {
+            "start": "2026-10-18",
+            "end": "2027-03-31"
+          },
+          "rule": "Met when a laser vendor confirms a CPO external-light-source design win in a formal filing",
+          "verification_status": "verifiable",
+          "evaluation_status": "unknown"
+        }
+      ],
+      "exit_conditions": [],
+      "exit_logic": "ANY",
+      "key_dependency": null,
+      "user_judgment": {
+        "original_statement": "Photonic chips are being adopted faster than expected",
+        "clarified_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+        "criteria": null,
+        "deadline": null,
+        "probability": null,
+        "requires_user_confirmation": true,
+        "confirmed": true,
+        "confirmed_claim_ids": [
+          "c1.cpo_ramp",
+          "c1.laser_demand"
+        ]
+      },
+      "market_reference": null,
+      "scenario_ref": null,
+      "support_status": "unknown",
+      "graph_version": "c1-v1",
+      "meta": {
+        "proposal_version": "c1-v1.c1.term.laser_vendor",
+        "prompt_version": "fixture",
+        "model": "fixture",
+        "approval_required": true
+      },
+      "approval_reset": false,
+      "rival_changed": false
+    },
+    {
+      "terminal_id": "c1.term.foundry",
+      "status": "draft",
+      "gate": "WAIT",
+      "direction": {
+        "instrument": "TSM",
+        "side": "long",
+        "horizon_days": 180,
+        "note": null
+      },
+      "entry_conditions": [
+        {
+          "id": "cond.c1.cpo_shipments",
+          "claim_id": "c1.cpo_ramp",
+          "kind": "numeric",
+          "predicate": "observed_by",
+          "series": "trendforce.cpo_switch_shipments_quarterly",
+          "source": null,
+          "comparator": ">=",
+          "threshold": null,
+          "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+          "anchor": "2026-10-18",
+          "deadline": "2027-06-30",
+          "observation_window": {
+            "start": "2026-10-18",
+            "end": "2027-06-30"
+          },
+          "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+          "verification_status": "unverified",
+          "evaluation_status": "unknown"
+        },
+        {
+          "id": "cond.c1.foundry_utilization",
+          "claim_id": "c1.siph_foundry",
+          "kind": "numeric",
+          "predicate": "observed_by",
+          "series": "trendforce.siph_foundry_utilization",
+          "source": null,
+          "comparator": ">=",
+          "threshold": 0.85,
+          "threshold_note": "Threshold taken from sc-006",
+          "anchor": "2026-10-18",
+          "deadline": "2027-09-30",
+          "observation_window": {
+            "start": "2026-10-18",
+            "end": "2027-09-30"
+          },
+          "rule": "Met when quarterly utilization reads >= 0.85",
+          "verification_status": "unverified",
+          "evaluation_status": "unknown"
+        }
+      ],
+      "exit_conditions": [],
+      "exit_logic": "ANY",
+      "key_dependency": null,
+      "user_judgment": {
+        "original_statement": "Photonic chips are being adopted faster than expected",
+        "clarified_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+        "criteria": null,
+        "deadline": null,
+        "probability": null,
+        "requires_user_confirmation": true,
+        "confirmed": false,
+        "confirmed_claim_ids": []
+      },
+      "market_reference": null,
+      "scenario_ref": null,
+      "support_status": "unknown",
+      "graph_version": "c1-v1",
+      "meta": {
+        "proposal_version": "c1-v1.c1.term.foundry",
+        "prompt_version": "fixture",
+        "model": "fixture",
+        "approval_required": true
+      },
+      "approval_reset": false,
+      "rival_changed": false
+    },
+    {
+      "terminal_id": "c1.term.dsp_vendor",
+      "status": "draft",
+      "gate": "WAIT",
+      "direction": {
+        "instrument": "MRVL",
+        "side": "short",
+        "horizon_days": 180,
+        "note": null
+      },
+      "entry_conditions": [
+        {
+          "id": "cond.c1.cpo_shipments",
+          "claim_id": "c1.cpo_ramp",
+          "kind": "numeric",
+          "predicate": "observed_by",
+          "series": "trendforce.cpo_switch_shipments_quarterly",
+          "source": null,
+          "comparator": ">=",
+          "threshold": null,
+          "threshold_note": "The pack only describes direction and gives no shipment baseline to set a threshold; the user or data must confirm it, the system does not fill it in",
+          "anchor": "2026-10-18",
+          "deadline": "2027-06-30",
+          "observation_window": {
+            "start": "2026-10-18",
+            "end": "2027-06-30"
+          },
+          "rule": "Met when quarterly shipment reports show CPO switch shipments at the threshold; unknown until the threshold is confirmed",
+          "verification_status": "unverified",
+          "evaluation_status": "unknown"
+        },
+        {
+          "id": "cond.c1.dsp_guidance",
+          "claim_id": "c1.pluggable_dsp",
+          "kind": "event",
+          "predicate": "not_observed_by",
+          "series": null,
+          "source": "earnings_call_transcripts",
+          "comparator": null,
+          "threshold": null,
+          "threshold_note": "Event condition, no numeric threshold",
+          "anchor": "2026-10-18",
+          "deadline": "2027-03-31",
+          "observation_window": {
+            "start": "2026-10-18",
+            "end": "2027-03-31"
+          },
+          "rule": "DSP vendors do not raise pluggable-DSP guidance within the window; decidable only after the window ends and the source covers all of it",
+          "verification_status": "unverified",
+          "evaluation_status": "unknown"
+        }
+      ],
+      "exit_conditions": [],
+      "exit_logic": "ANY",
+      "key_dependency": null,
+      "user_judgment": {
+        "original_statement": "Photonic chips are being adopted faster than expected",
+        "clarified_statement": "CPO switch shipments in AI clusters move forward to 2H27",
+        "criteria": null,
+        "deadline": null,
+        "probability": null,
+        "requires_user_confirmation": true,
+        "confirmed": false,
+        "confirmed_claim_ids": []
+      },
+      "market_reference": null,
+      "scenario_ref": null,
+      "support_status": "unknown",
+      "graph_version": "c1-v1",
+      "meta": {
+        "proposal_version": "c1-v1.c1.term.dsp_vendor",
+        "prompt_version": "fixture",
+        "model": "fixture",
+        "approval_required": true
+      },
+      "approval_reset": false,
+      "rival_changed": false
+    }
+  ]
+}

@@ -55,7 +55,7 @@ def test_baseline_prompt_carries_the_same_material():
 
 
 def test_entrypoint_exception_is_isolated():
-    ep = FakeEntrypoints(raise_on={"光子芯片"})
+    ep = FakeEntrypoints(raise_on={"Photonic chips"})
     results = run_all(CASES, ("pipeline",), reasoner=FakeReasoner(), evidence=FakeEvidence(), entrypoints=ep)
     assert _by(results, "C1", "pipeline")["status"] == "ERROR"
     assert _by(results, "D1", "pipeline")["status"] != "ERROR"
@@ -68,8 +68,8 @@ def test_report_from_sample_results(tmp_path):
     header = "| " + " | ".join(report.COLUMNS) + " |"
     assert header in md
     assert "%" not in md, "不报百分比"
-    assert "n/a（scenario 全文给定）" in md
-    assert "当前流程不可信" in md  # sample 里 C3 有越界写入
+    assert "n/a (scenario given in full)" in md
+    assert "cannot be trusted" in md  # sample 里 C3 有越界写入
     for r in results:
         assert f"| {r['case_id']} |" in md
 
@@ -77,7 +77,7 @@ def test_report_from_sample_results(tmp_path):
 def test_committed_sample_results_render():
     path = EVAL_DIR / "sample_results.json"
     md = report.render_report(json.loads(path.read_text(encoding="utf-8")))
-    assert "## pipeline 组" in md and "## baseline 组" in md and "## 两组对照" in md
+    assert "## pipeline group" in md and "## baseline group" in md and "## pipeline vs baseline" in md
 
 
 def test_abstain_before_inspect_is_not_silently_pending():
@@ -116,4 +116,59 @@ def test_synthetic_run_skips_retrieval_and_says_why():
                       entrypoints=FakeEntrypoints(observations=[]), pack_source="synthetic")
     r = results[0]
     assert r["retrieval"] is None and "retrieval_miss" not in r["failure_types"]
-    assert "撞号" in report.render_report(results)
+    assert "ids collide" in report.render_report(results)
+
+
+# ---- 方案 B：proposals 列表、逐份计划检查 ---------------------------------------
+
+def test_missing_proposals_field_is_an_error_not_a_pass():
+    """旧写法 get(out, "proposal") is None 在字段改名后恒为真；现在缺 proposals 必须报错。"""
+    for case_id in ("T1", "C1", "C4"):
+        r = run_case(load_case(case_id), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                     entrypoints=FakeEntrypoints(legacy=True))
+        assert r["status"] == "ERROR", (case_id, r["checks"])
+        assert "proposals" in r["actual"]["error"] and "proposal" in r["actual"]["error"]
+
+
+def test_c1_has_three_plans_and_gate_is_checked_per_plan():
+    from eval.fakes import c1_fake_plans
+    assert [p["terminal_id"] for p in c1_fake_plans()] == ["c1.term.laser_vendor", "c1.term.foundry", "c1.term.dsp_vendor"]
+    ok = run_case(load_case("C1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                  entrypoints=FakeEntrypoints())
+    assert ok["status"] == "PENDING_REVIEW", [c for c in ok["checks"] if not c["passed"]]
+    assert len(ok["actual"]["plans"]) == 3
+    assert sum(1 for c in ok["checks"] if c["name"].endswith(":null_threshold_has_note")) == 3
+    bad = run_case(load_case("C1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                   entrypoints=FakeEntrypoints(plan_gates={"c1.term.foundry": "BLOCKED"}))
+    gate = next(c for c in bad["checks"] if c["name"] == "gate_per_plan")
+    assert not gate["passed"] and "c1.term.foundry=BLOCKED" in gate["detail"] and "gate_wrong" in bad["failure_types"]
+
+
+def test_null_threshold_note_checked_in_every_plan():
+    from eval.fakes import c1_fake_plans
+
+    class OnePlanMissingNote(FakeEntrypoints):
+        def inspect(self, event, target=None, **kw):
+            out = super().inspect(event, target, **kw)
+            if out["proposals"] and not kw.get("judgment_only"):
+                bad = dict(out["proposals"][2]["entry_conditions"][0])
+                bad["threshold_note"] = None
+                out["proposals"][2]["entry_conditions"] = [bad]
+            return out
+    r = run_case(load_case("C1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                 entrypoints=OnePlanMissingNote())
+    failed = [c["name"] for c in r["checks"] if not c["passed"]]
+    assert failed == ["c1.term.dsp_vendor:null_threshold_has_note"], failed
+
+
+def test_d1_user_confirmation_checked_per_plan():
+    r = run_case(load_case("D1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                 entrypoints=FakeEntrypoints())
+    assert any(c["name"] == "user_judgment_confirmation_per_plan" and c["passed"] for c in r["checks"])
+
+
+def test_report_lists_gate_per_terminal():
+    results = run_all([load_case("C1")], ("pipeline",), reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                      entrypoints=FakeEntrypoints())
+    md = report.render_report(results)
+    assert "c1.term.laser_vendor=WAIT" in md and "c1.term.dsp_vendor=WAIT" in md

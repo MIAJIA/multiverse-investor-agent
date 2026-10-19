@@ -43,16 +43,17 @@ def _good(threshold=None, note="资料包没有过境恢复基准，阈值由用
              "observation_window": {"start": "2026-10-18", "end": "2026-11-30"},
              "rule": "窗口内日过境量达到阈值即 met", "verification_status": "unverified"},
         ],
-        "proposal": {
+        "proposals": [{
+            "terminal_id": "h.brent",
             "direction": {"instrument": "BZ", "side": "short", "horizon_days": 30, "note": None},
             "entry_condition_ids": ["cond.transits"], "exit_condition_ids": [], "exit_logic": "ANY",
             "key_dependency": {"condition_id": "cond.transits", "claim_id": "h.transits", "why": "真通航而非宣布开放"},
             "user_judgment": {"original_statement": "霍尔木兹海峡下周重开", "clarified_statement": "2026-11-30 前过境恢复",
-                              "criteria": None, "deadline": "2026-11-30", "requires_user_confirmation": True}},
+                              "criteria": None, "deadline": "2026-11-30", "requires_user_confirmation": True}}],
     }
 
 
-GRAPH_KEYS, PLAN_KEYS = ("no_chain", "no_chain_reason", "nodes", "edges"), ("conditions", "proposal")
+GRAPH_KEYS, PLAN_KEYS = ("no_chain", "no_chain_reason", "nodes", "edges"), ("conditions", "proposals")
 
 
 class Scripted:
@@ -70,7 +71,7 @@ class Scripted:
             out, self._plan = self._plan, None
         else:
             out = self.outputs.pop(0)
-            if isinstance(out, dict) and "proposal" in out and "nodes" in out:
+            if isinstance(out, dict) and "proposals" in out and "nodes" in out:
                 if stage == "inspect":
                     self._plan = {k: out[k] for k in PLAN_KEYS if k in out}
                     out = {k: out[k] for k in GRAPH_KEYS if k in out}
@@ -96,7 +97,7 @@ def test_retry_feeds_back_errors_then_succeeds(ev, tmp_path):
     assert res["ok"] and res["attempts"] == 3  # 图 1 次 + 条件 / 提案 2 次
     assert r.stages == ["inspect", "inspect.plan", "inspect.plan"]  # 只重写出错的那一步
     assert "cond.transits" in r.prompts[2] and "threshold_note" in r.prompts[2]
-    p = res["proposal"]
+    p, = res["proposals"]
     assert p["gate"] == "WAIT" and p["status"] == "draft" and p["meta"]["approval_required"] is True
     assert p["entry_conditions"][0]["evaluation_status"] == "unknown"
     trace = (tmp_path / "trace.jsonl").read_text().splitlines()
@@ -123,7 +124,7 @@ def test_record_then_replay_is_deterministic(ev, tmp_path):
     rec = RecordingReasoner(Scripted([_good()]), tmp_path / "cassette.jsonl")
     first = ep.inspect("霍尔木兹海峡下周重开", reasoner=rec, evidence=ev, config=CFG)
     again = ep.inspect("霍尔木兹海峡下周重开", reasoner=ReplayReasoner(tmp_path / "cassette.jsonl"), evidence=ev, config=CFG)
-    assert again["graph"] == first["graph"] and again["proposal"] == first["proposal"]
+    assert again["graph"] == first["graph"] and again["proposals"] == first["proposals"]
     with pytest.raises(CassetteMiss):  # 输入变了，旧录音不能冒充
         ep.inspect("别的事件", reasoner=ReplayReasoner(tmp_path / "cassette.jsonl"), evidence=ev, config=CFG)
 
@@ -138,12 +139,12 @@ def test_fork_scope_enforced_through_entrypoint(ev):
               "assessment": [{"claim_id": "h.transits", "status": "challenged", "reason": "时间推迟"},
                              {"claim_id": "h.brent", "status": "challenged", "reason": "上游推迟"}]}
     r = Scripted([outside, inside])
-    res = ep.fork(base["graph"], op, reasoner=r, evidence=ev, config=CFG, proposal=base["proposal"])
+    res = ep.fork(base["graph"], op, reasoner=r, evidence=ev, config=CFG, proposals=base["proposals"])
     assert res["ok"] and res["attempts"] == 2 and "h.open" in r.prompts[1]
     assert res["scenario"]["assessment"]["h.open"] == "unaffected"
     assert res["diff"]["nodes_changed"] == ["h.transits"]
-    assert res["proposal"]["support_status"] == "challenged"
-    assert res["proposal"]["scenario_ref"]["base_version"] == "d1-v1"
+    assert res["proposals"][0]["support_status"] == "challenged"
+    assert res["proposals"][0]["scenario_ref"]["base_version"] == "d1-v1"
     assert res["base_graph"] == base["graph"]
 
 

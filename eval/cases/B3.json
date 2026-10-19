@@ -1,0 +1,42 @@
+{
+  "id": "B3",
+  "type": "custom",
+  "layer": "B",
+  "title": "Exit conditions with OR: several independent risks",
+  "entry": "inspect",
+  "input": {
+    "event": "The Strait of Hormuz stays disrupted and oil stays high, so go long Brent",
+    "target": null,
+    "evidence_packs": [
+      "hormuz"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "The pack has several independent risks that would each break the thesis: real transit recovery (hz-009 baseline, PortWatch transits), the bypass pipeline coming back (hz-003, hz-022), the risk premium fading (hz-023). Expect several exit conditions with exit_logic = ANY, each observable and dated.",
+    "gate": "WAIT",
+    "exit_logic": "ANY",
+    "min_exit_conditions": 2,
+    "key_excerpts": [
+      "hz-003",
+      "hz-009",
+      "hz-022",
+      "hz-023"
+    ]
+  },
+  "evals": [
+    "E2"
+  ],
+  "auto_checks": [
+    "gate_per_plan",
+    "exit_logic_any_with_min_conditions",
+    "null_threshold_has_note"
+  ],
+  "human_review": [
+    "E2: are the exit conditions really independent, observable and dated",
+    "E2: was one risk split into several to pad the list"
+  ],
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py)."
+}

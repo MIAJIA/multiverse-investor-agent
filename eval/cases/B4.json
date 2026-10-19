@@ -1,0 +1,36 @@
+{
+  "id": "B4",
+  "type": "custom",
+  "layer": "B",
+  "title": "Relative time anchor: no new attack within 72 hours of reopening",
+  "entry": "inspect",
+  "input": {
+    "event": "If there is no new attack within 72 hours after Hormuz reopens, go short Brent",
+    "target": null,
+    "evidence_packs": [
+      "hormuz"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "'72 hours after reopening' is relative and the start date is unknown. Expect the anchor to be a scenario: event the user confirms, not a plausible-looking absolute date. Reopening has not happened, so it should be role=shock and the related branch hypothetical. The predicate should be not_observed_by.",
+    "gate": "WAIT",
+    "anchor_prefix": "scenario:",
+    "predicate_expected": "not_observed_by"
+  },
+  "evals": [
+    "E2",
+    "Branch quality"
+  ],
+  "auto_checks": [
+    "gate_per_plan",
+    "relative_anchor_uses_scenario_prefix"
+  ],
+  "human_review": [
+    "E2: did the model invent a reopening date",
+    "Branch quality: is the not-yet-happened reopening marked role=shock"
+  ],
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py)."
+}
