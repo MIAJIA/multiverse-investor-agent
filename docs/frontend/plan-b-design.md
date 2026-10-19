@@ -341,3 +341,10 @@ type AppState = {
 另外顺带检查：c1_blocked 的 LITE 是 BLOCKED；c4_abstain 显示弃权；联网开关打开后状态行显示；预览页（#plan-b）B1 / B2 正常；控制台无报错。截图：`screenshots/planb-b1-highlight.jpg`、`planb-b3-reset.jpg`。
 
 **还没做**：用 `VITE_MOCK=0` 接本地真实后端走 B1 → B2 → B3，等主 session 给录制目录。
+
+### B2 定稿：答案卡（Mia 选定，2026-10-19）
+
+- 正式 B2 用答案卡（`components/approve/ApproveCard.tsx`）：顶部「你的想法」胶囊，一排胶囊切换结论（已批准的带 ✓，被分叉撤销的带橙点），下面一张卡：大字「看多 LITE」、一句论点、类别标签、前提（带引用数，点开看原文）、信号（缺阈值的原地填），完整计划卡收进「更多细节」；底部黑色胶囊批准 / 改批 / 撤销。
+- 假设分支的横幅写清楚是哪个假设：分支上的冲击节点，或者情景里改过、且在这条分支祖先里的假设（查 `scenario.ops` 的 target）。
+- 列表版（ApproveList）和原版（ApprovePlans）已删除；草稿和理解确认的类型移到 `components/approve/model.ts`。预览页（#plan-b）的 B2 也只剩答案卡。截图：`screenshots/planb-b2-card.jpg`、`pb-b2-lite-b-card.jpg`。
+- 浏览器里走过：确认想法前胶囊是灰的；批准 LITE（录好的 c1-v2）；切到 TSM 胶囊写「改批这份 · 会撤销…」；B3 改假设 →「在这个版本上重新批准」→ 卡片显示「前提已改动，请重新批准」和带假设名的横幅；批准再撤销后没有 ✓。

@@ -9,10 +9,9 @@ import { strength } from '../../node/strength';
 import { EVALUATION } from '../../status';
 import { T } from '../../strings';
 import type { Condition, PlanBBundle, TradeProposal } from '../../types';
-import type { PlanDraft, Understood } from '../ApprovePlans';
 import { BranchTag } from '../BranchSwatch';
 import ProposalCard from '../ProposalCard';
-import { missingThresholds } from './model';
+import { missingThresholds, type PlanDraft, type Understood } from './model';
 import './approve.css';
 
 export function UnderstoodPill({ text, needed, understood, onUnderstood }: {

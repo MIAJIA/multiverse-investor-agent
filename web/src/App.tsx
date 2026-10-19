@@ -2,8 +2,8 @@
 // 方案 B：一个版本有几份计划（每个结论一份）；B2 批准其中一份或撤销（sign，terminal_id 为 null）。
 import { useEffect, useState } from 'react';
 import * as api from './api';
-import { EMPTY_DRAFT, type PlanDraft, type Understood } from './components/ApprovePlans';
-import ApproveList from './components/approve/ApproveList';
+import ApproveCard from './components/approve/ApproveCard';
+import { EMPTY_DRAFT, type PlanDraft, type Understood } from './components/approve/model';
 import Scenario from './components/Scenario';
 import Workspace from './components/Workspace';
 import type { RunCreated, VersionBundle, WriteResult } from './types';
@@ -175,7 +175,7 @@ export default function App() {
             onGoApprove={() => patch({ tab: 'signoff' })} />
         )}
         {base && s.tab === 'signoff' && (
-          <ApproveList bundle={base} selected={s.selectedTerminalId} onSelect={(id) => patch({ selectedTerminalId: id || null })}
+          <ApproveCard bundle={base} selected={s.selectedTerminalId} onSelect={(id) => patch({ selectedTerminalId: id || null })}
             drafts={s.drafts} onDraft={(tid, d) => patch({ drafts: { ...s.drafts, [tid]: d } })}
             understood={s.understood} onUnderstood={(understood) => patch({ understood })}
             onApprove={approve} onRevoke={revoke} busy={s.busy} />
