@@ -111,6 +111,7 @@ export interface Scenario {
   ops: Op[];
   assessment: Record<string, AssessmentStatus>;
   assessment_reason: Record<string, string>;
+  root_version: string | null; // 最初的非情景基线；叠加时 ops / assessment 都继承父情景
 }
 
 export interface Direction {
@@ -139,8 +140,9 @@ export interface UserJudgment {
 
 export interface ScenarioRef {
   base_version: string;
-  challenged_claim_ids: string[];
+  challenged_claim_ids: string[]; // 叠加后的全部受挑战 claim
   next_checks: string[];
+  root_version: string | null;
 }
 
 export interface CriticReport {

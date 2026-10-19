@@ -66,3 +66,4 @@
 - 五个设计问题，各两种做法：情景列表（分段胶囊 / 版本树）、比较（叠色 / 并排）、叠加着色（相对上一层 / 相对基线）、情景摘要（大数字卡片 / 表盘点阵）、新建情景（灵动岛 / 侧边表单）。截图 `screenshots/sc1–sc5`。
 - 情景名是演示表；「相对基线」由前端把每层后端结果合起来演示，正式版需要后端给。
 - 发现的后端问题：叠加分叉（c1-v4）的提案 `support_status` 回到 supported——`derive_proposal` 只看这一层的 challenged，父情景 c1-v2 让激光路径受挑战这件事没有带下来。
+- 跟上叠加情景的修复（core-schema@bb173e1，fast-forward）：后端的 assessment 和 `scenario_ref.challenged_claim_ids` 现在都是叠加后的全部结果，Scenario 多了 `root_version`，ops 也继承父情景。前端改成：「相对基线」直接用 `scenario_ref.challenged_claim_ids`；「这一层新增」= 本版本 challenged 减去父版本 challenged（集合差），并用测试确认这些节点都在后端 diff 的 `changed_claim_ids` 里；「这一层改动的假设」只看这一层新加的 op。多情景 playground 的大部分视图默认显示相对基线，第 3 组 A 显示这一层新增，树上的数字也是这一层新增。

@@ -1,4 +1,4 @@
-// 多情景 playground 的只读辅助：版本链、演示名、按层合并的着色。不做判断，只组合后端已给的 assessment。
+// 多情景 playground 的只读辅助：版本链、演示名、两种着色。不做判断：累计结果是后端给的，「这一层新增」只做集合差。
 import { changedTargets } from '../lookup';
 import type { AssessmentStatus, VersionBundle } from '../types';
 
@@ -31,7 +31,7 @@ const DEMO_NAMES: Record<string, string> = { 'c1-v2': '改用集成激光', 'c1-
 
 export function scenarioName(versions: Versions, v: string): string {
   if (!versions[v]?.scenario) return '基线';
-  const op = versions[v].scenario!.ops[0];
+  const op = versions[v].scenario!.ops.at(-1); // 叠加时 ops 继承父情景，最后一个是这一层的
   return DEMO_NAMES[v] ?? String(op?.value ?? v).slice(0, 10);
 }
 
@@ -49,16 +49,39 @@ export interface Coloring {
   changed: string[];
 }
 
-/** 相对上一层：后端给的 assessment 原样。 */
-export function relativeColoring(b: VersionBundle): Coloring {
-  return { assessment: b.scenario?.assessment ?? {}, changed: changedTargets(b.scenario) };
+function coloringOf(b: VersionBundle, lit: string[], changed: string[]): Coloring {
+  const set = new Set(lit);
+  const assessment: Record<string, AssessmentStatus> = {};
+  for (const n of b.graph.nodes) assessment[n.id] = set.has(n.id) ? 'challenged' : 'unaffected';
+  return { assessment, changed };
 }
 
-/** 相对基线（累计）：把链上每一层后端给的 challenged 合起来。正式版应由后端给出，这里只为演示这种读法。 */
+/** 这一层新增的受挑战节点：本版本 assessment 的 challenged 减去父版本的（只做集合差，不判断因果）。 */
+export function newChallenged(versions: Versions, v: string): string[] {
+  const parent = versions[v].scenario?.base_version;
+  const prev = new Set(parent ? challenged(versions[parent]) : []);
+  return challenged(versions[v]).filter((id) => !prev.has(id));
+}
+
+/** 这一层的操作：叠加时 ops 继承父情景，所以去掉父版本已有的那几个。 */
+function layerOps(versions: Versions, v: string) {
+  const ops = versions[v].scenario?.ops ?? [];
+  const parent = versions[v].scenario?.base_version;
+  return ops.slice(versions[parent ?? '']?.scenario?.ops.length ?? 0);
+}
+
+/** 相对上一层：只亮这一层新增的受挑战节点和这一层改动的假设。 */
+export function layerColoring(versions: Versions, v: string): Coloring {
+  const changed = changedTargets({ ...versions[v].scenario!, ops: layerOps(versions, v) });
+  return coloringOf(versions[v], newChallenged(versions, v), changed);
+}
+
+/** 相对基线（累计）：直接用后端给的 scenario_ref.challenged_claim_ids（叠加后的全部结果）。 */
+export function cumulativeChallenged(b: VersionBundle): string[] {
+  return b.proposal?.scenario_ref?.challenged_claim_ids ?? challenged(b);
+}
+
 export function cumulativeColoring(versions: Versions, v: string): Coloring {
-  const layers = chain(versions, v).slice(1).map((x) => versions[x]);
-  const lit = new Set(layers.flatMap(challenged));
-  const assessment: Record<string, AssessmentStatus> = {};
-  for (const n of versions[v].graph.nodes) assessment[n.id] = lit.has(n.id) ? 'challenged' : 'unaffected';
-  return { assessment, changed: [...new Set(layers.flatMap((b) => changedTargets(b.scenario)))] };
+  const b = versions[v];
+  return coloringOf(b, cumulativeChallenged(b), changedTargets(b.scenario));
 }
