@@ -26,7 +26,7 @@ from urllib.parse import urlsplit
 
 from catalyst import prompts
 from catalyst.harness import run_stage
-from catalyst.reasoner import DEFAULT_EFFORT, CassetteMiss, Reasoner
+from catalyst.reasoner import DEFAULT_EFFORT, CassetteMiss, Reasoner, client_timeout
 from catalyst.schema import EvidencePack, Excerpt, Stance, Strict, parse_pack
 from catalyst.store import RunStore
 
@@ -165,7 +165,7 @@ class AnthropicSearcher:
     def __init__(self, model: str | None = None, effort: str = DEFAULT_EFFORT, max_tokens: int = 32000):
         import anthropic  # the SDK is only needed for live retrieval
 
-        self.client = anthropic.Anthropic()
+        self.client = anthropic.Anthropic(timeout=client_timeout(), max_retries=2)
         self.model = model or web_model()
         self.effort, self.max_tokens = effort, max_tokens
 

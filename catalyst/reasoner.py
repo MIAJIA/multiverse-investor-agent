@@ -19,6 +19,15 @@ DEFAULT_MODEL = os.environ.get("CATALYST_MODEL", "claude-opus-5-5")
 DEFAULT_EFFORT = os.environ.get("CATALYST_EFFORT", "high")
 
 
+def client_timeout():
+    """Read timeout for API calls. The SDK default (10 minutes) lets a silently dropped stream hang a run for ten
+    minutes before retrying; 5 minutes (CATALYST_TIMEOUT, seconds) still covers long thinking."""
+    import httpx
+
+    read = float(os.environ.get("CATALYST_TIMEOUT", "300"))
+    return httpx.Timeout(connect=15.0, read=read, write=60.0, pool=15.0)
+
+
 @dataclass
 class Completion:
     text: str
@@ -80,7 +89,7 @@ class AnthropicReasoner:
     def __init__(self, model: str = DEFAULT_MODEL, effort: str = DEFAULT_EFFORT, max_tokens: int = 32000):
         import anthropic  # 只有实时调用才需要 SDK
 
-        self.client = anthropic.Anthropic()
+        self.client = anthropic.Anthropic(timeout=client_timeout(), max_retries=2)
         self.model, self.effort, self.max_tokens = model, effort, max_tokens
         self.name = f"anthropic:{model}"
 
