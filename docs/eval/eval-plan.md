@@ -47,7 +47,9 @@
 | C2 | inspect | Event A「高于 Fable 的模型被出口限制」+ 用户给的 Target B | 一条 A → B 路径或 no_chain + 理由；至少一条 document / event 型 Condition（出口管制文件、生效日期）；不编阈值；进场 WAIT | Inspect、E1、E2（文件 / 事件型） |
 | C3 | fork | 对 C1 基线图分别做一次 ChangeAssumption 与一次预定义 AddShock（fixture） | 写范围由代码先定；范围外节点、边、Condition 哈希不变；challenged 集合 = golden；基线版本仍在；提案 v2 的变化能追溯到被改的假设 | E3 |
 | C4 | discover | Event A「中期选举分裂」→ 一个远距离标的 | Discover 弃权（0 个候选）或只给「不推荐继续」；不生成提案 | E4、Discovery 弃权 |
-| D1 | discover / inspect | 创始人原例「霍尔木兹海峡下周重开」；Hormuz 小包 | 跑通全流程；过境阈值为 null + threshold_note；「下周开放」被澄清成带绝对日期的判断并要求用户确认；进场 WAIT | 跨领域不编数（E1、E2） |
+| D1 | discover / inspect | 创始人原例「霍尔木兹海峡下周重开」；Hormuz 小包 | 跑通全流程；过境阈值为 null + threshold_note（note 应引用关闭前基线 hz-009，说明恢复比例要用户确认）；「下周开放」被澄清成带绝对日期的判断并要求用户确认；进场 WAIT | 跨领域不编数（E1、E2） |
+
+资料来源：C1、C2、C4、D1 跑真实包（`packs/semiconductor.json`、`packs/hormuz.json`），`key_excerpts` 是真实包的 id；C3 只用 golden 图加 `c1_evidence_pack`（占位片段，和真实包同号不同义），两者不混用。一次运行只用一种来源（runner `--packs real|synthetic`）。
 
 在线搜索 pack 只在一个案例里开着演示（由主 session 决定是哪一个；本线默认 C2），其余案例走本地知识库，不把成败交给实时搜索。
 

@@ -74,9 +74,12 @@ runner 的 CLI 另外需要 `catalyst.reasoner.default_reasoner()`（返回的�
 
 ## 4b. runner 实际怎么调核心（对齐后）
 
-- 三个入口都传 `packs=<本案例可用的 pack>`。pack 列表由 `eval.runner.prepare_packs` 算：真实 pack 优先；还没交付时用 `EvidenceProvider.register` 注入 `eval/fixtures` 里同 pack_id 的合成包，并在结果的 `notes` 里写明；不存在的 pack（如 `web`）两个组都不带。baseline 组的 prompt 用同一份列表，保证「同一资料」。
+- 三个入口都传 `packs=<本案例可用的 pack>`，由 `eval.runner.prepare_packs(case, evidence, source)` 算。**一次运行只用一种来源**（`run_all(..., pack_source=)`、CLI `--packs real|synthetic`）：真实包复用了 `sc-001…`、`hz-001…` 这些 id，但含义和立场都和 `eval/fixtures` 里的占位片段不同。
+  - `real`（默认）：只用 `packs/` 下的真实包；缺了就不带并写进 `notes`，不拿合成包补；provider 里若已注册了合成包（`synthetic: true`）也不用。
+  - `synthetic`：一律用 `EvidenceProvider.register` 注入同 pack_id 的占位包，只验证流程；检索命中不判（报告写「n/a（合成包，id 与真实包撞号）」）。
+  - baseline 组的 prompt 用同一份列表，保证「同一资料」。
 - Discover 之后的 inspect 传 `candidate=<整个候选 dict>`（同时带 `candidate_id`）。
-- fork 传 `packs`，不传 `pack`；E3 哈希的基线取核心回传的 `base_graph`（已是规范形式），不直接哈希手写 fixture。
+- C3 的 fork 用 golden 图（`c1_graph_v1.json`）加 `pack=<c1_evidence_pack>`、`packs=[]`，不论本轮是不是真实包：golden 图引用的是占位片段 id；E3 哈希的基线取核心回传的 `base_graph`（已是规范形式），不直接哈希手写 fixture。
 - 入口返回 `ok=False` 时记 `structured_failure`，附核心给的 errors。
 - baseline 组优先调 `reasoner.single_prompt(prompt)`；reasoner 没有这个方法时退回 `complete(stage="baseline", system="", user=prompt, schema={"type": "object"})`。
 

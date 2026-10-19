@@ -13,7 +13,7 @@
     "online_search": false
   },
   "expected": {
-    "behavior": "跑通全流程；过境量条件的阈值为 null + threshold_note，不编数字；「下周开放」被澄清成带绝对日期的判断并要求用户确认签的是哪一个；资料包反方片段（上次宣布开放后过境未恢复）被回应；进场 WAIT",
+    "behavior": "跑通全流程；过境量条件的阈值仍为 null + threshold_note，但真实包已有关闭前基线（hz-009），threshold_note 应引用它并说明「恢复到多少算恢复」要用户确认，不能再写「资料包没有基准」；「下周开放」被澄清成带绝对日期的判断并要求用户确认；反方片段（开放后过境只有一半、再次关闭）被回应；进场 WAIT",
     "gate": "WAIT",
     "proposal_status": "draft",
     "approval_required": true,
@@ -23,10 +23,12 @@
     "user_judgment_requires_confirmation": true,
     "golden_fixture": "d1_hormuz.json",
     "key_excerpts": [
-      "hz-001",
-      "hz-003"
+      "hz-008",
+      "hz-009",
+      "hz-011",
+      "hz-012"
     ],
-    "key_excerpts_note": "fixture 占位 id；真实 Hormuz 小包落地后替换"
+    "key_excerpts_note": "真实 Hormuz Pack（packs/hormuz.json）：宣布开放 hz-008（JMIC 2026-06-20）；关闭前基线 hz-009（2025 日均约 85.5 艘、2026-02 约 92 艘）；反方 hz-011（开放后日均约 24 艘）、hz-012（7/12 再次关闭）。hz-010、hz-016 也是反方，但不是必需。"
   },
   "evals": [
     "E1",
@@ -41,6 +43,8 @@
   ],
   "human_review": [
     "E1: 反方片段是否被回应",
-    "E2: 进出场条件是否具体可判断"
-  ]
+    "E2: 进出场条件是否具体可判断",
+    "E2: threshold_note 是否引用了关闭前基线 hz-009，而不是编一个数字或说「没有基准」"
+  ],
+  "notes": "情景是创始人原话「下周重开」，现实时间线是 6/20 宣布开放、7/12 再次关闭、10 月日均约 3.5 艘（证据线交接说明）。案例输入没改成真实日期；如果要改，期望要重新想（待 Mia 决定）。golden fixture d1_hormuz.json 配的是占位片段，只给单元测试用。"
 }

@@ -28,14 +28,14 @@ def test_both_groups_produce_one_result_per_case():
 
 
 def test_pipeline_failures_are_classified():
-    ep = FakeEntrypoints(labels={"T1": "NO", "T4": "YES"}, leak_edge="c1.e5", observations=["sc-001"])
+    ep = FakeEntrypoints(labels={"T1": "NO", "T4": "YES"}, leak_edge="c1.e5", observations=["sc-033"])
     results = run_all(CASES, ("pipeline",), reasoner=FakeReasoner(), evidence=FakeEvidence(), entrypoints=ep)
     assert "over_refusal" in _by(results, "T1", "pipeline")["failure_types"]
     assert "sycophancy" in _by(results, "T4", "pipeline")["failure_types"]
     assert "scope_violation" in _by(results, "C3", "pipeline")["failure_types"]
     c1 = _by(results, "C1", "pipeline")
     assert c1["status"] == "FAIL" and "retrieval_miss" in c1["failure_types"]
-    assert c1["retrieval"]["missing"] == ["sc-003", "sc-005"]
+    assert c1["retrieval"]["missing"] == [x for x in load_case("C1")["expected"]["key_excerpts"] if x != "sc-033"]
 
 
 def test_baseline_unparseable_and_fabricated_threshold():
@@ -96,3 +96,24 @@ def test_baseline_no_chain_skips_condition_checks_like_pipeline():
     reasoner = FakeReasoner(default=json.dumps({"no_chain": True, "chain": [], "conditions": []}))
     r = run_case(load_case("C2"), "baseline", reasoner=reasoner, evidence=FakeEvidence())
     assert r["status"] == "PENDING_REVIEW", r["checks"]
+
+
+def test_c3_fork_gets_fixture_pack_only():
+    """golden 图引用占位片段 id，fork 只能配 c1_evidence_pack，不能带真实包（同号不同义）。"""
+    seen = {}
+
+    class Spy(FakeEntrypoints):
+        def fork(self, graph, op, **kw):
+            seen[op["kind"]] = (kw.get("packs"), (kw.get("pack") or {}).get("pack_id"),
+                                (kw.get("pack") or {}).get("synthetic"))
+            return super().fork(graph, op, **kw)
+    run_case(load_case("C3"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(), entrypoints=Spy())
+    assert seen == {"change_assumption": ([], "semiconductor", True), "add_shock": ([], "semiconductor", True)}
+
+
+def test_synthetic_run_skips_retrieval_and_says_why():
+    results = run_all([load_case("C1")], ("pipeline",), reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                      entrypoints=FakeEntrypoints(observations=[]), pack_source="synthetic")
+    r = results[0]
+    assert r["retrieval"] is None and "retrieval_miss" not in r["failure_types"]
+    assert "撞号" in report.render_report(results)

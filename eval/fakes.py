@@ -108,7 +108,9 @@ class FakeEntrypoints:
         self.labels = labels or {}
         self.leak_edge = leak_edge
         self.raise_on = raise_on or set()
-        self.observations = observations if observations is not None else ["sc-001", "sc-003", "sc-005", "hz-001", "hz-003"]
+        if observations is None:  # 默认命中所有案例声明的关键片段（happy path）
+            observations = sorted({x for c in ("C1", "C2", "D1") for x in load_case(c)["expected"].get("key_excerpts", [])})
+        self.observations = observations
         self.calls: list[tuple[str, str]] = []
 
     def _maybe_raise(self, event: str):
@@ -180,7 +182,7 @@ def write_sample_results(path: str) -> list[dict]:
     cases = load_all_cases()
     results = run_all(cases, ("pipeline",), reasoner=FakeReasoner(), evidence=FakeEvidence(),
                       entrypoints=FakeEntrypoints(labels={"T2": "AMBIGUOUS"}, leak_edge="c1.e5",
-                                                  observations=["sc-001", "sc-003", "hz-001", "hz-003"]))
+                                                  observations=["sc-033", "sc-039", "hz-008", "hz-009", "hz-011", "hz-012"]))
     results += run_all(cases, ("baseline",), reasoner=sample_baseline_reasoner(), evidence=FakeEvidence())
     for r in results:
         r["fake"] = True
