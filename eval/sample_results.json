@@ -308,9 +308,35 @@
       ],
       "abstained": false,
       "no_chain": false,
-      "gate": "WAIT",
-      "conditions": 1,
-      "proposal_status": "draft"
+      "plans": [
+        {
+          "terminal_id": "c1.term.laser_vendor",
+          "gate": "WAIT",
+          "conditions": 2,
+          "status": "draft",
+          "support_status": "unknown"
+        },
+        {
+          "terminal_id": "c1.term.foundry",
+          "gate": "WAIT",
+          "conditions": 2,
+          "status": "draft",
+          "support_status": "unknown"
+        },
+        {
+          "terminal_id": "c1.term.dsp_vendor",
+          "gate": "WAIT",
+          "conditions": 2,
+          "status": "draft",
+          "support_status": "unknown"
+        }
+      ],
+      "branch_kinds": {
+        "c1.term.laser_vendor": "model_only",
+        "c1.term.foundry": "model_only",
+        "c1.term.dsp_vendor": "model_only"
+      },
+      "conditions": 6
     },
     "status": "FAIL",
     "failure_types": [
@@ -360,10 +386,10 @@
         "failure_type": null
       },
       {
-        "name": "gate",
+        "name": "gate_per_plan",
         "eval": "E2",
         "passed": true,
-        "detail": "gate=WAIT",
+        "detail": "",
         "failure_type": null
       },
       {
@@ -374,7 +400,21 @@
         "failure_type": null
       },
       {
-        "name": "null_threshold_has_note",
+        "name": "c1.term.laser_vendor:null_threshold_has_note",
+        "eval": "E2",
+        "passed": true,
+        "detail": "",
+        "failure_type": null
+      },
+      {
+        "name": "c1.term.foundry:null_threshold_has_note",
+        "eval": "E2",
+        "passed": true,
+        "detail": "",
+        "failure_type": null
+      },
+      {
+        "name": "c1.term.dsp_vendor:null_threshold_has_note",
         "eval": "E2",
         "passed": true,
         "detail": "",
@@ -414,9 +454,19 @@
     },
     "actual": {
       "no_chain": false,
-      "gate": "WAIT",
-      "conditions": 1,
-      "proposal_status": "draft"
+      "plans": [
+        {
+          "terminal_id": "c2.term.nvda",
+          "gate": "WAIT",
+          "conditions": 1,
+          "status": "draft",
+          "support_status": "unknown"
+        }
+      ],
+      "branch_kinds": {
+        "c2.term.nvda": "model_only"
+      },
+      "conditions": 1
     },
     "status": "FAIL",
     "failure_types": [
@@ -458,10 +508,10 @@
         "failure_type": null
       },
       {
-        "name": "gate",
+        "name": "gate_per_plan",
         "eval": "E2",
         "passed": true,
-        "detail": "gate=WAIT",
+        "detail": "",
         "failure_type": null
       },
       {
@@ -472,7 +522,7 @@
         "failure_type": null
       },
       {
-        "name": "null_threshold_has_note",
+        "name": "c2.term.nvda:null_threshold_has_note",
         "eval": "E2",
         "passed": true,
         "detail": "",
@@ -486,9 +536,7 @@
         "failure_type": "retrieval_miss"
       }
     ],
-    "notes": [
-      "资料包 web 不存在，本轮两个组都不带它（real 模式不拿合成包补）"
-    ],
+    "notes": [],
     "human_review": [
       "E1: 路径每一跳是否有资料依据",
       "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"
@@ -648,9 +696,19 @@
       ],
       "abstained": false,
       "no_chain": false,
-      "gate": "WAIT",
-      "conditions": 2,
-      "proposal_status": "draft"
+      "plans": [
+        {
+          "terminal_id": "d1.term.brent",
+          "gate": "WAIT",
+          "conditions": 2,
+          "status": "draft",
+          "support_status": "unknown"
+        }
+      ],
+      "branch_kinds": {
+        "d1.term.brent": "model_only"
+      },
+      "conditions": 2
     },
     "status": "PENDING_REVIEW",
     "failure_types": [],
@@ -686,28 +744,28 @@
         "failure_type": null
       },
       {
-        "name": "gate",
-        "eval": "E2",
-        "passed": true,
-        "detail": "gate=WAIT",
-        "failure_type": null
-      },
-      {
-        "name": "null_threshold_has_note",
+        "name": "gate_per_plan",
         "eval": "E2",
         "passed": true,
         "detail": "",
         "failure_type": null
       },
       {
-        "name": "no_fabricated_threshold",
+        "name": "d1.term.brent:null_threshold_has_note",
+        "eval": "E2",
+        "passed": true,
+        "detail": "",
+        "failure_type": null
+      },
+      {
+        "name": "d1.term.brent:no_fabricated_threshold",
         "eval": "E1",
         "passed": true,
         "detail": "",
         "failure_type": null
       },
       {
-        "name": "user_judgment_confirmation",
+        "name": "user_judgment_confirmation_per_plan",
         "eval": "E2",
         "passed": true,
         "detail": "",
@@ -1057,9 +1115,7 @@
         "failure_type": "unparseable"
       }
     ],
-    "notes": [
-      "资料包 web 不存在，本轮两个组都不带它（real 模式不拿合成包补）"
-    ],
+    "notes": [],
     "human_review": [
       "E1: 路径每一跳是否有资料依据",
       "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"

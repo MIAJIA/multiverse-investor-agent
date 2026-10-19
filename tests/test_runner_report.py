@@ -117,3 +117,58 @@ def test_synthetic_run_skips_retrieval_and_says_why():
     r = results[0]
     assert r["retrieval"] is None and "retrieval_miss" not in r["failure_types"]
     assert "撞号" in report.render_report(results)
+
+
+# ---- 方案 B：proposals 列表、逐份计划检查 ---------------------------------------
+
+def test_missing_proposals_field_is_an_error_not_a_pass():
+    """旧写法 get(out, "proposal") is None 在字段改名后恒为真；现在缺 proposals 必须报错。"""
+    for case_id in ("T1", "C1", "C4"):
+        r = run_case(load_case(case_id), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                     entrypoints=FakeEntrypoints(legacy=True))
+        assert r["status"] == "ERROR", (case_id, r["checks"])
+        assert "proposals" in r["actual"]["error"] and "proposal" in r["actual"]["error"]
+
+
+def test_c1_has_three_plans_and_gate_is_checked_per_plan():
+    from eval.fakes import c1_fake_plans
+    assert [p["terminal_id"] for p in c1_fake_plans()] == ["c1.term.laser_vendor", "c1.term.foundry", "c1.term.dsp_vendor"]
+    ok = run_case(load_case("C1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                  entrypoints=FakeEntrypoints())
+    assert ok["status"] == "PENDING_REVIEW", [c for c in ok["checks"] if not c["passed"]]
+    assert len(ok["actual"]["plans"]) == 3
+    assert sum(1 for c in ok["checks"] if c["name"].endswith(":null_threshold_has_note")) == 3
+    bad = run_case(load_case("C1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                   entrypoints=FakeEntrypoints(plan_gates={"c1.term.foundry": "BLOCKED"}))
+    gate = next(c for c in bad["checks"] if c["name"] == "gate_per_plan")
+    assert not gate["passed"] and "c1.term.foundry=BLOCKED" in gate["detail"] and "gate_wrong" in bad["failure_types"]
+
+
+def test_null_threshold_note_checked_in_every_plan():
+    from eval.fakes import c1_fake_plans
+
+    class OnePlanMissingNote(FakeEntrypoints):
+        def inspect(self, event, target=None, **kw):
+            out = super().inspect(event, target, **kw)
+            if out["proposals"] and not kw.get("judgment_only"):
+                bad = dict(out["proposals"][2]["entry_conditions"][0])
+                bad["threshold_note"] = None
+                out["proposals"][2]["entry_conditions"] = [bad]
+            return out
+    r = run_case(load_case("C1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                 entrypoints=OnePlanMissingNote())
+    failed = [c["name"] for c in r["checks"] if not c["passed"]]
+    assert failed == ["c1.term.dsp_vendor:null_threshold_has_note"], failed
+
+
+def test_d1_user_confirmation_checked_per_plan():
+    r = run_case(load_case("D1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                 entrypoints=FakeEntrypoints())
+    assert any(c["name"] == "user_judgment_confirmation_per_plan" and c["passed"] for c in r["checks"])
+
+
+def test_report_lists_gate_per_terminal():
+    results = run_all([load_case("C1")], ("pipeline",), reasoner=FakeReasoner(), evidence=FakeEvidence(),
+                      entrypoints=FakeEntrypoints())
+    md = report.render_report(results)
+    assert "c1.term.laser_vendor=WAIT" in md and "c1.term.dsp_vendor=WAIT" in md

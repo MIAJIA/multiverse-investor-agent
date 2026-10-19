@@ -47,8 +47,10 @@ def _actual(r: dict) -> str:
         parts.append(f"候选 {a['candidates']} 个" + ("（弃权）" if a.get("abstained") else ""))
     if a.get("no_chain"):
         parts.append("no_chain")
-    if a.get("gate"):
-        parts.append(f"gate={a['gate']}")
+    if a.get("plans"):
+        parts.append("计划 " + "，".join(f"{x['terminal_id']}={x['gate']}" for x in a["plans"]))
+    elif "plans" in a:
+        parts.append("计划 0 份")
     if "conditions" in a:
         parts.append(f"条件 {a['conditions']} 条")
     return "；".join(parts)

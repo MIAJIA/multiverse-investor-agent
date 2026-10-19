@@ -72,5 +72,9 @@
 - [x] test-set-plan.md 第 2 版：A / B / W / R / T / P 六层，26 个案例 + 约 10 组扰动
 - [x] W1 收进 eval/cases；C2 去掉 web，C2 / D1 标 run_variants
 - [x] 复核表加：分支是否真正竞争、尚未发生的事件是否标 shock、每轮是否找反方、回测三项
-- [ ] runner 按方案 B 改（等后端数据结构）
+- [x] runner 按方案 B 改：`read_proposals` 显式读、缺字段报错；gate / null 阈值 / 用户确认逐份计划检查；报告按 terminal 列 gate
 - [ ] B、R、K 案例文件；回测组包与泄漏检查；联网指标
+- [x] fakes：返回 `proposals`；C1 给 3 份计划（LITE、TSM、MRVL）；`legacy=True` 模拟旧契约
+- [x] INTERFACE.md 4c；契约测试在核心没有方案 B 时跳过，旧契约下断言 runner 报错
+- [x] 测试：本仓库 213 passed、9 skipped；用 plan-b 工作区的核心跑契约测试 16 passed
+- [ ] 后端实现 commit 转来后合并，跑全套

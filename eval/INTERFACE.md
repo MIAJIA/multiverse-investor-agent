@@ -66,7 +66,7 @@ fork(graph, op, *, reasoner, evidence, config=None) -> {
 }
 ```
 
-TradeProposal 至少要有 `entry_conditions`、`support_status`、`meta.approval_required`、`user_judgment`，以及 adapter 读 gate 结果用的 `gate`（`evaluate_entry(entry_conditions)` 的结果，提议作为派生字段直接放进提案）。
+TradeProposal 至少要有 `entry_conditions`、`support_status`、`meta.approval_required`、`user_judgment`，以及 adapter 读 gate 结果用的 `gate`（`evaluate_entry(entry_conditions)` 的结果，提议作为派生字段直接放进提案）。方案 B 之后返回体改成 `proposals` 列表，见 4c。
 
 runner 的 CLI 另外需要 `catalyst.reasoner.default_reasoner()`（返回的对象还要有 `single_prompt(prompt: str) -> str`，baseline 组用同一个模型做单次 prompt）和 `catalyst.evidence.default_provider()`（要有 `load_pack(pack_id) -> list[excerpt]`，baseline 组把同一份资料全文拼进 prompt）。
 
@@ -82,6 +82,17 @@ runner 的 CLI 另外需要 `catalyst.reasoner.default_reasoner()`（返回的�
 - C3 的 fork 用 golden 图（`c1_graph_v1.json`）加 `pack=<c1_evidence_pack>`、`packs=[]`，不论本轮是不是真实包：golden 图引用的是占位片段 id；E3 哈希的基线取核心回传的 `base_graph`（已是规范形式），不直接哈希手写 fixture。
 - 入口返回 `ok=False` 时记 `structured_failure`，附核心给的 errors。
 - baseline 组优先调 `reasoner.single_prompt(prompt)`；reasoner 没有这个方法时退回 `complete(stage="baseline", system="", user=prompt, schema={"type": "object"})`。
+
+## 4c. 方案 B 之后 eval 读的字段（plan-b@d105c45）
+
+- inspect / discover / fork / sign 的返回体：`proposals: list[TradeProposal]`，没有时是 `[]`。**不再读单数 `proposal`。**
+  - eval 用 `eval.runner.read_proposals(out, stage)` 显式读：字段缺失、或者返回体里还是旧的 `proposal`、或者不是列表，一律抛 `MissingField`，run_case 记 ERROR。不允许当成「没有提案」静默通过。
+  - judgment_only（CausalT5k）、Discover、no_chain 时必须是 `[]`。
+- 每份计划（`TradeProposal`）eval 读：`terminal_id`、`gate`、`status`、`support_status`、`entry_conditions`、`exit_conditions`、`user_judgment.requires_user_confirmation`。`approval_reset`、`rival_changed` 目前只在报告里展示，不判分。
+- inspect 返回体的 `branches: [{terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}]`：eval 只把 `kind` 列进报告；分支是不是真正的竞争归人工复核，不做自动检查（方案 B 第 6 节）。
+- 逐份检查：案例里的 `gate` 期望指每一份计划；null 阈值说明、编造阈值逐份检查；`requires_user_confirmation` 逐份检查。条件类型（例如「至少一条数值型」）按整张图的计划合起来看，因为并列受益的计划可以用不同类型的条件。
+- 同一版本几份计划的 `original_statement`、`clarified_statement` 相同，eval 不重复检查。
+- 契约测试 `tests/test_runner_core.py` 里读 `proposals` 的用例，在核心还没有 `TradeProposal.terminal_id` 时跳过；另有一条在旧契约下断言 runner 报错。
 
 ## 5. 需要主 session 决定的问题
 

@@ -75,6 +75,32 @@ def _conditions_of(proposal: Any) -> list[dict]:
     return list(get(proposal, "entry_conditions") or []) + list(get(proposal, "exit_conditions") or [])
 
 
+class MissingField(KeyError):
+    """核心返回体缺了 eval 依赖的字段。不能当成「没有」处理，否则会静默通过。"""
+
+
+_MISSING = object()
+
+
+def read_proposals(out: Any, stage: str) -> list:
+    """方案 B：每个 terminal 一份计划，返回体里是 `proposals` 列表（没有时是 []）。
+
+    显式读这个字段：字段缺失、或还是旧的单数 `proposal`，直接抛 MissingField（run_case 记 ERROR），
+    不能当成「没有提案」——旧写法 `get(out, "proposal") is None` 在字段改名后会恒为真。
+    """
+    value = get(out, "proposals", _MISSING)
+    if value is _MISSING:
+        legacy = " （返回体里还是旧的单数 proposal）" if get(out, "proposal", _MISSING) is not _MISSING else ""
+        raise MissingField(f"{stage}: 返回体没有 proposals 字段{legacy}")
+    if not isinstance(value, (list, tuple)):
+        raise MissingField(f"{stage}: proposals 应该是列表，实际是 {type(value).__name__}")
+    return list(value)
+
+
+def _plan_label(plan: Any) -> str:
+    return str(get(plan, "terminal_id") or "?")
+
+
 def _threshold_checks(case: dict, conditions: list[dict]) -> list[dict]:
     checks = []
     nulls_ok = all(get(c, "threshold_note") for c in conditions
@@ -189,8 +215,10 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         ok, types = scoring.judge_label(exp["label"], label, case.get("probe"))
         res["checks"].append(check("label_matches_gold", "E4", ok, f"gold={exp['label']} pred={label}"))
         res["failure_types"] += types
-        res["checks"].append(check("no_proposal", "E1", get(out, "proposal") is None,
-                                   "CausalT5k 只出因果判断", "unexpected_proposal"))
+        plans = read_proposals(out, "inspect(judgment_only)")
+        res["checks"].append(check("no_proposal", "E1", plans == [],
+                                   "CausalT5k 只出因果判断" if not plans else f"出了 {len(plans)} 份计划",
+                                   "unexpected_proposal"))
         return
 
     if case["entry"] == "fork":
@@ -198,7 +226,6 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         return
 
     observations: list[str] = []
-    proposal = None
     if case["entry"] == "discover":
         d = ep.discover(inp["event"], None, **kw)
         if not _structured_ok(res, "discover", d):
@@ -211,7 +238,9 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
             ok = len(cands) == 0 or all(l == "not_recommended" for l in labels)
             res["checks"].append(check("abstained_or_only_not_recommended", "E4", ok,
                                        f"候选 {len(cands)} 个：{labels}", "no_abstain"))
-            res["checks"].append(check("no_proposal", "E4", get(d, "proposal") is None, "", "unexpected_proposal"))
+            plans = read_proposals(d, "discover")
+            res["checks"].append(check("no_proposal", "E4", plans == [],
+                                       "" if not plans else f"弃权却出了 {len(plans)} 份计划", "unexpected_proposal"))
             return
         lo, hi = exp.get("candidates_min", 0), exp.get("candidates_max", 3)
         res["checks"].append(check("candidate_count", "Discovery", lo <= len(cands) <= hi,
@@ -235,26 +264,42 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         return
 
     observations += list(get(out, "observations") or [])
-    proposal = get(out, "proposal")
+    plans = read_proposals(out, "inspect")
     no_chain = bool(get(out, "no_chain"))
-    gate = get(proposal, "gate")
-    conditions = _conditions_of(proposal)
-    res["actual"].update({"no_chain": no_chain, "gate": gate, "conditions": len(conditions),
-                          "proposal_status": get(proposal, "support_status") or get(proposal, "status")})
+    all_conditions = [c for p in plans for c in _conditions_of(p)]
+    res["actual"].update({
+        "no_chain": no_chain,
+        "plans": [{"terminal_id": _plan_label(p), "gate": get(p, "gate"), "conditions": len(_conditions_of(p)),
+                   "status": get(p, "status"), "support_status": get(p, "support_status")} for p in plans],
+        "branch_kinds": {str(get(b, "terminal_id")): get(b, "kind") for b in (get(out, "branches") or [])},
+        "conditions": len(all_conditions),
+    })
 
     if exp.get("chain_or_no_chain"):
         ok = no_chain or get(out, "graph") is not None
         res["checks"].append(check("chain_or_no_chain", "E1", ok, failure_type="missing_proposal"))
-    if not no_chain:
-        res["checks"].append(check("proposal_present", "E2", proposal is not None, failure_type="missing_proposal"))
+    if no_chain:
+        res["checks"].append(check("no_chain_has_no_plans", "E1", plans == [],
+                                   "" if not plans else f"no_chain 却出了 {len(plans)} 份计划", "unexpected_proposal"))
+    else:
+        res["checks"].append(check("proposal_present", "E2", bool(plans), failure_type="missing_proposal"))
         if "gate" in exp:
-            res["checks"].append(check("gate", "E2", gate == exp["gate"], f"gate={gate}", "gate_wrong"))
-        res["checks"] += _kind_checks(case, conditions)
-        res["checks"] += _threshold_checks(case, conditions)
+            # 案例里的 gate 期望指每一份计划的 gate 都等于它
+            wrong = [f"{_plan_label(p)}={get(p, 'gate')}" for p in plans if get(p, "gate") != exp["gate"]]
+            res["checks"].append(check("gate_per_plan", "E2", bool(plans) and not wrong,
+                                       f"期望每份 {exp['gate']}；不符：{wrong}" if wrong else "", "gate_wrong"))
+        # 条件类型按整张图的计划合起来看（并列受益的计划可以用不同类型的条件）
+        res["checks"] += _kind_checks(case, all_conditions)
+        # null 阈值说明、编造阈值逐份计划检查
+        for p in plans:
+            for c in _threshold_checks(case, _conditions_of(p)):
+                c["name"] = f"{_plan_label(p)}:{c['name']}"
+                res["checks"].append(c)
         if exp.get("user_judgment_requires_confirmation"):
-            uj = get(proposal, "user_judgment") or {}
-            res["checks"].append(check("user_judgment_confirmation", "E2",
-                                       bool(get(uj, "requires_user_confirmation")), failure_type="no_user_confirmation"))
+            missing = [_plan_label(p) for p in plans
+                       if not get(get(p, "user_judgment") or {}, "requires_user_confirmation")]
+            res["checks"].append(check("user_judgment_confirmation_per_plan", "E2", bool(plans) and not missing,
+                                       f"没要求确认的计划：{missing}" if missing else "", "no_user_confirmation"))
 
     if pack_source == "synthetic":
         return  # key_excerpts 是真实包的 id，和占位片段撞号，比了也没有意义

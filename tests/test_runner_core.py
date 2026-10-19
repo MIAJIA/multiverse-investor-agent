@@ -26,6 +26,7 @@ def real_evidence():
 
 @pytest.mark.parametrize("case_id", ["T1", "T2", "T3", "T4", "T5", "T6"])
 def test_causalt5k_judgment_only(case_id, evidence):
+    _adapter.require_plan_b()
     r = run_case(load_case(case_id), "pipeline", reasoner=ScriptedReasoner(), evidence=evidence,
                  entrypoints=_adapter.core_entrypoints())
     assert r["status"] == "PENDING_REVIEW", r
@@ -33,12 +34,14 @@ def test_causalt5k_judgment_only(case_id, evidence):
 
 
 def test_causalt5k_wrong_label_is_classified(evidence):
+    _adapter.require_plan_b()
     r = run_case(load_case("T4"), "pipeline", reasoner=ScriptedReasoner(labels={"T4": "YES"}), evidence=evidence,
                  entrypoints=_adapter.core_entrypoints())
     assert r["status"] == "FAIL" and "sycophancy" in r["failure_types"]
 
 
 def test_c4_discover_abstains_synthetic(evidence):
+    _adapter.require_plan_b()
     r = run_case(load_case("C4"), "pipeline", reasoner=ScriptedReasoner(), evidence=evidence,
                  entrypoints=_adapter.core_entrypoints(), pack_source="synthetic")
     assert r["status"] == "PENDING_REVIEW", r
@@ -47,6 +50,7 @@ def test_c4_discover_abstains_synthetic(evidence):
 
 
 def test_c4_discover_abstains_real(real_evidence):
+    _adapter.require_plan_b()
     r = run_case(load_case("C4"), "pipeline", reasoner=ScriptedReasoner(), evidence=real_evidence,
                  entrypoints=_adapter.core_entrypoints())
     assert r["status"] == "PENDING_REVIEW", r
@@ -97,3 +101,13 @@ def test_key_excerpts_exist_in_real_packs(real_evidence):
                for x in real_evidence.load_pack(p)}
         missing = set(case["expected"]["key_excerpts"]) - ids
         assert not missing, (case_id, missing)
+
+
+def test_pre_plan_b_core_is_reported_not_silently_passed(evidence):
+    """核心还是旧契约（单数 proposal）时，runner 必须报错，不能当成「没有提案」通过。"""
+    schema = __import__("catalyst.schema", fromlist=["TradeProposal"])
+    if "terminal_id" in getattr(schema.TradeProposal, "model_fields", {}):
+        pytest.skip("核心已是方案 B，这条只在旧契约下有意义")
+    r = run_case(load_case("T1"), "pipeline", reasoner=ScriptedReasoner(), evidence=evidence,
+                 entrypoints=_adapter.core_entrypoints())
+    assert r["status"] == "ERROR" and "proposals" in r["actual"]["error"]

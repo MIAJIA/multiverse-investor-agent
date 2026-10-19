@@ -100,31 +100,68 @@ def _apply_patch_for_fake(graph: dict, patch: dict, version: str) -> dict:
     return g
 
 
+def _fake_plan(terminal_id: str, instrument: str, conditions: list[dict], uj: dict, gate: str = "WAIT") -> dict:
+    """方案 B 的一份计划（TradeProposal 的子集，eval 读到的字段都在）。"""
+    return {"terminal_id": terminal_id, "status": "draft", "gate": gate,
+            "direction": {"instrument": instrument, "side": "long", "horizon": "fake"},
+            "entry_conditions": conditions, "exit_conditions": [], "exit_logic": "ANY",
+            "key_dependency": None, "user_judgment": uj, "support_status": "unknown",
+            "graph_version": "fake", "meta": {"proposal_version": f"fake.{terminal_id}", "approval_required": True},
+            "approval_reset": False, "rival_changed": False}
+
+
+def c1_fake_plans(gates: dict[str, str] | None = None) -> list[dict]:
+    """C1 golden 图有 3 个并列 terminal（LITE、TSM、MRVL），每个一份计划；共用 CPO 出货条件，各加一条本路径的条件。"""
+    g = load_fixture("c1_graph_v1.json")
+    conds = {c["id"]: c for c in g["conditions"]}
+    shared = conds["cond.c1.cpo_shipments"]
+    own = {"c1.term.laser_vendor": "cond.c1.els_design_wins", "c1.term.foundry": "cond.c1.foundry_utilization",
+           "c1.term.dsp_vendor": "cond.c1.dsp_guidance"}
+    uj = {"original_statement": "光子芯片采用快于预期", "clarified_statement": "fake", "requires_user_confirmation": True}
+    gates = gates or {}
+    return [_fake_plan(n["id"], n["instruments"][0], [shared, conds[own[n["id"]]]], dict(uj), gates.get(n["id"], "WAIT"))
+            for n in g["nodes"] if n["role"] == "terminal"]
+
+
 class FakeEntrypoints:
-    """pipeline 组的假入口。labels 覆盖 CausalT5k 的预测（默认等于 gold）；leak_edge 让 fork 偷改一条范围外的边。"""
+    """pipeline 组的假入口，返回方案 B 的形状（proposals 列表，每个 terminal 一份）。
+
+    labels 覆盖 CausalT5k 的预测（默认等于 gold）；leak_edge 让 fork 偷改一条范围外的边；
+    plan_gates 覆盖 C1 某个 terminal 的 gate；legacy=True 返回旧的单数 proposal，用来测「缺字段直接报错」。
+    """
 
     def __init__(self, labels: dict[str, str] | None = None, leak_edge: str | None = None,
-                 raise_on: set[str] | None = None, observations: list[str] | None = None):
+                 raise_on: set[str] | None = None, observations: list[str] | None = None,
+                 plan_gates: dict[str, str] | None = None, legacy: bool = False):
         self.labels = labels or {}
         self.leak_edge = leak_edge
         self.raise_on = raise_on or set()
         if observations is None:  # 默认命中所有案例声明的关键片段（happy path）
             observations = sorted({x for c in ("C1", "C2", "D1") for x in load_case(c)["expected"].get("key_excerpts", [])})
         self.observations = observations
+        self.plan_gates = plan_gates or {}
+        self.legacy = legacy
         self.calls: list[tuple[str, str]] = []
 
     def _maybe_raise(self, event: str):
         if any(k in event for k in self.raise_on):
             raise RuntimeError(f"fake failure for {event}")
 
+    def _shape(self, out: dict) -> dict:
+        if self.legacy:  # 旧契约：单数 proposal，没有 proposals
+            plans = out.pop("proposals")
+            out["proposal"] = plans[0] if plans else None
+        return out
+
     def discover(self, event: str, target: str | None = None, **kw) -> dict:
         self.calls.append(("discover", event))
         self._maybe_raise(event)
         if "选举" in event:
-            return {"candidates": [], "abstained": True, "abstain_reason": "fake: 缺少因果依据", "observations": []}
-        return {"candidates": [{"id": "cand-1", "direction": "fake", "label": "grounded", "rationale": "fake"},
-                               {"id": "cand-2", "direction": "fake", "label": "hypothesis", "rationale": "fake"}],
-                "abstained": False, "observations": list(self.observations)}
+            return self._shape({"candidates": [], "abstained": True, "abstain_reason": "fake: 缺少因果依据",
+                                "proposals": [], "observations": []})
+        return self._shape({"candidates": [{"id": "cand-1", "direction": "fake", "label": "grounded", "rationale": "fake"},
+                                           {"id": "cand-2", "direction": "fake", "label": "hypothesis", "rationale": "fake"}],
+                            "abstained": False, "proposals": [], "observations": list(self.observations)})
 
     def inspect(self, event: str, target: str | None = None, **kw) -> dict:
         self.calls.append(("inspect", event))
@@ -133,22 +170,20 @@ class FakeEntrypoints:
             case_id = next(c for c in ("T1", "T2", "T3", "T4", "T5", "T6")
                            if load_case(c)["input"]["material"] == kw.get("material"))
             label = self.labels.get(case_id, load_case(case_id)["expected"]["label"])
-            return {"graph": None, "no_chain": False, "proposal": None,
-                    "judgment": {"label": label, "rationale": "fake rationale"}, "observations": []}
+            return self._shape({"graph": None, "no_chain": False, "proposals": [], "branches": [],
+                                "judgment": {"label": label, "rationale": "fake rationale"}, "observations": []})
         if "霍尔木兹" in event:
-            conds = load_fixture("d1_hormuz.json")["entry_conditions"]
-            uj = {"requires_user_confirmation": True}
+            uj = {"original_statement": event, "clarified_statement": "fake", "requires_user_confirmation": True}
+            plans = [_fake_plan("d1.term.brent", "BZ", load_fixture("d1_hormuz.json")["entry_conditions"], uj)]
         elif target:
-            conds = [{"id": "cond.fake.doc", "kind": "document", "predicate": "observed_by", "threshold": None,
-                      "threshold_note": "文件型条件"}]
-            uj = {}
+            cond = {"id": "cond.fake.doc", "kind": "document", "predicate": "observed_by", "threshold": None,
+                    "threshold_note": "文件型条件"}
+            plans = [_fake_plan("c2.term.nvda", target, [cond], {"requires_user_confirmation": False})]
         else:
-            conds = load_fixture("c1_graph_v1.json")["conditions"][:1]
-            uj = {}
-        proposal = {"entry_conditions": conds, "exit_conditions": [], "gate": "WAIT", "support_status": "draft",
-                    "user_judgment": uj, "meta": {"approval_required": True}}
-        return {"graph": {"version": "fake"}, "no_chain": False, "proposal": proposal,
-                "judgment": None, "observations": list(self.observations)}
+            plans = c1_fake_plans(self.plan_gates)
+        branches = [{"terminal_id": p["terminal_id"], "kind": "model_only"} for p in plans]
+        return self._shape({"graph": {"version": "fake"}, "no_chain": False, "proposals": plans, "branches": branches,
+                            "judgment": None, "observations": list(self.observations)})
 
     def fork(self, graph: dict, op: dict, **kw) -> dict:
         self.calls.append(("fork", op["kind"]))
@@ -159,7 +194,7 @@ class FakeEntrypoints:
         return {"graph": new, "base_graph": graph, "scope": fx["expected_scope"], "diff": {},
                 "scenario": {"version": new["version"], "base_version": graph["version"], "ops": [op],
                              "assessment": dict(fx["patch_in_scope"]["assessment"])},
-                "proposal": None}
+                "proposals": []}
 
 
 def sample_baseline_reasoner() -> FakeReasoner:
