@@ -1,249 +1,290 @@
 {
   "pack_id": "hormuz",
   "synthetic": false,
-  "note": "主要论点：霍尔木兹海峡重新开放会带来可观测的实际通航恢复，并通过中东原油供给恢复压低 Brent 近月价格。stance 相对这个论点（supports / contradicts / neutral）：supports = 支撑链上某一环（正式开放公告、开放与油价下跌的对应、油流约束解除后价格回落的机制、通航恢复的类比）；contradicts = 削弱它（宣布开放 / 停火后过境量未恢复或很快逆转、保险与船东不跟进、可绕行的替代供给、油价受绕行管道与风险溢价等其他因素驱动）；neutral = 只提供背景（地理、历史流量与过境基线、PortWatch 的测量方法与发布节奏、序列回修）。2026 年时间线（据片段）：4/8 停火、6/17 MoU、6/20 JMIC 宣布开放、7/12 IRGC 再次关闭；PortWatch 日数据截至 2026-10-11，EIA STEO 截至 2026-10-06。关闭前基线（hz-009、hz-020）是历史值，不是「恢复」的阈值：恢复到什么水平算恢复，仍须用户确认。",
+  "note": "Thesis: reopening the Strait of Hormuz brings an observable recovery in actual transits and, through recovering Middle East crude supply, lower front-month Brent prices. Stance is relative to this thesis: supports = backs a link in the chain (formal opening notices, oil prices falling on reopening, prices easing once flow constraints resolve, analogs of traffic recovering); contradicts = weakens it (transits not recovering or quickly reversing after announced openings or ceasefires, insurers and carriers not following, alternative bypass supply, oil prices driven by bypass-route attacks and risk premiums); neutral = background only (geography, historical flows and transit baselines, PortWatch measurement method, release cadence and revisions). 2026 timeline per the excerpts: 4/8 ceasefire, 6/17 MoU, 6/20 JMIC 'open' notice, 7/12 IRGC re-closure; PortWatch daily data through 2026-10-11, EIA STEO through 2026-10-06. Pre-closure baselines (hz-009, hz-020) are historical values, not a recovery threshold: what level counts as recovery must still be confirmed by the user.",
   "_provenance": {
-    "built": "2026-10-18，证据线（evidence 分支）",
+    "built": "2026-10-18 by the evidence line (evidence branch); rewritten in English the same day",
     "material_root": "/Users/mia/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/outputs/knowledge_packs/energy.json",
-    "method": "hz-001–003 对照 EIA 原文 URL 复核；hz-004–007 取自 energy.json 的 PortWatch 事实卡。PortWatch 方法页没有发布日期，date 取 sources.json 记录的页面元数据修改日 2026-08-25（upstream_metadata_modified_at），不是观测日期。 2026-10-18 补充：hz-009/010/011/013/016 由本线直接查询 PortWatch 的 ArcGIS 数据服务（Daily_Chokepoints_Data，dataLastEditDate 2026-10-14）并按日 n_total 计算均值；hz-008 逐字核对 JMIC PDF；hz-012/014/015/017/018 回原网页核对（Reuters 原站未直接读到，用的是署名 Reuters 的转载页）。 hz-019–023 逐字核对 EIA STEO 2026-08 与 2026-10 的 PDF（本地抽文本；发布日期来自 EIA 官网：8 月版 2026-08-11、10 月版 2026-10-06）。",
+    "method": "text is a verbatim excerpt wherever the original was re-read on 2026-10-18 (… marks omitted words): EIA web page, JMIC PDF, EIA STEO PDFs (August release 2026-08-11, October release 2026-10-06), and the Reuters, Insurance Business, Euronews, Arab News and ESM pages. derived_from_dataset excerpts state averages the evidence line computed from the PortWatch ArcGIS Daily_Chokepoints_Data service (dataLastEditDate 2026-10-14). unverified_fact_card excerpts use the English fact cards from Mia's knowledge pack because the PortWatch methodology page renders no text for automated readers; its date is the page metadata modification date 2026-08-25, not an observation date. No source is non-English, so nothing is translated.",
+    "portwatch_query": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname='Strait of Hormuz'&outFields=date,n_total,n_tanker&orderByFields=date&f=json",
     "fact_ids": {
       "hz-001": "E015",
       "hz-002": "E017 + E018",
-      "hz-003": "原文（事实卡只收了管道存在，未收可绕行容量）",
+      "hz-003": "original page (the fact card recorded the pipelines, not the bypass capacity)",
       "hz-004": "E025",
       "hz-005": "E027",
       "hz-006": "E026",
       "hz-007": "E028",
-      "hz-008": "补充调研",
-      "hz-009": "补充调研",
-      "hz-010": "补充调研",
-      "hz-011": "补充调研",
-      "hz-012": "补充调研",
-      "hz-013": "补充调研",
-      "hz-014": "补充调研",
-      "hz-015": "补充调研",
-      "hz-016": "补充调研",
-      "hz-017": "补充调研",
-      "hz-018": "补充调研",
-      "hz-019": "补充调研",
-      "hz-020": "补充调研",
-      "hz-021": "补充调研",
-      "hz-022": "补充调研",
-      "hz-023": "补充调研"
+      "hz-008": "follow-up research",
+      "hz-009": "follow-up research",
+      "hz-010": "follow-up research",
+      "hz-011": "follow-up research",
+      "hz-012": "follow-up research",
+      "hz-013": "follow-up research",
+      "hz-014": "follow-up research",
+      "hz-015": "follow-up research",
+      "hz-016": "follow-up research",
+      "hz-017": "follow-up research",
+      "hz-018": "follow-up research",
+      "hz-019": "follow-up research",
+      "hz-020": "follow-up research",
+      "hz-021": "follow-up research",
+      "hz-022": "follow-up research",
+      "hz-023": "follow-up research"
     },
-    "portwatch_query": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname='Strait of Hormuz'&outFields=date,n_total,n_tanker&orderByFields=date&f=json",
+    "text_basis": {
+      "hz-001": "verbatim",
+      "hz-002": "verbatim",
+      "hz-003": "verbatim",
+      "hz-004": "unverified_fact_card",
+      "hz-005": "unverified_fact_card",
+      "hz-006": "unverified_fact_card",
+      "hz-007": "unverified_fact_card",
+      "hz-008": "verbatim",
+      "hz-009": "derived_from_dataset",
+      "hz-010": "derived_from_dataset",
+      "hz-011": "derived_from_dataset",
+      "hz-012": "verbatim",
+      "hz-013": "derived_from_dataset",
+      "hz-014": "verbatim",
+      "hz-015": "verbatim",
+      "hz-016": "derived_from_dataset",
+      "hz-017": "verbatim",
+      "hz-018": "verbatim",
+      "hz-019": "verbatim",
+      "hz-020": "verbatim",
+      "hz-021": "verbatim",
+      "hz-022": "verbatim",
+      "hz-023": "verbatim"
+    },
+    "excerpt_notes": {
+      "hz-002": "Historical annual average, not current traffic.",
+      "hz-004": "Page renders no text for automated readers; text is the English fact card E025 from Mia's knowledge pack.",
+      "hz-005": "Fact card E027; original page not re-read.",
+      "hz-006": "Fact card E026; original page not re-read.",
+      "hz-007": "Fact card E028; original page not re-read. Series can be revised retrospectively.",
+      "hz-009": "Averages computed by the evidence line from the daily series.",
+      "hz-010": "Computed from the daily series.",
+      "hz-011": "Computed from the daily series.",
+      "hz-013": "Computed from the daily series.",
+      "hz-015": "The article also reports Hapag-Lloyd's CEO saying it was premature to assess how much traffic could pass (paraphrase in the article, no direct quote).",
+      "hz-016": "Computed from the daily series.",
+      "hz-018": "Analog only: Ukraine opened the corridor unilaterally (August 2023), not through a negotiated reopening.",
+      "hz-019": "Same paragraph: Brent reached as high as $105/b on July 23.",
+      "hz-021": "Same section: Brent forecast to decrease to an average of $87/b by 2Q27."
+    },
     "stance_decisions": {
-      "hz-003": "2026-10-18 由 supports 改为 contradicts（Mia 交主 session 定）：海峡关闭时仍有约 260 万桶/日可经管道绕开，供给缺口没那么大，重开后油价的下跌空间也相应变小，削弱「重开 → 通航恢复 → Brent 回落」这条链。",
-      "neutral_2026-10-18": "schema 支持 neutral 后，把 hz-001、hz-002、hz-004、hz-005、hz-006、hz-007、hz-009、hz-020 由 supports / contradicts 改为 neutral（规则见 note）。"
+      "hz-003": "2026-10-18: supports → contradicts (Mia left it to the main session): with about 2.6 million b/d able to bypass the strait by pipeline during a closure, the supply gap is smaller, so the room for oil prices to fall on reopening is smaller too; this weakens the reopening → transit recovery → lower Brent chain.",
+      "neutral_2026-10-18": "After the schema added neutral: hz-001, 002, 004, 005, 006, 007, 009, 020 moved to neutral (rule in note)."
     }
   },
   "excerpts": [
     {
       "source_id": "eia-tie-65504",
       "excerpt_id": "hz-001",
-      "source": "EIA Today in Energy（T1 官方数据）· 开篇段落",
+      "source": "EIA Today in Energy, 2025-06-16 (T1 official data) · opening paragraph",
       "date": "2025-06-16",
       "stance": "neutral",
       "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504",
-      "text": "霍尔木兹海峡位于阿曼和伊朗之间，连接波斯湾与阿曼湾、阿拉伯海。"
+      "text": "The Strait of Hormuz, located between Oman and Iran, connects the Persian Gulf with the Gulf of Oman and the Arabian Sea."
     },
     {
       "source_id": "eia-tie-65504",
       "excerpt_id": "hz-002",
-      "source": "EIA Today in Energy（T1 官方数据）· 开篇段落",
+      "source": "EIA Today in Energy, 2025-06-16 (T1 official data) · opening paragraph",
       "date": "2025-06-16",
       "stance": "neutral",
       "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504",
-      "text": "EIA 估计 2024 年经海峡的石油流量平均约 2,000 万桶/日（20 million b/d），约占全球石油液体消费的 20%（历史年均值，不是当前过境量）。"
+      "text": "In 2024, oil flow through the strait averaged 20 million barrels per day (b/d), or the equivalent of about 20% of global petroleum liquids consumption."
     },
     {
       "source_id": "eia-tie-65504",
       "excerpt_id": "hz-003",
-      "source": "EIA Today in Energy（T1 官方数据）· 绕行管道段落",
+      "source": "EIA Today in Energy, 2025-06-16 (T1 official data) · bypass pipelines paragraph",
       "date": "2025-06-16",
       "stance": "contradicts",
       "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504",
-      "text": "EIA 估计沙特与阿联酋管道约有 260 万桶/日（2.6 million b/d）的容量可用于绕开霍尔木兹海峡。"
+      "text": "The pipelines do not typically operate at full capacity, and we estimate that about 2.6 million b/d of capacity from the Saudi and UAE pipelines could be available to bypass the Strait of Hormuz in the event of a supply disruption."
     },
     {
       "source_id": "imf-portwatch-method",
       "excerpt_id": "hz-004",
-      "source": "IMF PortWatch Data & Methodology（T1 官方数据）· Daily Port Activity Data and Trade Estimates",
+      "source": "IMF PortWatch Data & Methodology (T1 official data) · Daily Port Activity Data and Trade Estimates",
       "date": "2026-08-25",
       "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
-      "text": "PortWatch 用 AIS 船舶信号估算港口活动和海运贸易量（模型估计，不是舱单或海关统计）。"
+      "text": "PortWatch publishes AIS-derived estimates of port activity and maritime trade volumes."
     },
     {
       "source_id": "imf-portwatch-method",
       "excerpt_id": "hz-005",
-      "source": "IMF PortWatch Data & Methodology（T1 官方数据）· 2024 methodology revision / vessel classification",
+      "source": "IMF PortWatch Data & Methodology (T1 official data) · 2024 methodology revision / vessel classification",
       "date": "2026-08-25",
       "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
-      "text": "PortWatch 区分干散货、杂货、集装箱、油轮和滚装船等船型。"
+      "text": "PortWatch distinguishes dry-bulk, general-cargo, container, tanker and ro-ro vessels."
     },
     {
       "source_id": "imf-portwatch-method",
       "excerpt_id": "hz-006",
-      "source": "IMF PortWatch Data & Methodology（T1 官方数据）· Daily Port Activity and Daily Chokepoint datasets",
+      "source": "IMF PortWatch Data & Methodology (T1 official data) · Daily Port Activity and Daily Chokepoint datasets: Updated Weekly, Tuesdays 9 AM ET",
       "date": "2026-08-25",
       "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
-      "text": "PortWatch 的咽喉要道数据是日频观测，但每周二美东 9 点才更新：通航恢复不会在数据里即时可见。"
+      "text": "PortWatch provides daily-frequency observations while its methodology page specifies weekly updates."
     },
     {
       "source_id": "imf-portwatch-method",
       "excerpt_id": "hz-007",
-      "source": "IMF PortWatch Data & Methodology（T1 官方数据）· 2026 revision log",
+      "source": "IMF PortWatch Data & Methodology (T1 official data) · 2026 revision log",
       "date": "2026-08-25",
       "stance": "neutral",
       "url": "https://portwatch.imf.org/pages/data-and-methodology",
-      "text": "PortWatch 记录了针对船舶覆盖、边界、AIS 伪造和不完整过境的修订，序列可能被追溯回修；AIS 缺口本身不能证明贸易流量真的变化。"
+      "text": "PortWatch records revisions for vessel coverage, boundaries, AIS spoofing and incomplete transits."
     },
     {
       "source_id": "jmic-advisory-010-26",
       "excerpt_id": "hz-008",
-      "source": "JMIC Advisory Note 010-26「Strait of Hormuz Open」（T1 正式公告）· 第 1 节",
+      "source": "JMIC Advisory Note 010-26, 'Strait of Hormuz Open' (T1 official) · section 1",
       "date": "2026-06-20",
       "stance": "supports",
       "url": "https://wwwcdn.imo.org/localresources/en/MediaCentre/HotTopics/Documents/JMIC%20Advisory%20Note%2001026%20SoH%20procedure.pdf",
-      "text": "JMIC 发布「霍尔木兹海峡开放」通告：美伊宣布开放航道后威胁等级维持 MODERATE，可走南线航道，但提醒海员仍有水雷、清扫作业在进行。"
+      "text": "The maritime security threat level in the SoH remains MODERATE following the announced intentions by both the United States and Iran for an opening of the waterway. However, Mariners should be advised of the existence of mines and expect naval presence as clearance operations continue."
     },
     {
       "source_id": "imf-portwatch-chokepoints",
       "excerpt_id": "hz-009",
-      "source": "IMF PortWatch Daily Chokepoints Data（T1 官方数据）· portname='Strait of Hormuz'，n_total（2025 全年、2026-02-15–02-27）",
+      "source": "IMF PortWatch Daily Chokepoints Data (T1 official data) · portname='Strait of Hormuz', n_total, 2025 and 2026-02-15 to 02-27",
       "date": "2026-10-14",
       "stance": "neutral",
       "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0",
-      "text": "PortWatch 霍尔木兹日过境船数：2025 年日均约 85.5 艘；2026-02-15 至 02-27（关闭前）日均约 92 艘（本线按日数据计算的均值）。"
+      "text": "PortWatch daily transit counts for the Strait of Hormuz averaged about 85.5 vessels per day in 2025 and about 92 per day from 2026-02-15 to 2026-02-27, before the closure."
     },
     {
       "source_id": "imf-portwatch-chokepoints",
       "excerpt_id": "hz-010",
-      "source": "IMF PortWatch Daily Chokepoints Data（T1 官方数据）· portname='Strait of Hormuz'，n_total（2026-04-09–04-28）",
+      "source": "IMF PortWatch Daily Chokepoints Data (T1 official data) · portname='Strait of Hormuz', n_total, 2026-04-09 to 04-28",
       "date": "2026-10-14",
       "stance": "contradicts",
       "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0",
-      "text": "2026-04-08 宣布停火后，04-09 至 04-28 霍尔木兹日过境船数平均约 6.3 艘，最高 20 艘：宣布停火没有带来通航恢复。"
+      "text": "After the ceasefire announced on 2026-04-08, PortWatch daily transits through the Strait of Hormuz averaged about 6.3 vessels from 2026-04-09 to 04-28, with a maximum of 20."
     },
     {
       "source_id": "imf-portwatch-chokepoints",
       "excerpt_id": "hz-011",
-      "source": "IMF PortWatch Daily Chokepoints Data（T1 官方数据）· portname='Strait of Hormuz'，n_total（2026-06-17–07-08）",
+      "source": "IMF PortWatch Daily Chokepoints Data (T1 official data) · portname='Strait of Hormuz', n_total, 2026-06-17 to 07-08",
       "date": "2026-10-14",
       "stance": "contradicts",
       "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0",
-      "text": "2026-06-17 美伊签署 MoU、06-20 JMIC 宣布开放后，06-18 至 07-08 日过境船数平均约 24 艘，峰值 51 艘（06-24），约为关闭前的一半以下。"
+      "text": "After the US-Iran MoU of 2026-06-17 and the JMIC 'open' notice of 06-20, PortWatch daily transits averaged about 24 vessels from 06-18 to 07-08, peaking at 51 on 06-24, under half the pre-closure level."
     },
     {
       "source_id": "reuters-20260712-irgc",
       "excerpt_id": "hz-012",
-      "source": "Reuters（T2 通讯社，经 internazionale.it 转载）· 导语",
+      "source": "Reuters (T2 wire, via internazionale.it reprint) · lead",
       "date": "2026-07-12",
       "stance": "contradicts",
       "url": "https://www.internazionale.it/ultime-notizie-reuters/2026/07/12/iran-s-irgc-navy-says-strait-of-hormuz-closed-until-further-notice-state-media-reports",
-      "text": "据 Reuters，伊朗革命卫队海军称已关闭霍尔木兹海峡直至另行通知：6 月的开放不到四周就逆转。"
+      "text": "July 12 (Reuters) - Iran's Revolutionary Guards navy said early on Sunday it had closed the Strait of Hormuz until further notice after firing a warning shot at a vessel it said had attempted to transit along an unapproved route, state media reported."
     },
     {
       "source_id": "imf-portwatch-chokepoints",
       "excerpt_id": "hz-013",
-      "source": "IMF PortWatch Daily Chokepoints Data（T1 官方数据）· portname='Strait of Hormuz'，n_total（2026-07-09–10-11）",
+      "source": "IMF PortWatch Daily Chokepoints Data (T1 official data) · portname='Strait of Hormuz', n_total, 2026-07-09 to 10-11",
       "date": "2026-10-14",
       "stance": "contradicts",
       "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0",
-      "text": "07-09 至 07-31 霍尔木兹日过境船数平均约 5.4 艘；08-26 至 10-11 平均约 3.7 艘，最高 8 艘（数据截至 2026-10-11）。"
+      "text": "PortWatch daily transits through the Strait of Hormuz averaged about 5.4 vessels from 2026-07-09 to 07-31 and about 3.7 from 08-26 to 10-11, with a maximum of 8 (data through 2026-10-11)."
     },
     {
       "source_id": "insurance-business-20260826",
       "excerpt_id": "hz-014",
-      "source": "Insurance Business（T3 行业媒体）· 导语与 Joint War Committee 段落",
+      "source": "Insurance Business (T3 trade media) · lede and Joint War Committee section",
       "date": "2026-08-26",
       "stance": "contradicts",
       "url": "https://www.insurancebusinessmag.com/us/news/marine/trump-says-hormuz-is-clear--the-insurance-market-disagrees-587552.aspx",
-      "text": "文章称美方宣布扫雷完成只改变了军事层面，没有改变保险层面；移出战争险除外区需要持续无事故通行、政局稳定和扫雷完成的正式证据。"
+      "text": "President Trump's claim that the US Navy has removed or detonated all mines in the Strait of Hormuz changes the kinetic picture, but it does not change the insurance one, at least not yet. … That listing will not be removed until the committee sees sustained incident-free passage, a settled geopolitical picture, and formal evidence that demining is complete."
     },
     {
       "source_id": "euronews-20260408",
       "excerpt_id": "hz-015",
-      "source": "Euronews（T3 媒体）· 船公司表态段落",
+      "source": "Euronews (T3 media) · carrier statements",
       "date": "2026-04-08",
       "stance": "contradicts",
       "url": "https://euronews.com/2026/04/08/shipping-companies-see-opportunities-but-seek-clarity-on-strait-of-hormuz-reopening",
-      "text": "Maersk 称停火可能带来通行机会，但尚未提供完全的海上确定性；Hapag-Lloyd CEO 称现在评估能有多少船通过为时过早。"
+      "text": "Maersk: \"The ceasefire may create transit opportunities, but it does not yet provide full maritime certainty\""
     },
     {
       "source_id": "imf-portwatch-chokepoints",
       "excerpt_id": "hz-016",
-      "source": "IMF PortWatch Daily Chokepoints Data（T1 官方数据）· portname='Bab el-Mandeb Strait'，n_total（2023-10-01–11-14、2025-01-20–02-28、2025-05-07–06-06）",
+      "source": "IMF PortWatch Daily Chokepoints Data (T1 official data) · portname='Bab el-Mandeb Strait', n_total",
       "date": "2026-10-14",
       "stance": "contradicts",
       "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0",
-      "text": "历史反例：曼德海峡日过境船数在胡塞袭击前（2023-10-01 至 11-14）平均约 78 艘；2025-01-19 加沙停火后约 32 艘、2025-05-06 美胡停火后约 34 艘，宣布停火后仍持平。"
+      "text": "Historical counterexample: PortWatch daily transits through Bab el-Mandeb averaged about 78 vessels before the Houthi attacks (2023-10-01 to 11-14), about 32 after the 2025-01-19 Gaza ceasefire and about 34 after the 2025-05-06 US-Houthi ceasefire."
     },
     {
       "source_id": "reuters-20250116-redsea",
       "excerpt_id": "hz-017",
-      "source": "Reuters（T2 通讯社，经 Arab News 转载）· 船公司表态",
+      "source": "Reuters (T2 wire, via Arab News reprint) · carrier statements",
       "date": "2025-01-16",
       "stance": "contradicts",
       "url": "https://www.arabnews.com/node/2586718/amp",
-      "text": "据 Reuters，加沙停火协议达成后 Maersk 称回到红海「现在推测时间还太早」，Hapag-Lloyd 称会先评估对红海安全形势的影响。"
+      "text": "\"We will closely analyze the latest developments and their impact on the security situation in the Red Sea,\" said a Hapag-Lloyd spokesperson. \"It is still too early to speculate about timing,\" a Maersk spokesperson said."
     },
     {
       "source_id": "reuters-20231114-blacksea",
       "excerpt_id": "hz-018",
-      "source": "Reuters（T2 通讯社，经 ESM Magazine 转载）· 正文",
+      "source": "Reuters (T2 wire, via ESM Magazine reprint) · body",
       "date": "2023-11-14",
       "stance": "supports",
       "url": "https://esmmagazine.com/supply-chain/ukraine-grain-exports-via-new-black-sea-corridor-hit-four-million-tonnes-zelenskiy-253607",
-      "text": "类比（支持方）：乌克兰 2023 年 8 月启用黑海新航道后，截至 11 月 9 日已有 91 艘船运出 330 万吨货物；该航道是乌方单方开辟，与谈判重开不完全可比。"
+      "text": "Ukrainian transport authorities last week said 91 vessels exported 3.3 million metric tonnes of agricultural and metal products as of 9 November."
     },
     {
       "source_id": "eia-steo-2026-08",
       "excerpt_id": "hz-019",
-      "source": "EIA Short-Term Energy Outlook 2026 年 8 月（T1 官方数据）· PDF 第 6 页 Global oil prices",
+      "source": "EIA Short-Term Energy Outlook, August 2026 (T1 official data) · PDF p.6 'Global oil prices'",
       "date": "2026-08-11",
       "stance": "supports",
       "url": "https://www.eia.gov/outlooks/steo/archives/aug26.pdf",
-      "text": "EIA：6 月美伊签署 MoU 后，Brent 现货 7 月 2 日跌至最低 $69/b；7 月油轮再遭袭击、海峡运量下降后，7 月 23 日升至 $105/b。"
+      "text": "Following the signing in June of the memorandum of understanding between the United States and Iran, the spot price of Brent crude oil fell as low as $69 per barrel (b) on July 2. Global crude oil prices rose and volatility increased later in July following renewed attacks on tankers transiting the Strait of Hormuz and the related reduction in oil shipments through the waterway."
     },
     {
       "source_id": "eia-steo-2026-08",
       "excerpt_id": "hz-020",
-      "source": "EIA Short-Term Energy Outlook 2026 年 8 月（T1 官方数据）· PDF 第 6 页",
+      "source": "EIA Short-Term Energy Outlook, August 2026 (T1 official data) · PDF p.6",
       "date": "2026-08-11",
       "stance": "neutral",
       "url": "https://www.eia.gov/outlooks/steo/archives/aug26.pdf",
-      "text": "EIA 估计经霍尔木兹海峡的原油和石油液体 2026 Q2 平均 490 万桶/日，冲突前的 2025 Q4 为 2,160 万桶/日。"
+      "text": "We estimate that crude oil and petroleum liquids transported through the Strait of Hormuz averaged 4.9 million barrels per day (b/d) in the second quarter of 2026 (2Q26), down from an average of 21.6 million b/d in 4Q25 before the conflict began."
     },
     {
       "source_id": "eia-steo-2026-10",
       "excerpt_id": "hz-021",
-      "source": "EIA Short-Term Energy Outlook 2026 年 10 月（T1 官方数据）· PDF 第 6–7 页",
+      "source": "EIA Short-Term Energy Outlook, October 2026 (T1 official data) · PDF pp.6-7",
       "date": "2026-10-06",
       "stance": "supports",
       "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
-      "text": "EIA 预测 Brent 4Q26 均价 $105/b，假设中东油流到 4Q26 仍受限；油价会维持高位，直到中东油流约束解除、库存得以回补，预计 2Q27 降至 $87/b。"
+      "text": "We forecast the Brent crude oil spot price will average $105/b in the fourth quarter of 2026 (4Q26), $14/b higher than in last month's STEO. … we forecast that oil prices will remain elevated until constraints on oil flows from the Middle East resolve and oil inventories can be replenished."
     },
     {
       "source_id": "eia-steo-2026-10",
       "excerpt_id": "hz-022",
-      "source": "EIA Short-Term Energy Outlook 2026 年 10 月（T1 官方数据）· PDF 第 6 页",
+      "source": "EIA Short-Term Energy Outlook, October 2026 (T1 official data) · PDF p.6",
       "date": "2026-10-06",
       "stance": "contradicts",
       "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
-      "text": "EIA：9 月 Brent 均价 $114/b，主要因沙特东西管道（绕开海峡的通道，受袭前日运超 500 万桶）遇袭暂停，9 月 15 日一度到 $131/b：油价不只取决于海峡本身。"
+      "text": "The Brent crude oil spot price increased to an average of $114 per barrel (b) in September, $23/b higher than in August. … The most notable among these developments were attacks on Saudi Arabia's East-West oil pipeline, which temporarily halted flows on a crucial bypass used to circumvent the Strait of Hormuz."
     },
     {
       "source_id": "eia-steo-2026-10",
       "excerpt_id": "hz-023",
-      "source": "EIA Short-Term Energy Outlook 2026 年 10 月（T1 官方数据）· PDF 第 7 页",
+      "source": "EIA Short-Term Energy Outlook, October 2026 (T1 official data) · PDF p.7",
       "date": "2026-10-06",
       "stance": "contradicts",
       "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
-      "text": "EIA：油轮过境风险推高运费与保险成本，抬升油价风险溢价，油轮运费 9 月创纪录；库存去化后需要时间回补，油价回落会滞后于油流恢复。"
+      "text": "The heightened risk associated with oil tankers transiting the region has added to shipping costs and increased the risk premium reflected in oil prices. High tanker rates, which reached record levels in September, reflect increasing insurance costs and are putting additional upward pressure on delivered crude oil prices to refiners."
     }
   ]
 }

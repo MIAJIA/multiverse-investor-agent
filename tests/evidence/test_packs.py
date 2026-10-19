@@ -9,7 +9,7 @@ import pytest
 from catalyst.evidence import DEFAULT_PACKS_DIR, EvidenceProvider, _tokens
 from catalyst.schema import parse_pack
 
-PREFIX = {"semiconductor": "sc", "hormuz": "hz"}
+PREFIX = {"semiconductor": "sc", "hormuz": "hz", "opec2022": "op"}
 TIERS = ("T1", "T2", "T3")
 
 
@@ -54,11 +54,12 @@ def test_dates_real_and_not_synthetic(pack_id):
 
 @pytest.mark.parametrize("pack_id", PREFIX)
 def test_every_excerpt_is_traceable(pack_id):
-    """每段写明来源等级，并能回溯到 URL；文本短到一两句。"""
+    """每段写明来源等级，并能回溯到 URL；文本是一两句的英文摘录。"""
     for x in parse_pack(_raw(pack_id)).excerpts:
-        assert any(f"（{t} " in x.source for t in TIERS), x.source
+        assert any(f"({t} " in x.source for t in TIERS), x.source
         assert x.url and x.url.startswith("https://"), x.excerpt_id
-        assert len(x.text) <= 160, x.excerpt_id
+        assert len(x.text) <= 480, x.excerpt_id
+        assert not re.search(r"[\u4e00-\u9fff]", x.text + x.source), x.excerpt_id
 
 
 @pytest.mark.parametrize("pack_id", PREFIX)
@@ -76,20 +77,20 @@ def test_combined(provider):
 # ---- search（BM25）------------------------------------------------------
 
 @pytest.mark.parametrize("query, expected", [
-    ("CPO 激光器 光源需求", "sc-025"),
-    ("co-packaged optics TSMC COUPE", "sc-023"),
-    ("H200 出口中国 许可审查", "sc-029"),
-    ("CoWoS 产能 2027 扩产", "sc-008"),
-    ("PortWatch 更新 数据滞后", "hz-006"),
-    ("霍尔木兹 石油流量 消费", "hz-002"),
-    ("CPO 激光器 订单 需求", "sc-039"),
-    ("集成激光 替代", "sc-043"),
-    ("模型权重 出口管制", "sc-044"),
-    ("宣布开放 过境 恢复", "hz-011"),
-    ("曼德海峡 停火", "hz-016"),
-    ("ELS 外置光源 LITE", "sc-039"),
-    ("MoU Brent 油价", "hz-019"),
-    ("Brent 预测 库存 回补", "hz-021"),
+    ("ELS external laser source order", "sc-039"),
+    ("lasers factor of four", "sc-025"),
+    ("integrated lasers pluggable LPO", "sc-043"),
+    ("AI model weights export control", "sc-044"),
+    ("H200 China case-by-case license", "sc-029"),
+    ("CoWoS capacity expand 2027", "sc-008"),
+    ("CPO inflection pluggable 2027", "sc-038"),
+    ("TSMC COUPE co-packaged optics production 2026", "sc-034"),
+    ("PortWatch weekly updates", "hz-006"),
+    ("Hormuz oil flow consumption", "hz-002"),
+    ("MoU Brent price fell", "hz-019"),
+    ("Brent forecast inventories replenished", "hz-021"),
+    ("Bab el-Mandeb ceasefire", "hz-016"),
+    ("insurance war risk demining", "hz-014"),
 ])
 def test_search_top3(provider, query, expected):
     top = [x["excerpt_id"] for x in provider.search(query, ["semiconductor", "hormuz"], k=3)]
@@ -97,7 +98,7 @@ def test_search_top3(provider, query, expected):
 
 
 def test_search_shape_and_order(provider):
-    out = provider.search("TSMC HPC 收入", ["semiconductor"], k=5)
+    out = provider.search("TSMC HPC revenue", ["semiconductor"], k=5)
     assert 0 < len(out) <= 5
     assert all(x["pack_id"] == "semiconductor" and x["score"] > 0 for x in out)
     assert [x["score"] for x in out] == sorted((x["score"] for x in out), reverse=True)
@@ -105,11 +106,12 @@ def test_search_shape_and_order(provider):
 
 
 def test_search_respects_pack_ids(provider):
-    assert all(x["pack_id"] == "hormuz" for x in provider.search("TSMC 海峡", ["hormuz"]))
+    assert all(x["pack_id"] == "hormuz" for x in provider.search("TSMC strait", ["hormuz"]))
 
 
 def test_search_no_hit_returns_empty(provider):
     assert provider.search("中期选举", ["semiconductor", "hormuz"]) == []
+    assert provider.search("midterm elections", ["semiconductor", "hormuz"]) == []
     assert provider.search("", ["semiconductor"]) == []
     assert provider.search("CPO", []) == []
 
@@ -126,3 +128,17 @@ def test_search_on_registered_pack(tmp_path):
         {"source_id": "a", "excerpt_id": "t-2", "source": "x", "date": "2026-01-01", "stance": "supports", "text": "代工产能利用率"},
     ]})
     assert [x["excerpt_id"] for x in p.search("激光", ["t"])] == ["t-1"]
+
+
+def test_opec2022_decision_time_split():
+    """K3 回测：决策时点（2022-10-05）前至少 4 段且含反方；之后至少 1 段事后产量数据。"""
+    ex = parse_pack(_raw("opec2022")).excerpts
+    before = [x for x in ex if x.date <= "2022-10-05"]
+    after = [x for x in ex if x.date > "2022-10-05"]
+    assert len(before) >= 4 and any(x.stance == "contradicts" for x in before)
+    assert any(x.excerpt_id == "op-010" for x in after)
+
+
+def test_search_opec2022(provider):
+    top = [x["excerpt_id"] for x in provider.search("effective cut headline paper physical", ["opec2022"], k=3)]
+    assert "op-007" in top
