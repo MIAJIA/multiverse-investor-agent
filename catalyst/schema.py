@@ -139,6 +139,9 @@ class Graph(Strict):
     conditions: list[Condition] = Field(default_factory=list)
     model_output_ref: Optional[str] = None
     observations_ref: Optional[str] = None
+    # The user's own input event, set by code at inspect and copied to every later version (fork, sign). branches.py
+    # uses it so the user's belief does not make the whole graph hypothetical. Never sent to the model.
+    user_event: Optional[str] = None
 
     def node(self, node_id: str) -> Claim:
         return next(n for n in self.nodes if n.id == node_id)

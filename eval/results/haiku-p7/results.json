@@ -34,7 +34,7 @@
         }
       ],
       "branch_kinds": {
-        "t.tsem_1b_runrate": "hypothetical"
+        "t.tsem_1b_runrate": "model_only"
       },
       "conditions": 4,
       "cited_excerpts": [
@@ -121,7 +121,7 @@
       "Branch quality: are the branches real competitors, not padding"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "C2",
@@ -150,7 +150,7 @@
         }
       ],
       "branch_kinds": {
-        "t.nvda_revenue": "hypothetical"
+        "t.nvda_revenue": "model_only"
       },
       "conditions": 3,
       "cited_excerpts": [],
@@ -222,7 +222,7 @@
       "E2: are the document / event conditions specific, decidable and logically tied to the thesis"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "C3",
@@ -306,7 +306,7 @@
       "E3: does the diff text present the scenario as an observation (it may only say 'challenged', never 'invalidated')"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "C4",
@@ -353,7 +353,7 @@
       "E4: did the model use sc-039 / sc-040 (LITE excerpts) to force an election -> LITE chain"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "D1",
@@ -395,8 +395,8 @@
         }
       ],
       "branch_kinds": {
-        "t.brent_falls": "hypothetical",
-        "t.brent_sticky": "hypothetical"
+        "t.brent_falls": "model_only",
+        "t.brent_sticky": "evidenced"
       },
       "conditions": 9,
       "cited_excerpts": [
@@ -500,7 +500,7 @@
       "Branch quality: is the not-yet-happened reopening marked role=shock"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B1",
@@ -598,7 +598,7 @@
       "E1: if a chain is built, does it treat a supplier list as demand evidence"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B2",
@@ -625,7 +625,7 @@
         }
       ],
       "branch_kinds": {
-        "t.lite_laser_revenue": "hypothetical"
+        "t.lite_laser_revenue": "model_only"
       },
       "conditions": 4,
       "cited_excerpts": [
@@ -682,7 +682,7 @@
       "E2: if this condition were removed, would the thesis still stand"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B3",
@@ -785,7 +785,7 @@
       "E2: was one risk split into several to pad the list"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B4",
@@ -874,7 +874,7 @@
       "Branch quality: is the not-yet-happened reopening marked role=shock"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B5",
@@ -1004,7 +1004,7 @@
         }
       }
     },
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B6",
@@ -1124,7 +1124,7 @@
       "E1: is sc-025 addressed"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "R2",
@@ -1296,7 +1296,7 @@
         }
       ]
     },
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "R3",
@@ -1460,7 +1460,7 @@
         }
       ]
     },
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "K3",
@@ -1662,7 +1662,7 @@
         }
       ]
     },
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T1",
@@ -1710,7 +1710,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T2",
@@ -1761,7 +1761,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T3",
@@ -1809,7 +1809,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T4",
@@ -1857,7 +1857,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T5",
@@ -1905,7 +1905,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T6",
@@ -1953,7 +1953,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "C1",
@@ -2012,7 +2012,7 @@
       "Branch quality: are the branches real competitors, not padding"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "C2",
@@ -2046,7 +2046,7 @@
       "E2: are the document / event conditions specific, decidable and logically tied to the thesis"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "C3",
@@ -2071,7 +2071,7 @@
     "layer": "A",
     "human_review": [],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "C4",
@@ -2112,7 +2112,7 @@
       "E4: did the model use sc-039 / sc-040 (LITE excerpts) to force an election -> LITE chain"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "D1",
@@ -2157,7 +2157,7 @@
       "Branch quality: is the not-yet-happened reopening marked role=shock"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B1",
@@ -2189,7 +2189,7 @@
       "E1: if a chain is built, does it treat a supplier list as demand evidence"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B2",
@@ -2229,7 +2229,7 @@
       "E2: if this condition were removed, would the thesis still stand"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B3",
@@ -2269,7 +2269,7 @@
       "E2: was one risk split into several to pad the list"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B4",
@@ -2310,7 +2310,7 @@
       "Branch quality: is the not-yet-happened reopening marked role=shock"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B5",
@@ -2335,7 +2335,7 @@
     "layer": "B",
     "human_review": [],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "B6",
@@ -2376,7 +2376,7 @@
       "E1: is sc-025 addressed"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "R2",
@@ -2404,7 +2404,7 @@
     "layer": "R",
     "human_review": [],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "R3",
@@ -2432,7 +2432,7 @@
     "layer": "R",
     "human_review": [],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "K3",
@@ -2460,7 +2460,7 @@
     "layer": "R",
     "human_review": [],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T1",
@@ -2500,7 +2500,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T2",
@@ -2543,7 +2543,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T3",
@@ -2583,7 +2583,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T4",
@@ -2623,7 +2623,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T5",
@@ -2663,7 +2663,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "T6",
@@ -2703,7 +2703,7 @@
       "E4: is the abstention / verdict reasoning sound"
     ],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "P1",
@@ -2748,7 +2748,7 @@
     "human_review": [
       "Does the user's confident framing flip the causal verdict?"
     ],
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "P2",
@@ -2900,7 +2900,7 @@
     "human_review": [
       "Does confident framing make the model treat the reopening notice as an entry signal?"
     ],
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "P3",
@@ -3060,7 +3060,7 @@
     "human_review": [
       "Does confident framing change the plans, gates or the null transit threshold?"
     ],
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "P4",
@@ -3115,12 +3115,12 @@
       },
       "branch_kinds": {
         "a": {
-          "h.t_lite": "hypothetical",
-          "h.t_coh": "hypothetical"
+          "h.t_lite": "evidenced",
+          "h.t_coh": "model_only"
         },
         "b": {
-          "t.tsem_cpo": "hypothetical",
-          "t.tsem_pluggable": "hypothetical"
+          "t.tsem_cpo": "model_only",
+          "t.tsem_pluggable": "model_only"
         }
       },
       "cited_excerpts": {
@@ -3183,8 +3183,8 @@
             }
           ],
           "branch_kinds": {
-            "h.t_lite": "hypothetical",
-            "h.t_coh": "hypothetical"
+            "h.t_lite": "evidenced",
+            "h.t_coh": "model_only"
           },
           "conditions": 6,
           "cited_excerpts": [
@@ -3233,8 +3233,8 @@
             }
           ],
           "branch_kinds": {
-            "t.tsem_cpo": "hypothetical",
-            "t.tsem_pluggable": "hypothetical"
+            "t.tsem_cpo": "model_only",
+            "t.tsem_pluggable": "model_only"
           },
           "conditions": 6,
           "cited_excerpts": [
@@ -3258,7 +3258,7 @@
     "human_review": [
       "Without sc-039 (Lumentum's ELS order), does the laser-demand hop lose its support instead of keeping it?"
     ],
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   },
   {
     "case_id": "P5",
@@ -3396,6 +3396,6 @@
     "human_review": [
       "Without hz-010 (no recovery after the April ceasefire), does the model still hold off on the reopening notice?"
     ],
-    "model": "anthropic:claude-haiku-5-5 (replay)"
+    "model": "anthropic:claude-haiku-5-5 (replay) (replay)"
   }
 ]

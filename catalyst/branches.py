@@ -81,11 +81,24 @@ def divergence_nodes(graph: Graph | dict) -> set[str]:
     return out
 
 
-def hypothetical_inputs(graph: Graph | dict, scenario: Scenario | dict | None) -> set[str]:
-    """Nodes that make every branch depending on them hypothetical: role=shock, nodes added by a scenario shock,
-    and assumptions the user changed."""
+def _norm(text: str | None) -> str:
+    return " ".join((text or "").casefold().split()).rstrip(" .。!！?？")
+
+
+def user_event_nodes(graph: Graph | dict) -> set[str]:
+    """Nodes that restate the user's own input event (their original_statement is the user's words). The whole graph
+    already answers "if your belief holds, what follows", and the plans' entry conditions test whether it happens,
+    so the user's own belief is not a source of "hypothetical"; otherwise every forecast would paint every branch."""
     g = parse_graph(graph)
-    out = {n.id for n in g.nodes if n.role == "shock"}
+    want = _norm(g.user_event)
+    return {n.id for n in g.nodes if want and _norm(n.original_statement) == want} if want else set()
+
+
+def hypothetical_inputs(graph: Graph | dict, scenario: Scenario | dict | None) -> set[str]:
+    """Nodes that make every branch depending on them hypothetical: role=shock (except the node that restates the
+    user's own event), nodes added by a scenario shock, and assumptions the user changed."""
+    g = parse_graph(graph)
+    out = {n.id for n in g.nodes if n.role == "shock"} - user_event_nodes(g)
     if scenario is not None:
         s = scenario if isinstance(scenario, Scenario) else Scenario.model_validate(scenario)
         for op in s.ops:

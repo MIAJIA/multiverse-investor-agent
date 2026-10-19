@@ -102,3 +102,15 @@ def test_create_run_defaults_to_research_packs(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError):
         api.create_run({"event": "x", "packs": ["opec2022"]})
     assert seen["packs"] == ["opec2022"]
+
+
+def test_user_event_is_kept_across_versions_and_hidden_from_the_fork_prompt(scripted):
+    created = api.create_run({"event": "霍尔木兹海峡下周重开", "target": "BZ", "today": "2026-10-18"})
+    run = created["run_id"]
+    assert api._store(run).bundle("r-v1")["graph"]["user_event"] == "霍尔木兹海峡下周重开"
+    signed = api.sign_run(run, {"version": "r-v1", "terminal_id": None})
+    assert api._store(run).bundle(signed["version"])["graph"]["user_event"] == "霍尔木兹海峡下周重开"
+    op = {"kind": "change_assumption", "target": "h.transits", "value": "推迟到 12 月"}
+    forked = api.fork_run(run, {"base_version": signed["version"], "op": op})
+    assert api._store(run).bundle(forked["version"])["graph"]["user_event"] == "霍尔木兹海峡下周重开"
+    assert '"user_event"' not in scripted.prompts[-1]

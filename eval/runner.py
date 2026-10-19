@@ -227,7 +227,12 @@ def _online_setup(case: dict, inp: dict, packs: list, config: dict, reasoner: An
         shutil.rmtree(run_dir)  # a new recording must not mix with frozen packs from an older run
     cfg = Config(packs=list(packs), online=True, today=config.get("today") or Config().today,
                  run_prefix=case["id"].lower())
-    store = RunStore(run_dir)
+    # Replay reads the frozen packs from the recorded run_dir but writes its own snapshots elsewhere: snapshots are
+    # immutable, and a replay under newer code may legitimately produce a different snapshot.
+    store_dir = run_dir.with_name(run_dir.name + ".replay") if replay_dir is not None else run_dir
+    if replay_dir is not None and store_dir.exists():
+        shutil.rmtree(store_dir)
+    store = RunStore(store_dir)
     web = attach_web(inp["event"], inp.get("target"), cfg=cfg, ev=evidence, store=store, reasoner=reasoner,
                      replay_dir=replay_dir)
     research = research_for(inp["event"], inp.get("target"), cfg=cfg, ev=evidence, web=web, replay_dir=replay_dir)

@@ -72,7 +72,7 @@ We did not tune the prompts to make these two cases pass, because a prompt tuned
 | K3 classic backtest | The plan also stayed out, but the model already knew this 2022 outcome, so we list the result as contaminated and do not count it. |
 | W1 online (Fed cut → TLT) | Round 1 retrieved 19 excerpts from whitelisted sites. The code then found 2 thresholds that lacked data and ran a follow-up round, which added 8 more excerpts. The final graph has two competing plans that both wait. |
 
-One design issue is still open. Branch kinds are derived by code, and a branch counts as hypothetical when it rests on an event that has not happened. The user's own belief is usually such an event, so in most runs every branch comes out hypothetical, and the three kinds stop telling the branches apart. We are deciding whether the user's own event should be excluded from that rule.
+Branch kinds needed one design change after the first real runs. A branch counts as hypothetical when it rests on an event that has not happened. The user's own belief is usually such an event, so at first every branch came out hypothetical, and the three kinds stopped telling the branches apart. The user's own event no longer counts: the whole graph already answers "if your belief holds, what follows", and the plans' entry conditions are what test whether it happens. Only additional unhappened events, and assumptions the user changes in a fork, make a branch hypothetical. In the re-scored run, the two Hormuz branches now differ: one is evidenced and the other is model-only.
 
 Human review covers what tests cannot: whether citations really support a mechanism, whether conditions are decidable, and *(plan B)* whether branches are genuine competitors rather than padding.
 

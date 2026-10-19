@@ -392,7 +392,8 @@
           }
         ],
         "model_output_ref": "fixture://c1/model_output_v1",
-        "observations_ref": "fixture://c1/observations_v1"
+        "observations_ref": "fixture://c1/observations_v1",
+        "user_event": null
       },
       "proposals": [
         {
@@ -1216,7 +1217,8 @@
           }
         ],
         "model_output_ref": "fixture://c1/model_output_v1",
-        "observations_ref": "fixture://c1/observations_v1"
+        "observations_ref": "fixture://c1/observations_v1",
+        "user_event": null
       },
       "proposals": [
         {
@@ -2047,7 +2049,8 @@
           }
         ],
         "model_output_ref": "fixture://c1/model_output_v1",
-        "observations_ref": "fixture://c1/observations_v1"
+        "observations_ref": "fixture://c1/observations_v1",
+        "user_event": null
       },
       "proposals": [
         {
@@ -2954,7 +2957,8 @@
           }
         ],
         "model_output_ref": "fixture://c1/model_output_v1",
-        "observations_ref": "fixture://c1/observations_v1"
+        "observations_ref": "fixture://c1/observations_v1",
+        "user_event": null
       },
       "proposals": [
         {
@@ -3785,7 +3789,8 @@
           }
         ],
         "model_output_ref": "fixture://c1/model_output_v1",
-        "observations_ref": "fixture://c1/observations_v1"
+        "observations_ref": "fixture://c1/observations_v1",
+        "user_event": null
       },
       "proposals": [
         {

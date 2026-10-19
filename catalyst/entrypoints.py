@@ -165,7 +165,8 @@ def _views(g: Graph, scenario: Scenario | None, pack: EvidencePack | None) -> di
 
 def _graph_from(nodes: list[Claim], edges: list[Mechanism], conditions, version: str, op: Op, cfg: Config) -> Graph:
     conds = [Condition.model_validate({**mc.dump(), "evaluation_status": "unknown"}) for mc in conditions]
-    g = Graph(version=version, parent_version=None, op=op, nodes=nodes, edges=edges, conditions=conds)
+    g = Graph(version=version, parent_version=None, op=op, nodes=nodes, edges=edges, conditions=conds,
+              user_event=op.value if op.kind == "inspect" and isinstance(op.value, str) else None)
     return _reevaluate(g, cfg)
 
 
@@ -419,7 +420,7 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
             + (f"The base version is itself a scenario; this fork stacks on top of it. Operations already stacked: {json.dumps([x.dump() for x in parent.ops], ensure_ascii=False)}\n"
                f"Current stacked assessment (claims outside the scope are kept as they are by the system and are not reset by this fork): {json.dumps(parent.assessment, ensure_ascii=False)}\n"
                if parent else "")
-            + f"Base graph:\n{json.dumps(base.dump(), ensure_ascii=False)}\n\nEvidence pack:\n{_pack_text(pk)}")
+            + f"Base graph:\n{json.dumps({k: v for k, v in base.dump().items() if k != 'user_event'}, ensure_ascii=False)}\n\nEvidence pack:\n{_pack_text(pk)}")
     holder: dict = {}
 
     def check(out: ForkOutput):

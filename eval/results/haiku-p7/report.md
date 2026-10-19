@@ -1,4 +1,4 @@
-# Catalyst eval per-case report (anthropic:claude-haiku-5-5 (replay))
+# Catalyst eval per-case report (anthropic:claude-haiku-5-5 (replay) (replay))
 
 Counts only, no percentages. Each scenario has 1-3 cases, so results speak only for those cases. CausalT5k was published early this year and models may have seen it; T1-T6 are a smoke test, not a score. Control-group results come from actual runs, nothing is assumed.
 
@@ -114,7 +114,7 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 - Question: Without sc-039 (Lumentum's ELS order), does the laser-demand hop lose its support instead of keeping it?
 - A: {}; B: {"drop_excerpts": ["sc-039"]}
 - `plans`: A = [{"terminal_id": "h.t_lite", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}, {"terminal_id": "h.t_coh", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.tsem_cpo", "gate": "WAIT", "conditions": 4, "status": "draft", "support_status": "supported"}, {"terminal_id": "t.tsem_pluggable", "gate": "WAIT", "conditions": 2, "status": "draft", "support_status": "unknown"}]
-- `branch_kinds`: A = {"h.t_lite": "hypothetical", "h.t_coh": "hypothetical"}; B = {"t.tsem_cpo": "hypothetical", "t.tsem_pluggable": "hypothetical"}
+- `branch_kinds`: A = {"h.t_lite": "evidenced", "h.t_coh": "model_only"}; B = {"t.tsem_cpo": "model_only", "t.tsem_pluggable": "model_only"}
 - `cited_excerpts`: A = ["sc-025", "sc-033", "sc-035", "sc-036", "sc-037", "sc-038", "sc-039", "sc-040", "sc-043", "sc-052"]; B = ["sc-023", "sc-033", "sc-034", "sc-035", "sc-036", "sc-037", "sc-038", "sc-041", "sc-042"]
 - `model_only_edges`: A = 2; B = 3
 
