@@ -260,3 +260,21 @@ API 事实来自 2026-10-18 读的官方文档：[web search tool](https://platf
 | 立场标注 `web.label`、Discover / Inspect / Fork | `CATALYST_MODEL`，默认 `claude-opus-5-5` | 同上 |
 
 检索请求 `max_tokens` 32000，带 server-side fallback，和 `AnthropicReasoner` 一致。理由：检索只挑搜索词和引用段落，白名单、原文核对、上限都由代码把关；按实测 token 量，Haiku 每次约 $0.08，Opus 约 $1–1.5。推理是否能降级，要等 eval 线做同一套案例的模型对比再定。
+
+**第二个实测：Gemini 4（白名单 w4）**
+
+问题：「Google 发布新一代模型 Gemini 4」→ GOOGL，本地资料包为空，案例 `runs/_cases/G1.json`。默认设置：检索 Haiku，推理 Opus 5.5。
+
+| | w3 `runs/G1/20261018-230702` | w4 `runs/G1/20261018-231518` |
+| --- | --- | --- |
+| 联网片段 | 10 段：PR Newswire 5（全是律所集体诉讼广告）、TrendForce 4、SEC 1 | 19 段：blog.google 12、SEC 5、TrendForce 2 |
+| 节点 | 9 个：8 unknown、1 supported | 8 个：5 unknown、3 supported |
+| 边 | 11 条，5 条 model_only | 8 条，1 条 model_only |
+| 成本 | 约 $0.6 | 约 $0.45 |
+
+w4 的改动：加 blog.google（T1 正式公告）；abc.xyz 进排除列表（财报列表靠 JS 加载，抓不到）；PR Newswire 上 URL 含 class-action、shareholder-alert 等的律所广告由代码丢弃（`exclude_path_patterns`，丢弃原因记为 `excluded_path`），并在给检索员的白名单摘要里写明不收。
+
+仍然存在的问题：
+- **问不到股价。** 白名单里没有行情数据源，产品也还没有接市场参照（`market_reference` 一律为 null），所以「发布后股价怎么动」只能变成一个要用户自己算的条件（相对 Nasdaq-100 的超额收益）。w3 那次唯一的股价数字（「下跌约 4.4%」）来自律所广告转述，说的是 7 月 Gemini 3.5 Pro 延期，不是 Gemini 4。
+- **日期仍然全是 unknown**（`page_age` 都是相对时间）。blog.google 的片段原文里其实带了日期（「Sep 30, 2026」）。
+- **标注质量**：有一段是作者署名加分享按钮的页面文字，也被标成了 supports（web-003）。代码只能保证原文是真的，判断不了一段文字算不算证据。

@@ -47,6 +47,9 @@ class Whitelist:
         for d in self.entries:
             if not d.isascii() or "/" in d or ":" in d:
                 raise ValueError(f"白名单域名只能是 ASCII 主机名：{d!r}")
+        # 域名可信、但某些路径不是证据（如 PR Newswire 上的律所集体诉讼广告）：按 URL 路径排除，由代码执行
+        self._exclude = {d: re.compile("|".join(map(re.escape, e["exclude_path_patterns"])), re.I)
+                         for d, e in self.entries.items() if e.get("exclude_path_patterns")}
 
     @property
     def domains(self) -> list[str]:
@@ -71,8 +74,16 @@ class Whitelist:
             pass
         return next((e for d, e in self.entries.items() if host == d or host.endswith("." + d)), None)
 
+    def excluded(self, url: str, entry: dict) -> str | None:
+        """URL 路径命中该域名的排除规则时返回命中的片段，否则 None。"""
+        rx = self._exclude.get(entry["domain"])
+        m = rx.search(urlsplit(url).path) if rx else None
+        return m.group(0) if m else None
+
     def summary(self) -> str:
-        return "\n".join(f"- {d}（{e['tier']} {e['kind']}）：{e['use_for']}" for d, e in self.entries.items())
+        return "\n".join(f"- {d}（{e['tier']} {e['kind']}）：{e['use_for']}"
+                         + (f"。不收：{e['exclude_note'].split('：')[0]}" if e.get("exclude_note") else "")
+                         for d, e in self.entries.items())
 
 
 # ---- 模型输出（只在检索阶段用，不进快照）---------------------------------------
@@ -297,6 +308,9 @@ def extract_candidates(responses: list[dict], wl: Whitelist) -> tuple[list[dict]
             entry = wl.match(url or "")
             if entry is None:
                 dropped.append({"reason": "not_whitelisted", "url": url, "text": raw[:200]})
+                continue
+            if hit := wl.excluded(url, entry):
+                dropped.append({"reason": f"excluded_path:{hit}", "url": url, "text": raw[:200]})
                 continue
             key = (url, _ws(raw))
             if key in seen:

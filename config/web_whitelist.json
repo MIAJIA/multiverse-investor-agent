@@ -1,5 +1,5 @@
 {
-  "version": "w3",
+  "version": "w4",
   "checked": "2026-10-18",
   "note": "联网检索（--online）只在这些网站里搜索和抓取。它们是研究用的证据来源，不是投资建议来源；来源可信不等于支持某条因果，每段证据仍须写明 stance。tier：T1 官方数据、监管文件与正式公告；T2 通讯社；T3 其他。domain 按 Anthropic allowed_domains 的规则写：不带协议，自动包含子域名，只用 ASCII。access 是 2026-10-18 从本机用 curl（浏览器 UA）和 Claude Code WebFetch 实测的结果，不等于 Anthropic web_fetch 一定能取到，第二阶段实测再核一遍。",
   "domains": [
@@ -41,7 +41,14 @@
      "paywall": "无", "access": "WebFetch 可读；列表页不一定显示日期，以单篇页面为准"},
     {"domain": "prnewswire.com", "name": "PR Newswire", "tier": "T1", "kind": "正式公告",
      "use_for": "公司自己发布的新闻稿（财报、订单、合作）。是公司本人的说法，不是第三方核实",
-     "paywall": "无", "access": "curl 可读，页面带发布时间"},
+     "paywall": "无", "access": "curl 可读，页面带发布时间",
+     "exclude_path_patterns": ["class-action", "securities-fraud", "lead-plaintiff", "shareholder-alert", "investor-alert",
+                               "stockholder-notice", "stock-notice", "stock-alert", "who-lost-money", "investors-with-losses",
+                               "law-firm", "lawsuit"],
+     "exclude_note": "律所的集体诉讼招揽广告（URL 含 class-action、shareholder-alert 等）不收：它们不是公司公告，里面的事实是转述 Reuters / Bloomberg 的二手内容。2026-10-18 Gemini 4 实测时这类广告占了联网片段的一半"},
+    {"domain": "blog.google", "name": "Google 官方博客", "tier": "T1", "kind": "正式公告",
+     "use_for": "Google / Gemini 产品与模型的官方发布（例如 Gemini 4 Argon 的上线公告）",
+     "paywall": "无", "access": "robots.txt 允许 Claude；curl 可读，文章页带发布日期（栏目页正文很少，要抓单篇文章）"},
     {"domain": "nvidia.com", "name": "NVIDIA 新闻与投资者关系", "tier": "T1", "kind": "公司投资者关系",
      "use_for": "NVIDIA 的产品与财报公告（nvidianews.nvidia.com、investor.nvidia.com）",
      "paywall": "无", "access": "curl 可读，正文约 1.8 万字符"},
@@ -73,6 +80,7 @@
     {"domain": "globenewswire.com / businesswire.com", "reason": "反爬 403"},
     {"domain": "maritime.dot.gov", "reason": "MARAD 航运通告：反爬 403"},
     {"domain": "bbc.com", "reason": "2026-10-18 实测：API 拒绝 allowed_domains 里的 bbc.com（400：not accessible to our user agent）"},
+    {"domain": "abc.xyz", "reason": "Alphabet 投资者关系：curl 被 JS / cookie 挑战页挡住（403），WebFetch 拿到的财报列表是空壳（靠 JS 加载）。Alphabet 财报以 sec.gov 上的 8-K / 10-Q 为准"},
     {"domain": "tsmc.com", "reason": "pr.tsmc.com / investor.tsmc.com 要求 JS 与 cookie，抓不到正文"}
   ]
 }

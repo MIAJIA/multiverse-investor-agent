@@ -329,3 +329,20 @@ def test_web_model_defaults_to_haiku_independent_of_reasoning_model(monkeypatch)
     assert ws.web_model() == "claude-haiku-5-5"
     monkeypatch.setenv("CATALYST_WEB_MODEL", "claude-sonnet-5-5")
     assert ws.web_model() == "claude-sonnet-5-5"
+
+
+LAW_FIRM = ("https://www.prnewswire.com/news-releases/googlgoog-shareholder-alert-december-1-2026-lead-plaintiff-"
+            "deadline-in-alphabet-inc-securities-class-action---contact-levi--korsinsky-302900722.html")
+COMPANY = "https://www.prnewswire.com/news-releases/google-cloud-launches-gemini-enterprise-for-legal-302859177.html"
+
+
+def test_law_firm_releases_excluded_company_releases_kept(wl):
+    assert wl.excluded(LAW_FIRM, wl.match(LAW_FIRM)) is not None
+    assert wl.excluded(COMPANY, wl.match(COMPANY)) is None
+    assert "律所的集体诉讼招揽广告" in wl.summary()  # 检索员事先知道这类页面不收
+    resp = [{"content": [{"type": "text", "text": "x", "citations": [
+        {"type": "web_search_result_location", "url": u, "title": "t", "cited_text": f"text {i}", "encrypted_index": "e"}
+        for i, u in enumerate([LAW_FIRM, COMPANY])]}], "usage": {}}]
+    cands, dropped, _ = ws.extract_candidates(resp, wl)
+    assert [c["url"] for c in cands] == [COMPANY]
+    assert dropped[0]["reason"].startswith("excluded_path:") and dropped[0]["url"] == LAW_FIRM
