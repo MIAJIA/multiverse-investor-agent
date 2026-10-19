@@ -23,8 +23,8 @@ def test_inspect_prompt_lists_every_candidate_and_does_not_claim_the_user_chose(
     ep.inspect("Hormuz reopens next week", None, candidates=ep.inspect_candidates(C), reasoner=r, evidence=ev,
                config=ep.Config(packs=["hz"], today="2026-10-18"))
     prompt = r.prompts[0]
-    assert "Candidate directions found by Discover" in prompt and '"c1"' in prompt and '"c2"' in prompt
-    assert '"c3"' not in prompt and "chosen by the user" not in prompt
+    assert "Candidate directions found by Discover" in prompt and "Brent falls after transits" in prompt
+    assert "Tanker rates lag" in prompt and "announcement alone" not in prompt and "chosen by the user" not in prompt
     assert "competing" in prompt
 
 
@@ -40,4 +40,15 @@ def test_api_passes_all_kept_candidates(scripted):  # noqa: F811
     scripted.outputs.insert(0, disc)
     api.create_run({"event": "Hormuz reopens next week", "today": "2026-10-18"})
     inspect_prompt = scripted.prompts[scripted.stages.index("inspect")]
-    assert '"c1"' in inspect_prompt and '"c2"' in inspect_prompt and '"c3"' not in inspect_prompt
+    assert "Brent falls after transits" in inspect_prompt and "Tanker rates lag" in inspect_prompt
+    assert "announcement alone" not in inspect_prompt
+
+
+def test_candidate_ids_are_not_sent_so_they_cannot_leak_into_plans(ev):  # noqa: F811
+    """A live run wrote "Candidate c1: ..." into a plan note; the ids are internal, so the model never gets them."""
+    r = Scripted([_good()])
+    ep.inspect("x", None, candidates=ep.inspect_candidates(C), reasoner=r, evidence=ev,
+               config=ep.Config(packs=["hz"], today="2026-10-18"))
+    prompt = r.prompts[0]
+    assert '"id": "c1"' not in prompt and '"id": "c2"' not in prompt
+    assert "Brent falls after transits recover" in prompt and "never call it a candidate" in prompt

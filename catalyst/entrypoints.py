@@ -239,11 +239,12 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     focus, warnings = "", []
     if candidates:
         focus = ("\nCandidate directions found by Discover (the system kept these; the user has not chosen among them): "
-                 f"{json.dumps(candidates, ensure_ascii=False)}\n"
+                 f"{json.dumps([{k: v for k, v in c.items() if k != 'id'} for c in candidates], ensure_ascii=False)}\n"
                  "Together these candidates are the direction for this graph. Where they disagree, they are the competing "
                  "views: draw them in one graph, share the upstream premises they have in common, and give each candidate "
-                 "its own terminal, unless two candidates are really the same view; then merge them and say so in the "
-                 "plan's direction note. A hypothesis candidate has no supporting excerpt yet, so mark its unsupported "
+                 "its own terminal, unless two candidates are really the same view; then merge them. The user never sees "
+                 "this list, so describe each view in its own words and never call it a candidate or give it a number "
+                 "in statements, labels or notes. A hypothesis candidate has no supporting excerpt yet, so mark its unsupported "
                  "edges model_only. If only one candidate is given, split inside it where a premise is genuinely contested.")
     elif candidate:
         focus = f"\nDirection chosen by the user (from Discover, id={candidate_id or candidate.get('id')}): {json.dumps(candidate, ensure_ascii=False)}"
