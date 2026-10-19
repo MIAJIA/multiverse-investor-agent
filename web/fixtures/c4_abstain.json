@@ -1,0 +1,27 @@
+{
+  "_source": {
+    "script": "web/scripts/make_fixtures.py",
+    "case": "C4 discover 弃权",
+    "today": "2026-10-18",
+    "packs": [
+      "semiconductor"
+    ],
+    "notes": [
+      "离线生成：ScriptedReasoner 的 discover 一律弃权"
+    ]
+  },
+  "label": "C4 弃权（没有因果链）",
+  "event": "中期选举分裂",
+  "run": {
+    "ok": true,
+    "errors": [],
+    "version": null,
+    "discover": {
+      "candidates": [],
+      "abstained": true,
+      "abstain_reason": "scripted：资料包里没有从事件到标的的因果依据"
+    }
+  },
+  "versions": {},
+  "latest": null
+}

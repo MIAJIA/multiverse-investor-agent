@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 runs/
 .env
+
+# web
+web/node_modules/
+web/dist/
