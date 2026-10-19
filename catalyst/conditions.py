@@ -30,7 +30,14 @@ def _hit(c: Condition, record: dict) -> bool:
 
 
 def evaluate(condition: Condition | dict, observations: list[dict], now: _dt.date) -> EvaluationStatus:
-    c = parse_condition(condition)
+    """日期不合法、观测格式不对时给 unknown，不抛异常：判定在校验之前也可能被调用。"""
+    try:
+        return _evaluate(parse_condition(condition), observations, now)
+    except (ValueError, KeyError, TypeError):
+        return "unknown"
+
+
+def _evaluate(c: Condition, observations: list[dict], now: _dt.date) -> EvaluationStatus:
     if c.kind == "numeric" and (c.threshold is None or c.comparator is None):
         return "unknown"
     if "scenario:" in (c.anchor + c.observation_window.start + c.observation_window.end):
@@ -55,11 +62,12 @@ def evaluate(condition: Condition | dict, observations: list[dict], now: _dt.dat
             return "not_met"
         return "met" if closed and covered else "unknown"
 
-    # at_deadline：只看截止日当天或之前最近的一条记录
+    # at_deadline：只看截止日当天或之前最近的一条记录（不受观测窗口结束早于截止日的影响）
     deadline = _d(c.deadline)
     if now < deadline or not any(_d(o["coverage"]["end"]) >= deadline for o in obs):
         return "unknown"
-    last = max((r for r in in_window if _d(r["date"]) <= deadline), key=lambda r: _d(r["date"]), default=None)
-    if last is None:
+    upto = [r for o in obs for r in o.get("records", []) if start <= _d(r["date"]) <= deadline]
+    last = max(upto, key=lambda r: _d(r["date"]), default=None)
+    if last is None or (c.kind == "numeric" and last.get("value") is None):
         return "unknown"
     return "met" if _hit(c, last) else "not_met"

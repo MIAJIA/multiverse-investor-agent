@@ -48,9 +48,7 @@ def _good(threshold=None, note="资料包没有过境恢复基准，阈值由用
             "entry_condition_ids": ["cond.transits"], "exit_condition_ids": [], "exit_logic": "ANY",
             "key_dependency": {"condition_id": "cond.transits", "claim_id": "h.transits", "why": "真通航而非宣布开放"},
             "user_judgment": {"original_statement": "霍尔木兹海峡下周重开", "clarified_statement": "2026-11-30 前过境恢复",
-                              "criteria": None, "deadline": "2026-11-30", "probability": None,
-                              "requires_user_confirmation": True, "confirmed": False, "confirmed_claim_ids": []},
-            "support_status": "unknown"},
+                              "criteria": None, "deadline": "2026-11-30", "requires_user_confirmation": True}},
     }
 
 

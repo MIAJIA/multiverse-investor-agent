@@ -12,7 +12,9 @@
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -32,22 +34,31 @@ def _load_case(ref: str, cases_dir: Path) -> dict:
     return json.loads(path.read_text())
 
 
+def _fixture_packs(fixtures_dir: Path) -> dict[str, tuple[str, dict]]:
+    """eval/fixtures 下所有合成资料包：顶层就是 pack 的文件，或带 evidence_pack 字段的 golden 文件。"""
+    found: dict[str, tuple[str, dict]] = {}
+    for f in sorted(fixtures_dir.glob("*.json")) if fixtures_dir.exists() else []:
+        data = json.loads(f.read_text())
+        for pack in (data, data.get("evidence_pack")):
+            if isinstance(pack, dict) and "pack_id" in pack and "excerpts" in pack:
+                found.setdefault(pack["pack_id"], (f.name, pack))
+    return found
+
+
 def _provider(case: dict, cases_dir: Path, packs_dir: Path) -> tuple[EvidenceProvider, list[str], list[str]]:
-    """真实 pack 优先；还没有时退回案例 golden fixture 里的合成资料包，并明确告警。"""
-    ev, notes = EvidenceProvider(packs_dir), []
-    packs = list(case.get("input", {}).get("evidence_packs", []))
-    for pid in packs:
+    """真实 pack 优先；还没交付时退回 eval fixture 里的合成资料包，并明确告警。"""
+    ev, notes, packs = EvidenceProvider(packs_dir), [], []
+    synthetic = _fixture_packs(cases_dir.parent / "fixtures")
+    for pid in case.get("input", {}).get("evidence_packs", []):
         if (packs_dir / f"{pid}.json").exists():
-            continue
-        fx_name = case.get("expected", {}).get("golden_fixture")
-        fx_path = cases_dir.parent / "fixtures" / fx_name if fx_name else None
-        if fx_path and fx_path.exists() and (pack := json.loads(fx_path.read_text()).get("evidence_pack")):
-            if pack.get("pack_id") == pid:
-                ev.register(pack)
-                notes.append(f"资料包 {pid} 还没交付，用 {fx_name} 里的合成占位片段代替（只验证流程，不验证推理）")
-                continue
-        notes.append(f"资料包 {pid} 不存在，本轮不带资料包运行")
-        packs.remove(pid)
+            packs.append(pid)
+        elif pid in synthetic:
+            name, pack = synthetic[pid]
+            ev.register(pack)
+            packs.append(pid)
+            notes.append(f"资料包 {pid} 还没交付，用 {name} 里的合成占位片段代替（只验证流程，不验证推理）")
+        else:
+            notes.append(f"资料包 {pid} 不存在，本轮不带它运行")
     return ev, packs, notes
 
 
@@ -84,14 +95,17 @@ def cmd_run(a) -> None:
     cases_dir = Path(a.cases_dir)
     case = _load_case(a.case, cases_dir)
     cid, inp = case["id"], case.get("input", {})
+    recorded_today = None
     if a.replay:
-        store = RunStore(Path(a.replay).parent / (Path(a.replay).name + ".replay"))
-        reasoner = ReplayReasoner(Path(a.replay) / "cassette.jsonl")
+        rec = Path(a.replay)
+        recorded_today = json.loads((rec / "case.json").read_text()).get("today")  # 回放必须用录制当天的日期
+        store = RunStore(rec.parent / f"{rec.name}.replay-{_dt.datetime.now():%H%M%S}")
+        reasoner = ReplayReasoner(rec / "cassette.jsonl")
     else:
         store = RunStore.new(a.runs_dir, cid)
         reasoner = RecordingReasoner(default_reasoner(), store.cassette)
     ev, packs, notes = _provider(case, cases_dir, Path(a.packs_dir))
-    cfg = ep.Config(packs=packs, today=a.today or inp.get("today") or case.get("today") or ep.Config().today,
+    cfg = ep.Config(packs=packs, today=a.today or recorded_today or inp.get("today") or ep.Config().today,
                     run_prefix=cid.lower())
     (store.root / "case.json").write_text(json.dumps({"case": case, "packs": packs, "notes": notes,
                                                       "today": cfg.today}, ensure_ascii=False, indent=2))
@@ -102,13 +116,7 @@ def cmd_run(a) -> None:
         res = ep.inspect(inp["event"], inp.get("target"), material=inp["material"], judgment_only=True,
                          reasoner=reasoner, evidence=ev, config=cfg, store=store)
     elif case.get("entry") == "fork":
-        if not a.base:
-            sys.exit("fork 案例需要 --base <录制好的上游运行目录>")
-        base = RunStore(a.base)
-        version = base.latest_version()
-        op = case["input"]["op"] if "op" in case["input"] else case["op"]
-        res = ep.fork(base.get_snapshot(version), op, reasoner=reasoner, evidence=ev, config=cfg,
-                      proposal=base.get_proposal(version), store=store)
+        res = _run_forks(case, cases_dir, a, reasoner, ev, cfg, store)
     elif case.get("entry") == "discover":
         res = ep.discover(inp["event"], reasoner=reasoner, evidence=ev, config=cfg, store=store)
         print("\n".join(_summary(res)))
@@ -125,6 +133,41 @@ def cmd_run(a) -> None:
     if res is not None:
         print("\n".join(_summary(res)))
     print(f"\nrun: {store.root}")
+
+
+def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
+    """C3：在基线图上依次执行案例列出的每个分叉。基线默认用案例指定的 golden 图（Expected Impact
+    只能对 golden 图自动比对）；--base 给出录制目录时改用录制的图。每个分叉都从同一基线出发。"""
+    fx_dir = cases_dir.parent / "fixtures"
+    proposal, pack = None, None
+    if a.base:
+        rec = RunStore(a.base)
+        version = rec.latest_version()
+        base_graph, proposal = rec.get_snapshot(version), rec.get_proposal(version)
+        obs = rec.root / "observations" / f"{version}.json"
+        if obs.exists():
+            pack = {"pack_id": f"recorded:{version}", "excerpts": json.loads(obs.read_text())["excerpts"]}
+    else:
+        base_graph = json.loads((fx_dir / case["input"]["base_graph_fixture"]).read_text())
+        cited = {ev_["excerpt_id"] for e in base_graph["edges"] for ev_ in e.get("evidence", [])}
+        pack = next((p for _, p in _fixture_packs(fx_dir).values()
+                     if cited & {x["excerpt_id"] for x in p["excerpts"]}), None)
+    res = None
+    for name in case["input"]["forks"]:
+        fx = json.loads((fx_dir / name).read_text())
+        print(f"→ fork {name}: {fx['op']['kind']} {fx['op'].get('target') or fx['op'].get('impacts')}")
+        res = ep.fork(base_graph, fx["op"], reasoner=reasoner, evidence=ev, config=cfg, pack=pack,
+                      proposal=proposal, store=store)
+        print("\n".join(_summary(res)))
+        if res.get("scope") and "expected_scope" in fx:
+            ok = all(set(res["scope"][k]) == set(fx["expected_scope"][k]) for k in ("nodes", "edges"))
+            print(f"  write_scope_matches_golden: {'PASS' if ok else 'FAIL'}")
+        if res.get("scenario") and "expected_challenged" in fx and not a.base:
+            got = {k for k, v in res["scenario"]["assessment"].items() if v == "challenged"}
+            want = set(fx["expected_challenged"])
+            print(f"  challenged_matches_golden: {'PASS' if got == want else 'FAIL'}"
+                  + ("" if got == want else f"（多 {sorted(got - want)}，少 {sorted(want - got)}）"))
+    return None
 
 
 def cmd_promote(a) -> None:
@@ -165,7 +208,7 @@ def main(argv=None) -> None:
     mode.add_argument("--replay", metavar="RUN_DIR")
     r.add_argument("--base", metavar="RUN_DIR")
     r.add_argument("--today")
-    r.add_argument("--cases-dir", default=str(ROOT / "eval" / "cases"))
+    r.add_argument("--cases-dir", default=os.environ.get("CATALYST_CASES_DIR", str(ROOT / "eval" / "cases")))
     r.add_argument("--packs-dir", default=str(ROOT / "packs"))
     r.add_argument("--runs-dir", default=str(ROOT / "runs"))
     r.set_defaults(fn=cmd_run)

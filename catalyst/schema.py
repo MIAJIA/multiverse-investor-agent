@@ -268,14 +268,22 @@ class ModelCondition(Strict):
     verification_status: VerificationStatus
 
 
+class ModelUserJudgment(Strict):
+    """模型只能提议「澄清后的判断」；确认、概率、确认过的 claim 只能由用户写。"""
+    original_statement: str
+    clarified_statement: str
+    criteria: Optional[str]
+    deadline: Optional[str]
+    requires_user_confirmation: bool
+
+
 class ProposalDraft(Strict):
     direction: Direction
     entry_condition_ids: list[str]
     exit_condition_ids: list[str]
     exit_logic: ExitLogic
     key_dependency: Optional[KeyDependency]
-    user_judgment: UserJudgment
-    support_status: SupportStatus
+    user_judgment: ModelUserJudgment
 
 
 class Judgment(Strict):

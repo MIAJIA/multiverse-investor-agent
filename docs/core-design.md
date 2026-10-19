@@ -43,7 +43,12 @@
 ## 其他实现决定
 
 - **规范形式**：快照、API、diff 和哈希一律使用字段齐全（含默认值）的 `dump()`。E3 的哈希比对必须先把两边都经过 schema 规范化，不能直接哈希手写的原始 dict。
-- **提案状态拆成两个字段**：`status`（生命周期：draft / needs_review）和 `gate`（进场判定：WAIT / BLOCKED / READY_FOR_REVIEW），两者都只由代码写。
+- **提案状态拆成两个字段**：`status`（生命周期）和 `gate`（进场判定：WAIT / BLOCKED / READY_FOR_REVIEW），两者都只由代码写。gate 为 READY_FOR_REVIEW 时 status 是 needs_review，否则是 draft。
+- **只由代码写的提案字段**：`support_status` 由关键依赖与进场条件所在 claim 的证据状态和情景 assessment 推导；`user_judgment` 里的 confirmed、confirmed_claim_ids、probability 只能由用户写（模型输出 schema 里根本没有这几个字段）。模型改写过原话时，`requires_user_confirmation` 一定是 true。
+- **条件判定随版本重算**：inspect 和 fork 产出的每个新版本，都按观测和日期重新判定全部条件。`conditions.evaluate` 永不抛异常，日期不合法时给 unknown。
+- **引用立场不能翻转**：引用片段时的 stance 必须与资料包里该片段的 stance 一致。
+- **证据只挂在边上**：没有入边的节点不能标 supported（inspect 阶段的检查）。节点级证据留到后续。
+- **fork 的引用校验**：补丁不能改证据引用，所以 fork 只校验 Stage 1 新增的边；基线图已有的引用在生成时已经校验过。Stage 1 的新边必须从新节点连到声明的 impacts。
 - **情景不推进证据**：补丁不能改 `evidence_status`，节点只允许改 statement / time_bucket / instruments。
 - **相对时间**：anchor 或 observation_window 写 `scenario:<事件>` 时合法，但在用户确认起点之前，判定结果一律是 unknown。
 - **结构化输出**：用 pydantic schema 转成严格的 JSON Schema（所有 object 都 `additionalProperties: false`、全部字段列入 required）。API 拒绝该 schema 时，退回到在提示词里约束 JSON，由校验器兜底。

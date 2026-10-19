@@ -34,9 +34,10 @@ class Scope:
     conditions: frozenset[str]
     new_nodes: frozenset[str] = field(default_factory=frozenset)
     new_edges: frozenset[str] = field(default_factory=frozenset)
+    impacts: frozenset[str] = field(default_factory=frozenset)
 
     def to_dict(self) -> dict:
-        return {k: sorted(getattr(self, k)) for k in ("nodes", "edges", "conditions", "new_nodes", "new_edges")}
+        return {k: sorted(getattr(self, k)) for k in ("nodes", "edges", "conditions", "new_nodes", "new_edges", "impacts")}
 
 
 def _descendants(graph: Graph, roots: set[str]) -> set[str]:
@@ -69,19 +70,23 @@ def compute_write_scope(graph: Graph | dict, op: Op | dict) -> Scope:
         new_edges = {e.id for e in o.new_edges}
         if clash := (new_nodes & node_ids) | (new_edges & {e.id for e in g.edges}):
             raise ScopeViolation(f"[{sorted(clash)[0]}] add_shock 新增的 id 与已有对象冲突")
+        for e in o.new_edges:  # Stage 1 结构检查：冲击只能从新节点连到声明的 impacts
+            if e.from_ not in new_nodes or e.to not in set(o.impacts) | new_nodes:
+                raise ScopeViolation(f"[{e.id}] Stage 1 新边必须从新节点连到 impacts：{e.from_} → {e.to}")
         nodes = _descendants(g, set(o.impacts)) | new_nodes
     else:
         raise ScopeViolation(f"[{o.kind}] 不是分叉操作")
     edges = {e.id for e in g.edges if e.from_ in nodes} | new_edges
     conditions = {c.id for c in g.conditions if c.claim_id in nodes}
-    return Scope(frozenset(nodes), frozenset(edges), frozenset(conditions), frozenset(new_nodes), frozenset(new_edges))
+    return Scope(frozenset(nodes), frozenset(edges), frozenset(conditions), frozenset(new_nodes), frozenset(new_edges),
+                 frozenset(o.impacts))
 
 
 def _as_scope(scope) -> Scope:
     if isinstance(scope, Scope):
         return scope
     if isinstance(scope, dict):
-        return Scope(*(frozenset(scope.get(k, [])) for k in ("nodes", "edges", "conditions", "new_nodes", "new_edges")))
+        return Scope(*(frozenset(scope.get(k, [])) for k in ("nodes", "edges", "conditions", "new_nodes", "new_edges", "impacts")))
     nodes, edges = scope[0], scope[1]
     return Scope(frozenset(nodes), frozenset(edges), frozenset())
 
@@ -93,6 +98,8 @@ def next_version(version: str) -> str:
 
 def apply_patch(graph: Graph | dict, patch: Patch | dict, scope, *, op: Op | dict | None = None,
                 new_version: str | None = None) -> Graph:
+    """返回新版本图。注意：条件的 evaluation_status 原样保留——改了阈值或日期的条件要由调用方重新判定
+    （entrypoints.fork 会做）。"""
     base = parse_graph(graph)
     p = patch if isinstance(patch, Patch) else Patch.model_validate(patch)
     s = _as_scope(scope)
@@ -119,6 +126,8 @@ def apply_patch(graph: Graph | dict, patch: Patch | dict, scope, *, op: Op | dic
     for e in p.edge_adds:
         if e.id not in s.new_edges:
             raise ScopeViolation(f"[{e.id}] 新边未经 Stage 1 声明")
+        if s.impacts and (e.from_ not in s.new_nodes or e.to not in s.impacts | s.new_nodes):
+            raise ScopeViolation(f"[{e.id}] 新边必须从新节点连到 impacts：{e.from_} → {e.to}")
         data["edges"].append(e.dump())
     update(data["nodes"], p.node_updates, s.nodes, NODE_FIELDS, "节点")
     update(data["edges"], p.edge_updates, s.edges, EDGE_FIELDS, "边")

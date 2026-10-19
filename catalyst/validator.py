@@ -22,9 +22,9 @@ class Issue:
 
 
 def _is_date(v: str | None) -> bool:
+    """只接受 YYYY-MM-DD（Python 3.11+ 的 fromisoformat 也接受 20261001，这里不接受）。"""
     try:
-        _dt.date.fromisoformat(v or "")
-        return True
+        return bool(v) and len(v) == 10 and _dt.date.fromisoformat(v).isoformat() == v
     except ValueError:
         return False
 
@@ -39,8 +39,10 @@ def validate_condition(condition: Condition | dict) -> list[Issue]:
             out.append(Issue(c.id, "数值条件的 threshold 为 null 时必须写 threshold_note（为什么不知道、由谁确认）"))
         if c.threshold is not None and c.comparator is None:
             out.append(Issue(c.id, "数值条件有 threshold 时必须给 comparator"))
-        if not c.series:
-            out.append(Issue(c.id, "数值条件必须指向一个 series"))
+        if not c.series and c.verification_status == "verifiable":
+            out.append(Issue(c.id, "标 verifiable 的数值条件必须指向一个 series；不知道序列就标 unverified 并在 threshold_note 说明"))
+        if not c.series and not (c.threshold_note or "").strip():
+            out.append(Issue(c.id, "数值条件没有 series 时必须在 threshold_note 写明缺什么数据"))
     elif not (c.source or c.series):
         out.append(Issue(c.id, f"{c.kind} 条件必须写明判定来源 source"))
     if not _is_date(c.deadline):
@@ -169,6 +171,8 @@ def validate_references(graph: Graph | dict, evidence_pack: EvidencePack | dict 
                 out.append(Issue(ev.excerpt_id, f"边 {e.id} 引用的片段 {ev.excerpt_id} 不在{where}里"))
             elif known[ev.excerpt_id].source_id != ev.source_id:
                 out.append(Issue(ev.excerpt_id, f"边 {e.id} 的 source_id {ev.source_id} 与片段来源 {known[ev.excerpt_id].source_id} 不一致"))
+            elif known[ev.excerpt_id].stance != ev.stance:
+                out.append(Issue(ev.excerpt_id, f"边 {e.id} 把 {known[ev.excerpt_id].stance} 片段 {ev.excerpt_id} 引用成了 {ev.stance}：立场不能翻转"))
             if ev.stance == "contradicts" and not ev.rebuttal and status.get(e.to) == "supported":
                 out.append(Issue(e.to, f"边 {e.id} 带未驳回的反方片段 {ev.excerpt_id}：要么写 rebuttal，要么把 {e.to} 标 contradicted"))
         if e.model_only and any(ev.stance == "supports" for ev in e.evidence):

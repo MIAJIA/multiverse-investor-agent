@@ -63,12 +63,15 @@ def run_stage(
         errors, warnings, value = [], [], None
         try:
             value = output_model.model_validate(_extract_json(out.text))
+        except ValidationError as e:  # 是 ValueError 的子类，必须先接
+            errors = _pydantic_errors(e)
         except ValueError as e:  # json 解析失败
             errors = [f"[json] {e}"]
-        except ValidationError as e:
-            errors = _pydantic_errors(e)
         if value is not None:
-            errors, warnings = validate(value)
+            try:
+                errors, warnings = validate(value)
+            except Exception as e:  # noqa: BLE001 —— 校验器自身出错也只能进 trace，不能放行
+                errors = [f"[validator] {type(e).__name__}: {e}"]
         if store:
             store.log_attempt(stage=stage, attempt=attempt, ok=not errors, errors=errors,
                               warnings=warnings, raw=out.text, meta=out.meta)
