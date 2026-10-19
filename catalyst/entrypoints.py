@@ -333,6 +333,69 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
     return _finish(store, result, name=f"fork.{version}")
 
 
+# ---- sign（用户签字：不调模型，产出新版本）---------------------------------
+
+SIGN_CONDITION_FIELDS = {"threshold", "threshold_note", "comparator", "deadline"}
+
+
+def sign(graph, proposal: dict, *, clarified_statement: str, criteria: str | None, deadline: str | None,
+         confirmed_claim_ids: list[str], condition_overrides: dict[str, dict] | None = None, config=None,
+         store: RunStore | None = None) -> dict:
+    """签的是研究判断，不是下单。用户改的阈值 / 截止写进新图版本的条件（改截止时观测窗口跟着收），
+    重新判定条件、重新派生提案；确认只能由这里写。快照不可变，所以签字永远产出新版本。"""
+    cfg = _cfg(config)
+    base = parse_graph(graph)
+    old = TradeProposal.model_validate(proposal)
+    result = {"graph": None, "proposal": None, "ok": False, "errors": [], "version": None}
+    node_ids = {n.id for n in base.nodes}
+    errors = [f"[{c}] 确认的 claim 不在图里" for c in confirmed_claim_ids if c not in node_ids]
+    data = base.dump()
+    by_id = {c["id"]: c for c in data["conditions"]}
+    for cid, fields in (condition_overrides or {}).items():
+        if cid not in by_id:
+            errors.append(f"[{cid}] 要修改的条件不在图里")
+            continue
+        if bad := set(fields) - SIGN_CONDITION_FIELDS:
+            errors.append(f"[{cid}] 签字时只能改 {sorted(SIGN_CONDITION_FIELDS)}，不能改 {sorted(bad)}")
+            continue
+        c = by_id[cid]
+        c.update(fields)
+        if "deadline" in fields and c["observation_window"]["end"] > fields["deadline"]:
+            c["observation_window"]["end"] = fields["deadline"]
+        if fields.get("threshold") is not None and c["comparator"] is None:
+            errors.append(f"[{cid}] 填了阈值就要给 comparator")
+    version = next_version(base.version)
+    while store and (store.root / "snapshots" / f"{version}.json").exists():
+        version = next_version(version)
+    data.update(version=version, parent_version=base.version,
+                op=Op(kind="sign", target=None, value={"confirmed_claim_ids": confirmed_claim_ids,
+                                                       "condition_overrides": condition_overrides or {}}).dump())
+    if not errors:
+        try:
+            new_g = _reevaluate(Graph.model_validate(data), cfg)
+            errors += [str(i) for i in blocking(validate_graph(new_g))]
+        except ValueError as e:  # pydantic 的字段错误（如日期格式）
+            errors.append(f"[sign] {e}")
+    if errors:
+        result["errors"] = errors
+        return result
+    uj = old.user_judgment.model_copy(update={
+        "clarified_statement": clarified_statement, "criteria": criteria, "deadline": deadline,
+        "confirmed": True, "confirmed_claim_ids": list(confirmed_claim_ids)})
+    p = derive_proposal(_draft_of(old), new_g, model=old.meta.model, user_judgment=uj, scenario_ref=old.scenario_ref)
+    result.update(graph=new_g.dump(), proposal=p.dump(), ok=True, version=new_g.version)
+    if store:
+        store.put_snapshot(base.dump())
+        store.put_snapshot(new_g.dump())
+        store.put_proposal(new_g.version, p.dump())
+        obs = store.root / "observations" / f"{base.version}.json"
+        if obs.exists():
+            store.put_observations(new_g.version, json.loads(obs.read_text())["excerpts"])
+        store.log_op(op="sign", actor="user", input_version=base.version, output_version=new_g.version,
+                     prompt_version=None, model=None)
+    return result
+
+
 def _finish(store: RunStore | None, result: dict, name: str = "inspect") -> dict:
     if store:
         path = store.root / f"{name}.result.json"

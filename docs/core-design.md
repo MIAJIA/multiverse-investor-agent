@@ -61,3 +61,15 @@
 - AddShock 的 Stage 1 由调用方在 op 里给出 `impacts`、`new_nodes`、`new_edges`；用模型识别任意冲击留到后续。
 - 条件判定需要的观测数据（`Config.observations`）在 POC 里通常为空，所以条件大多是 unknown，进场判定大多是 WAIT。这是设计上的默认状态（先别动）。
 - 市场参照没有接入：`market_reference` 一律为 null，即 no_market。
+
+## HTTP 接口（`catalyst/api.py`）
+
+前端用的薄 HTTP 层，不含业务逻辑：只把请求翻译成入口调用，再从 RunStore 读出版本。运行 `.venv/bin/python -m catalyst.api`，地址是 http://localhost:8000。设 `CATALYST_REPLAY=<录制目录>` 时用录音回放，不调用模型。
+
+- 所有写操作都返回 `{ok, errors, version}`，前端拿到版本号后再 GET 这个版本。
+- `GET /api/runs/{id}/versions/{v}` 返回 `{graph, proposal, scenario, diff, excerpts}`。`diff` 相对父版本计算，`promote` 写出的 fixture 也是这个形状。
+- **sign** 不调用模型，产出一个新版本（`op.kind = "sign"`）：
+  - 用户改的阈值和截止写进条件；截止提前时，观测窗口跟着收。
+  - 重新判定条件、重新派生提案，`user_judgment.confirmed = true`。
+  - 签字只能改 threshold / threshold_note / comparator / deadline 这几个字段。
+- **fork** 以基线版本的提案（含签字）和 observations 为输入，所以签字结果在分叉后不会丢失。

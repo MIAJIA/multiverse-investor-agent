@@ -36,7 +36,7 @@ Gate = Literal["WAIT", "BLOCKED", "READY_FOR_REVIEW"]
 ProposalStatus = Literal["draft", "needs_review"]
 SupportStatus = Literal["supported", "challenged", "unknown"]
 CandidateLabel = Literal["grounded", "hypothesis", "not_recommended"]
-OpKind = Literal["generate", "discover", "inspect", "change_assumption", "add_shock"]
+OpKind = Literal["generate", "discover", "inspect", "change_assumption", "add_shock", "sign"]
 ExitLogic = Literal["ANY", "ALL"]
 Side = Literal["long", "short"]
 

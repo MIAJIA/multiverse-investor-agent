@@ -180,10 +180,7 @@ def cmd_promote(a) -> None:
                            "notes": case["notes"], "cassette": "cassette.jsonl"},
                "versions": {}}
     for snap in sorted((store.root / "snapshots").glob("*.json")):
-        v = snap.stem
-        fixture["versions"][v] = {"graph": json.loads(snap.read_text()), "proposal": store.get_proposal(v)}
-        if (sc := store.root / "scenarios" / f"{v}.json").exists():
-            fixture["versions"][v]["scenario"] = json.loads(sc.read_text())
+        fixture["versions"][snap.stem] = store.bundle(snap.stem)  # 与 GET /versions/{v} 同形
     fixture["latest"] = version
     out = Path(a.fixtures_dir) / f"{a.name}.json"
     out.parent.mkdir(exist_ok=True)

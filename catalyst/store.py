@@ -16,7 +16,7 @@ import datetime as _dt
 import json
 from pathlib import Path
 
-from catalyst.diff import content_hash
+from catalyst.diff import content_hash, diff as graph_diff
 
 
 class SnapshotExists(Exception):
@@ -31,7 +31,11 @@ class RunStore:
     @classmethod
     def new(cls, base: Path | str, case_id: str) -> "RunStore":
         stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-        return cls(Path(base) / case_id / stamp)
+        root, n = Path(base) / case_id / stamp, 1
+        while root.exists():  # 同一秒启动的两次运行不能落进同一个目录
+            n += 1
+            root = Path(base) / case_id / f"{stamp}-{n}"
+        return cls(root)
 
     # ---- 不可变写入 ----
     def _put(self, kind: str, version: str, obj: dict) -> Path:
@@ -62,6 +66,18 @@ class RunStore:
     def get_proposal(self, version: str) -> dict | None:
         path = self.root / "proposals" / f"{version}.json"
         return json.loads(path.read_text()) if path.exists() else None
+
+    def bundle(self, version: str) -> dict:
+        """一个版本的完整视图：GET /versions/{v} 与 promote 的 fixture 用同一个形状。"""
+        graph = self.get_snapshot(version)
+        sc = self.root / "scenarios" / f"{version}.json"
+        obs = self.root / "observations" / f"{version}.json"
+        parent = graph.get("parent_version")
+        has_parent = parent and (self.root / "snapshots" / f"{parent}.json").exists()
+        return {"graph": graph, "proposal": self.get_proposal(version),
+                "scenario": json.loads(sc.read_text()) if sc.exists() else None,
+                "diff": graph_diff(self.get_snapshot(parent), graph) if has_parent else None,
+                "excerpts": json.loads(obs.read_text())["excerpts"] if obs.exists() else []}
 
     def latest_version(self) -> str | None:
         ops = self.oplog()
