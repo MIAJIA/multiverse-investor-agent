@@ -1,0 +1,535 @@
+{
+  "pack_id": "semiconductor",
+  "synthetic": false,
+  "note": "主要论点：AI 算力需求正在加速先进制程、先进封装与光互连（CPO / 硅光）的采用，并把需求传导到代工、封测、存储与光学供应链。stance 相对这个论点：supports = 支撑链上某一环（需求、产能扩张、供应链关系、技术平台）；contradicts = 削弱它（产能瓶颈拖慢采用、认证周期、单位光源需求下降、出口管制限制对华需求传导、CPO 放量推迟、可插拔与集成激光路线并存）。出口管制片段里，放宽对华或盟友出口记 supports，收紧或维持限制记 contradicts。研究时点以各片段 date 为准，不代表 2026-10 的最新状态；TrendForce、Third Bridge 等研究机构片段是发布时的预测与判断，不是已兑现结果。收入占比不是产能占比，HPC 不等于 AI。",
+  "_provenance": {
+    "built": "2026-10-18，证据线（evidence 分支）",
+    "material_root": "/Users/mia/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/outputs",
+    "method": "sc-001–006 逐页核对 TSMC_2026Q1_Official_Presentation.pdf（与 ~/Downloads/1Q26%20Presentation%20(E).pdf 同一文件，12 页）；sc-029–032 逐段核对 knowledge_packs/provenance/FR_2026-00789_official.pdf；sc-007–010、sc-022–025 对照原文 URL 复核；其余取自 knowledge_packs/semiconductor.json、ai_technology.json 的事实卡（括号内为 fact_id），未逐条回原文。 2026-10-18 补充 sc-033–051：三条调研线找到候选后，本线逐条回原网页或原 PDF 核对引文和日期（WebFetch；BIS 2026-05-31 指引 PDF 本地抽文本）。转载页：sc-042 Broadcom（MarketScreener）、sc-047 Bloomberg（Yahoo Finance）。sc-051 日期取 EDGAR 文件修改日 2026-05-20。",
+    "fact_ids": {
+      "sc-001": "S038 + PDF p6",
+      "sc-002": "S037 + PDF p5",
+      "sc-003": "S039 + PDF p8",
+      "sc-004": "PDF p9",
+      "sc-005": "PDF p10",
+      "sc-006": "PDF p4",
+      "sc-007": "S040 / TF-1",
+      "sc-008": "S041 / TF-2",
+      "sc-009": "TF-2",
+      "sc-010": "S042 / TF-3",
+      "sc-011": "S008 + S009",
+      "sc-012": "S011",
+      "sc-013": "S010",
+      "sc-014": "S013",
+      "sc-015": "S012",
+      "sc-016": "S020",
+      "sc-017": "S014",
+      "sc-018": "S018",
+      "sc-019": "S005",
+      "sc-020": "S045",
+      "sc-021": "S035 + S036",
+      "sc-022": "A014",
+      "sc-023": "A015 + 原文",
+      "sc-024": "A016 + 原文",
+      "sc-025": "原文（事实卡未收）",
+      "sc-026": "A004 + A006",
+      "sc-027": "A013",
+      "sc-028": "A017 + A018",
+      "sc-029": "P022 + P023 + FR PDF p2（印刷页 1685）",
+      "sc-030": "P024 + P025 + FR PDF p2",
+      "sc-031": "P026 + FR PDF p2",
+      "sc-032": "FR PDF p2",
+      "sc-033": "补充调研",
+      "sc-034": "补充调研",
+      "sc-035": "补充调研",
+      "sc-036": "补充调研",
+      "sc-037": "补充调研",
+      "sc-038": "补充调研",
+      "sc-039": "补充调研",
+      "sc-040": "补充调研",
+      "sc-041": "补充调研",
+      "sc-042": "补充调研",
+      "sc-043": "补充调研",
+      "sc-044": "补充调研",
+      "sc-045": "补充调研",
+      "sc-046": "补充调研",
+      "sc-047": "补充调研",
+      "sc-048": "补充调研",
+      "sc-049": "补充调研",
+      "sc-050": "补充调研",
+      "sc-051": "补充调研",
+      "sc-052": "补充调研"
+    },
+    "tickers": "交易代码只写同一份文件里写明的：sc-034 TSM/2330、sc-039 LITE、sc-040 NVDA/LITE、sc-041 TSEM、sc-042 AVGO、sc-052 COHR；外置光源（ELS）供应方依据：sc-039（Lumentum 首笔 ELS 订单）、sc-052（Coherent ELS 模块，仅展示）。"
+  },
+  "excerpts": [
+    {
+      "source_id": "tsmc-1q26-presentation",
+      "excerpt_id": "sc-001",
+      "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 6 页",
+      "date": "2026-04-16",
+      "stance": "supports",
+      "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
+      "text": "TSMC 1Q26 按平台划分的收入中，HPC 占 61%，智能手机占 26%（HPC 不等于 AI）。"
+    },
+    {
+      "source_id": "tsmc-1q26-presentation",
+      "excerpt_id": "sc-002",
+      "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 5 页",
+      "date": "2026-04-16",
+      "stance": "supports",
+      "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
+      "text": "TSMC 1Q26 晶圆收入中 3nm 占 25%、5nm 占 36%、7nm 占 13%（收入占比，不是产能或出货量占比）。"
+    },
+    {
+      "source_id": "tsmc-1q26-presentation",
+      "excerpt_id": "sc-003",
+      "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 8 页",
+      "date": "2026-04-16",
+      "stance": "supports",
+      "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
+      "text": "TSMC 1Q26 资本支出为 NT$350.76 billion（4Q25 为 NT$356.91 billion），是当季现金流项目，不是全年指引。"
+    },
+    {
+      "source_id": "tsmc-1q26-presentation",
+      "excerpt_id": "sc-004",
+      "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 9 页",
+      "date": "2026-04-16",
+      "stance": "supports",
+      "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
+      "text": "TSMC 管理层预计 2Q26 收入在 US$39.0 billion 至 US$40.2 billion 之间，毛利率 65.5%–67.5%。"
+    },
+    {
+      "source_id": "tsmc-1q26-presentation",
+      "excerpt_id": "sc-005",
+      "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 10 页",
+      "date": "2026-04-16",
+      "stance": "supports",
+      "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
+      "text": "TSMC 管理层预计 2026 年收入以美元计增长超过 30%（前瞻性陈述）。"
+    },
+    {
+      "source_id": "tsmc-1q26-presentation",
+      "excerpt_id": "sc-006",
+      "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 4 页",
+      "date": "2026-04-16",
+      "stance": "supports",
+      "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
+      "text": "TSMC 1Q26 净收入 US$35.90 billion，高于 US$34.6–35.8 billion 的指引，同比增长 40.6%；毛利率 66.2%。"
+    },
+    {
+      "source_id": "trendforce-20260430",
+      "excerpt_id": "sc-007",
+      "source": "TrendForce 新闻稿（T3 行业研究机构）· 正文第 1 段",
+      "date": "2026-04-30",
+      "stance": "supports",
+      "url": "https://www.trendforce.com/presscenter/news/20260430-13028.html",
+      "text": "据 TrendForce，AI 需求自 2023 年起快速增长，造成 3nm–2nm 晶圆产能瓶颈，短缺并延伸到 2.5D/3D 先进封装。"
+    },
+    {
+      "source_id": "trendforce-20260430",
+      "excerpt_id": "sc-008",
+      "source": "TrendForce 新闻稿（T3 行业研究机构）· 正文第 6 段",
+      "date": "2026-04-30",
+      "stance": "supports",
+      "url": "https://www.trendforce.com/presscenter/news/20260430-13028.html",
+      "text": "据 TrendForce，TSMC 计划到 2027 年把 CoWoS 产能扩充 60% 以上（文章未写明比较基期与产能口径，是计划不是已兑现结果）。"
+    },
+    {
+      "source_id": "trendforce-20260430",
+      "excerpt_id": "sc-009",
+      "source": "TrendForce 新闻稿（T3 行业研究机构）· 正文第 6 段",
+      "date": "2026-04-30",
+      "stance": "contradicts",
+      "url": "https://www.trendforce.com/presscenter/news/20260430-13028.html",
+      "text": "TrendForce 预计即便有扩产，2.5D 封装短缺到 2027 年也只是开始略有缓解：产能瓶颈会限制采用速度。"
+    },
+    {
+      "source_id": "trendforce-20260430",
+      "excerpt_id": "sc-010",
+      "source": "TrendForce 新闻稿（T3 行业研究机构）· 正文第 5 段",
+      "date": "2026-04-30",
+      "stance": "supports",
+      "url": "https://www.trendforce.com/presscenter/news/20260430-13028.html",
+      "text": "据 TrendForce，SPIL、Amkor 等封测厂受益于封装订单外溢，EMIB、FOEB 等替代技术也在获得关注。"
+    },
+    {
+      "source_id": "nvda-10k-fy2026",
+      "excerpt_id": "sc-011",
+      "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
+      "date": "2026-02-25",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "text": "NVIDIA 采用 fabless、委外制造模式，披露 TSMC 与 Samsung 为其晶圆代工厂。"
+    },
+    {
+      "source_id": "nvda-10k-fy2026",
+      "excerpt_id": "sc-012",
+      "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
+      "date": "2026-02-25",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "text": "NVIDIA 披露其产品使用 CoWoS 先进封装。"
+    },
+    {
+      "source_id": "nvda-10k-fy2026",
+      "excerpt_id": "sc-013",
+      "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
+      "date": "2026-02-25",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "text": "NVIDIA 披露 SK hynix、Micron、Samsung 为其存储供应商（原文写 memory，未分配到 HBM）。"
+    },
+    {
+      "source_id": "nvda-10k-fy2026",
+      "excerpt_id": "sc-014",
+      "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing；Item 1A",
+      "date": "2026-02-25",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "text": "NVIDIA 用预付款、长期协议和预先承诺锁定供应（是采购机制，不是已实现的产能或出货）。"
+    },
+    {
+      "source_id": "nvda-10k-fy2026",
+      "excerpt_id": "sc-015",
+      "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
+      "date": "2026-02-25",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "text": "NVIDIA 列出 Hon Hai、Wistron、Fabrinet 等为最终产品的委外制造商。"
+    },
+    {
+      "source_id": "amd-10k-fy2025",
+      "excerpt_id": "sc-016",
+      "source": "AMD FY2025 Form 10-K（T1 正式公告）· Item 7 Overview",
+      "date": "2026-02-04",
+      "stance": "supports",
+      "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+      "text": "AMD FY2025 数据中心业务收入约 $16.6 billion（含 EPYC 服务器 CPU，不只是 AI 加速器）。"
+    },
+    {
+      "source_id": "amd-10k-fy2025",
+      "excerpt_id": "sc-017",
+      "source": "AMD FY2025 Form 10-K（T1 正式公告）· Item 1 Third-Party Wafer Foundry Facilities",
+      "date": "2026-02-04",
+      "stance": "supports",
+      "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+      "text": "AMD 披露其 HPC、FPGA 和自适应 SoC 晶圆由 TSMC 生产。"
+    },
+    {
+      "source_id": "amd-10k-fy2025",
+      "excerpt_id": "sc-018",
+      "source": "AMD FY2025 Form 10-K（T1 正式公告）· Item 1 Assembly, Test, Mark and Packaging",
+      "date": "2026-02-04",
+      "stance": "supports",
+      "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+      "text": "AMD 披露其封装测试由 ATMP 合资公司、SPIL 和 KYEC 提供。"
+    },
+    {
+      "source_id": "amkor-10k-fy2025",
+      "excerpt_id": "sc-019",
+      "source": "Amkor FY2025 Form 10-K（T1 正式公告）· Item 1 Overview",
+      "date": "2026-02-20",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/1047127/000104712726000014/amkr-20251231.htm",
+      "text": "Amkor 是 OSAT（委外封装测试）厂商，提供先进封装、晶圆级加工和系统级封装（SiP）服务。"
+    },
+    {
+      "source_id": "amkor-10k-fy2025",
+      "excerpt_id": "sc-020",
+      "source": "Amkor FY2025 Form 10-K（T1 正式公告）· Item 1A 风险因素",
+      "date": "2026-02-20",
+      "stance": "contradicts",
+      "url": "https://www.sec.gov/Archives/edgar/data/1047127/000104712726000014/amkr-20251231.htm",
+      "text": "Amkor 披露客户对封装测试工艺的认证可能需要数月：新封装路线不能立即放量。"
+    },
+    {
+      "source_id": "asml-annual-report-2025",
+      "excerpt_id": "sc-021",
+      "source": "ASML 2025 年报（T1 正式公告）· 2025 at a glance / System sales in units",
+      "date": "2026-02-25",
+      "stance": "supports",
+      "url": "https://investor.asml.com/annual-reports/2025",
+      "text": "ASML 2025 年系统销售包括 48 台 EUV 和 279 台 DUV（系统销售口径，不是产量或装机量）。"
+    },
+    {
+      "source_id": "nvidia-blog-cpo-20250826",
+      "excerpt_id": "sc-022",
+      "source": "NVIDIA 技术博客（T3 厂商技术描述）· How Industry Collaboration Fosters NVIDIA Co-Packaged Optics",
+      "date": "2025-08-26",
+      "stance": "supports",
+      "url": "https://developer.nvidia.com/blog/how-industry-collaboration-fosters-nvidia-co-packaged-optics/",
+      "text": "NVIDIA 描述其共封装光学（CPO）平台集成了光子 IC、电子 IC、光纤、封装、连接器和激光器。"
+    },
+    {
+      "source_id": "nvidia-blog-cpo-20250826",
+      "excerpt_id": "sc-023",
+      "source": "NVIDIA 技术博客（T3 厂商技术描述）· How Industry Collaboration Fosters NVIDIA Co-Packaged Optics",
+      "date": "2025-08-26",
+      "stance": "supports",
+      "url": "https://developer.nvidia.com/blog/how-industry-collaboration-fosters-nvidia-co-packaged-optics/",
+      "text": "NVIDIA 称与 TSMC 深度合作解决硅光的量产制造问题，光引擎采用 TSMC 的 COUPE 技术（技术合作，不代表订单量或产能分配）。"
+    },
+    {
+      "source_id": "nvidia-blog-cpo-20250826",
+      "excerpt_id": "sc-024",
+      "source": "NVIDIA 技术博客（T3 厂商技术描述）· How Industry Collaboration Fosters NVIDIA Co-Packaged Optics",
+      "date": "2025-08-26",
+      "stance": "supports",
+      "url": "https://developer.nvidia.com/blog/how-industry-collaboration-fosters-nvidia-co-packaged-optics/",
+      "text": "NVIDIA 的 CPO 平台包括 Quantum-X InfiniBand 与 Spectrum-X Ethernet Photonics 交换机；文章未给出出货年份。"
+    },
+    {
+      "source_id": "nvidia-blog-cpo-20250826",
+      "excerpt_id": "sc-025",
+      "source": "NVIDIA 技术博客（T3 厂商技术描述）· How Industry Collaboration Fosters NVIDIA Co-Packaged Optics",
+      "date": "2025-08-26",
+      "stance": "contradicts",
+      "url": "https://developer.nvidia.com/blog/how-industry-collaboration-fosters-nvidia-co-packaged-optics/",
+      "text": "NVIDIA 称其外置激光光源（ELS）设计使数据中心激光器总数比传统方案减少到四分之一：CPO 放量不等于激光器数量同比例增长。"
+    },
+    {
+      "source_id": "arxiv-2304.01433",
+      "excerpt_id": "sc-026",
+      "source": "TPU v4 论文，arXiv 2304.01433（T3 作者报告）· 摘要",
+      "date": "2023-04-04",
+      "stance": "supports",
+      "url": "https://arxiv.org/abs/2304.01433",
+      "text": "TPU v4 超级计算机含 4,096 颗芯片，用光路交换机（OCS）动态重构互连拓扑（光用于互连，不是光计算）。"
+    },
+    {
+      "source_id": "arxiv-2403.14806",
+      "excerpt_id": "sc-027",
+      "source": "光电集成电路综述，arXiv 2403.14806v2（T3 预印本）· 摘要",
+      "date": "2024-03-21",
+      "stance": "supports",
+      "url": "https://arxiv.org/abs/2403.14806v2",
+      "text": "该综述把带宽、时延和光复用列为光子集成电路用于 AI 计算的研究动机（是研究动机，不是能效或成本证明）。"
+    },
+    {
+      "source_id": "nature-s41586-025-08854-x",
+      "excerpt_id": "sc-028",
+      "source": "Nature 论文 s41586-025-08854-x（T3 同行评审作者报告）· 公开摘要",
+      "date": "2025-04-09",
+      "stance": "supports",
+      "url": "https://www.nature.com/articles/s41586-025-08854-x",
+      "text": "Ahmed 等报告一台光子处理器运行了 ResNet、BERT 和 Atari 强化学习负载（作者演示，不代表量产或独立复现）。"
+    },
+    {
+      "source_id": "fr-2026-00789",
+      "excerpt_id": "sc-029",
+      "source": "Federal Register 2026-00789，BIS 最终规则（T1 正式公告）· 91 FR 1685 SUMMARY / DATES",
+      "date": "2026-01-15",
+      "stance": "supports",
+      "url": "https://www.federalregister.gov/documents/2026/01/15/2026-00789/revision-to-license-review-policy-for-advanced-computing-commodities",
+      "text": "BIS 把部分半导体对中国和澳门出口的许可审查政策从「推定拒绝」改为「逐案审查」，覆盖 NVIDIA H200 及同等或更低性能的芯片；规则 2026-01-15 发布并生效。"
+    },
+    {
+      "source_id": "fr-2026-00789",
+      "excerpt_id": "sc-030",
+      "source": "Federal Register 2026-00789，BIS 最终规则（T1 正式公告）· 91 FR 1685 I. Background",
+      "date": "2026-01-15",
+      "stance": "contradicts",
+      "url": "https://www.federalregister.gov/documents/2026/01/15/2026-00789/revision-to-license-review-policy-for-advanced-computing-commodities",
+      "text": "逐案审查只适用于 TPP 低于 21,000 且 total DRAM bandwidth 低于 6,500 GB/s 的先进计算商品（如 NVIDIA H200、AMD MI325X）。"
+    },
+    {
+      "source_id": "fr-2026-00789",
+      "excerpt_id": "sc-031",
+      "source": "Federal Register 2026-00789，BIS 最终规则（T1 正式公告）· 91 FR 1685 I. Background",
+      "date": "2026-01-15",
+      "stance": "contradicts",
+      "url": "https://www.federalregister.gov/documents/2026/01/15/2026-00789/revision-to-license-review-policy-for-advanced-computing-commodities",
+      "text": "申请人须证明美国供应充足、不挤占为美国用户生产同等或更先进芯片的代工产能，对中国和澳门的总出货不超过该产品美国出货的 50%，且每批货出口前经第三方实验室检测。"
+    },
+    {
+      "source_id": "fr-2026-00789",
+      "excerpt_id": "sc-032",
+      "source": "Federal Register 2026-00789，BIS 最终规则（T1 正式公告）· 91 FR 1685 II. Revisions to § 742.6",
+      "date": "2026-01-15",
+      "stance": "contradicts",
+      "url": "https://www.federalregister.gov/documents/2026/01/15/2026-00789/revision-to-license-review-policy-for-advanced-computing-commodities",
+      "text": "对澳门或 D:5 国家组的再出口与境内转让，以及总部在这些地区的实体，许可政策仍是推定拒绝。"
+    },
+    {
+      "source_id": "nvidia-pr-20260531-vera-rubin",
+      "excerpt_id": "sc-033",
+      "source": "NVIDIA 新闻稿（T1 正式公告）· Building the Fabric for Million-GPU AI Factories",
+      "date": "2026-05-31",
+      "stance": "supports",
+      "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Vera-Rubin-Ramps-Into-Full-Production-to-Power-Agentic-AI-Factories-Worldwide/default.aspx",
+      "text": "NVIDIA 称 Spectrum-X Ethernet Photonics（全球首款 200Gb/s SerDes 的共封装光学 CPO 交换机）已经投产，CoreWeave、Lambda、OCI 是首批采用者。"
+    },
+    {
+      "source_id": "tsmc-pr-20260423-symposium",
+      "excerpt_id": "sc-034",
+      "source": "TSMC 新闻稿（T1 正式公告）· 2026 北美技术论坛 3DFabric 部分",
+      "date": "2026-04-23",
+      "stance": "supports",
+      "url": "https://pr.tsmc.com/english/news/3302",
+      "text": "TSMC（TWSE: 2330, NYSE: TSM）称基于 COUPE 的真正共封装光学方案将于 2026 年在基板上开始生产，功耗效率是可插拔方案的 2 倍、时延降为 1/10。"
+    },
+    {
+      "source_id": "trendforce-20260727-cpo",
+      "excerpt_id": "sc-035",
+      "source": "TrendForce 新闻稿（T3 行业研究机构）· 正文第 1–2 段",
+      "date": "2026-07-27",
+      "stance": "supports",
+      "url": "https://www.trendforce.com/presscenter/news/20260727-13151.html",
+      "text": "据 TrendForce，NVIDIA 已开始向部分合作伙伴出货 Spectrum-X CPO 交换机，Broadcom 51.2T Bailly CPO 交换机已进入量产。"
+    },
+    {
+      "source_id": "trendforce-20260727-cpo",
+      "excerpt_id": "sc-036",
+      "source": "TrendForce 新闻稿（T3 行业研究机构）· 正文",
+      "date": "2026-07-27",
+      "stance": "contradicts",
+      "url": "https://www.trendforce.com/presscenter/news/20260727-13151.html",
+      "text": "TrendForce 预计 CPO 交换机市场到 2027–2028 年才进入放量期，光引擎良率、散热和先进封装产能是扩张瓶颈。"
+    },
+    {
+      "source_id": "trendforce-20260615-optical",
+      "excerpt_id": "sc-037",
+      "source": "TrendForce 新闻稿（T3 行业研究机构）· 正文",
+      "date": "2026-06-15",
+      "stance": "contradicts",
+      "url": "https://www.trendforce.com/presscenter/news/20260615-13098.html",
+      "text": "TrendForce 预计 CPO/NPO 市场 2030 年超过 $39 billion，但称技术复杂度可能让 CPO 普及耗时更久，可插拔光模块 2030 年仍有近 $26 billion。"
+    },
+    {
+      "source_id": "thirdbridge-20260617-optics",
+      "excerpt_id": "sc-038",
+      "source": "Third Bridge 分析（T3 专家网络研究）· Section 1",
+      "date": "2026-06-17",
+      "stance": "contradicts",
+      "url": "https://www.thirdbridge.com/en-us/about-us/media/perspectives/is-optical-connectivity-ais-next-bottleneck",
+      "text": "Third Bridge 预计 2026 年传统可插拔光模块仍是主流，CPO 稳定的商业拐点不太可能早于 2027 年下半年。"
+    },
+    {
+      "source_id": "lumentum-8k-20260811",
+      "excerpt_id": "sc-039",
+      "source": "Lumentum FY2026 Q4 业绩新闻稿，SEC 8-K Ex.99.1（T1 正式公告）· CEO 引述",
+      "date": "2026-08-11",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001633978/000162828026055726/lite_ex991xq4fy26.htm",
+      "text": "Lumentum（NASDAQ: LITE）CEO 称超高功率 CPO 激光器需求在增加，并拿到首笔外置光源（ELS）模块订单；当季收入 $1.01 billion。"
+    },
+    {
+      "source_id": "lumentum-8k-20260302-nvidia",
+      "excerpt_id": "sc-040",
+      "source": "NVIDIA 与 Lumentum 联合新闻稿，SEC 8-K Ex.99.1（T1 正式公告）· 第 2 段",
+      "date": "2026-03-02",
+      "stance": "supports",
+      "url": "https://www.sec.gov/Archives/edgar/data/1633978/000119312526085412/d41019dex991.htm",
+      "text": "NVIDIA（NASDAQ: NVDA）对 Lumentum（NASDAQ: LITE）做出数十亿美元采购承诺，取得先进激光器件的未来产能使用权，并投资 $2 billion。"
+    },
+    {
+      "source_id": "tower-pr-20260804",
+      "excerpt_id": "sc-041",
+      "source": "Tower Semiconductor 2026 Q2 业绩新闻稿（T1 正式公告）· CEO 引述",
+      "date": "2026-08-04",
+      "stance": "supports",
+      "url": "https://towersemi.com/2026/08/04/08042026/",
+      "text": "Tower Semiconductor（NASDAQ/TASE: TSEM）称硅光收入年化规模从 2025 Q2 的 $180 million 增至 2026 Q2 的 $680 million，计划 2026 Q4 超过 $1 billion。"
+    },
+    {
+      "source_id": "broadcom-pr-20251010-davisson",
+      "excerpt_id": "sc-042",
+      "source": "Broadcom 新闻稿（T1 正式公告，经 MarketScreener 转载；原站未直接读到）· 开篇与产品要点",
+      "date": "2025-10-10",
+      "stance": "supports",
+      "url": "https://in.marketscreener.com/news/broadcom-announces-tomahawk-6-davisson-the-industry-s-first-102-4-tbps-ethernet-switch-with-co-pa-ce7d5adad189f026",
+      "text": "Broadcom（NASDAQ: AVGO）称已开始出货 102.4T CPO 交换机 Tomahawk 6 - Davisson，光引擎基于 TSMC COUPE，采用可现场更换的 ELSFP 激光模块。"
+    },
+    {
+      "source_id": "convergedigest-20260305-openlight",
+      "excerpt_id": "sc-043",
+      "source": "Converge Digest（T3 行业媒体）· 正文第 1–3 段",
+      "date": "2026-03-05",
+      "stance": "contradicts",
+      "url": "https://convergedigest.com/openlight-begins-production-for-800g-and-1-6t-laser-integrated-pics/",
+      "text": "OpenLight 的片上异质集成激光 PIC 已获首批量产订单，面向 DSP 光模块与 LPO 可插拔：集成激光是外置激光之外的另一条路线（目前不是 CPO）。"
+    },
+    {
+      "source_id": "fr-2025-00636",
+      "excerpt_id": "sc-044",
+      "source": "Federal Register 2025-00636「Framework for Artificial Intelligence Diffusion」（T1 正式公告）· SUMMARY / DATES / ECCN 4E091",
+      "date": "2025-01-15",
+      "stance": "contradicts",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-15/html/2025-00636.htm",
+      "text": "BIS 的 AI Diffusion 规则新增对闭源 AI 模型权重的管制（ECCN 4E091，训练算力 10^26 次运算及以上），2025-01-13 生效，合规日 2025-05-15。"
+    },
+    {
+      "source_id": "bis-pr-20250513-rescission",
+      "excerpt_id": "sc-045",
+      "source": "BIS 新闻稿（T1 正式公告）· 正文",
+      "date": "2025-05-13",
+      "stance": "supports",
+      "url": "https://www.bis.gov/press-release/department-commerce-announces-rescission-biden-era-artificial-intelligence-diffusion-rule-strengthens",
+      "text": "BIS 宣布已指示执法人员不执行 AI Diffusion 规则，并计划发布正式撤销的法规、未来另出替代规则。"
+    },
+    {
+      "source_id": "gao-b-337935",
+      "excerpt_id": "sc-046",
+      "source": "GAO 决定 B-337935（T1 正式公告）· 结论",
+      "date": "2026-05-12",
+      "stance": "contradicts",
+      "url": "https://www.gao.gov/products/b-337935",
+      "text": "GAO 认定 BIS 不执行 AI Diffusion 规则的新闻稿属于 CRA 意义上的规则，并称商务部尚未发布正式撤销的法规：规则文本在形式上仍未删除。"
+    },
+    {
+      "source_id": "bloomberg-20260313-draft-rule",
+      "excerpt_id": "sc-047",
+      "source": "Bloomberg（T2 通讯社，经 Yahoo Finance 转载）· 正文",
+      "date": "2026-03-13",
+      "stance": "supports",
+      "url": "https://sg.finance.yahoo.com/news/us-withdraws-draft-rule-calling-184957331.html",
+      "text": "据 Bloomberg，美国商务部撤回了一份要求对 Nvidia、AMD 的 AI 芯片出口逐案审查的全球许可规则草案，并称不会回到 AI Diffusion 框架。"
+    },
+    {
+      "source_id": "bis-guidance-20260531",
+      "excerpt_id": "sc-048",
+      "source": "BIS 指引（T1 正式公告）· 第 1–3 段",
+      "date": "2026-05-31",
+      "stance": "contradicts",
+      "url": "https://www.bis.gov/media/documents/bis-guidance-may-31-2026.pdf",
+      "text": "BIS 澄清：向总部（或最终母公司）在 D:5 国家组或澳门的实体出口先进计算物项仍需许可证，即使这些实体位于境外。"
+    },
+    {
+      "source_id": "bis-pr-20260710-uae",
+      "excerpt_id": "sc-049",
+      "source": "BIS 新闻稿（T1 正式公告）· 正文",
+      "date": "2026-07-10",
+      "stance": "supports",
+      "url": "https://www.bis.gov/press-release/department-commerce-eases-export-controls-uae",
+      "text": "美国商务部批准阿联酋政府和部分公司在阿联酋境内免许可证获得先进计算物项（含芯片和服务器）。"
+    },
+    {
+      "source_id": "nvda-8k-20250415-h20",
+      "excerpt_id": "sc-050",
+      "source": "NVIDIA Form 8-K Item 8.01（T1 正式公告）",
+      "date": "2025-04-15",
+      "stance": "contradicts",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000082/nvda-20250409.htm",
+      "text": "NVIDIA 披露美国政府要求 H20 出口到中国（含香港、澳门）和 D:5 国家须获许可证且无限期有效，预计相关费用最多约 $5.5 billion。"
+    },
+    {
+      "source_id": "nvda-10q-fy2027q1",
+      "excerpt_id": "sc-051",
+      "source": "NVIDIA FY2027 Q1 Form 10-Q（T1 正式公告）· MD&A Recent Developments",
+      "date": "2026-05-20",
+      "stance": "contradicts",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000052/nvda-20260426.htm",
+      "text": "NVIDIA 称已获许可向特定中国客户少量出货 H200，但截至披露时该许可计划尚未产生收入，且出货须缴 25% 关税。"
+    },
+    {
+      "source_id": "coherent-pr-20260317-ofc",
+      "excerpt_id": "sc-052",
+      "source": "Coherent 新闻稿（T1 正式公告）· OFC 2026 展示",
+      "date": "2026-03-17",
+      "stance": "supports",
+      "url": "https://www.coherent.com/news/press-releases/coherent-co-packaged-optics-cpo-technologies-ofc-2026",
+      "text": "Coherent（NYSE: COHR）在 OFC 2026 展示 6.4T 硅光 CPO，配套自家外置光源（ELS）模块，由自产高功率 InP CW 激光器驱动（是展示，不是订单）。"
+    }
+  ]
+}
