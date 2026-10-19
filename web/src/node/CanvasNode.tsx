@@ -23,6 +23,8 @@ export interface CanvasData extends Record<string, unknown> {
   reapprove: boolean; // 结论：这份计划的前提变了，要重新批准
   canEdit: boolean; // 显示铅笔（非结论节点；选中时或是前提假设时）
   editing: boolean;
+  editText?: string; // 编辑框的初始文字（后端拒绝后带回用户写的）
+  pendingText?: string; // 已提交、后端在重算：先显示用户的新说法
   busy: boolean;
   onEditStart?: () => void;
   onEditCommit?: (text: string) => void;
@@ -31,7 +33,7 @@ export interface CanvasData extends Record<string, unknown> {
 
 function EditBox({ initial, busy, onCommit, onCancel }: { initial: string; busy: boolean; onCommit: (t: string) => void; onCancel: () => void }) {
   const [text, setText] = useState(initial);
-  const ok = text.trim() && text.trim() !== initial.trim();
+  const ok = !!text.trim();
   return (
     <div className="cn-edit nodrag nopan" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
       <textarea autoFocus value={text} rows={3} placeholder={T.edit.placeholder} onChange={(e) => setText(e.target.value)}
@@ -48,7 +50,7 @@ function EditBox({ initial, busy, onCommit, onCancel }: { initial: string; busy:
 }
 
 export default function CanvasNode({ data, selected }: NodeProps<Node<CanvasData>>) {
-  const { claim, label, s, kind, isKey, dimmed, assessment, changed, reapprove, canEdit, editing, busy } = data;
+  const { claim, label, s, kind, isKey, dimmed, assessment, changed, reapprove, canEdit, editing, busy, editText, pendingText } = data;
   const Icon = TYPE_ICON[claim.role];
   const terminal = claim.role === 'terminal';
   const ticker = claim.instruments[0];
@@ -56,10 +58,11 @@ export default function CanvasNode({ data, selected }: NodeProps<Node<CanvasData
   const style = {
     borderStyle: kind ? LINE[kind].border : 'solid',
     opacity: faded && !editing ? 0.3 : 1,
-    outline: changed ? '2px solid #2f6fed' : selected ? '2px solid #2f6fed80' : undefined,
+    outline: changed || pendingText ? '2px solid #2f6fed' : selected ? '2px solid #2f6fed80' : undefined,
     outlineOffset: 3,
   } as const;
-  const flag = changed ? <span className="cn-flag mine">{T.edit.yourEdit}</span>
+  const flag = pendingText ? <span className="cn-flag mine">{T.pending.flag}</span>
+    : changed ? <span className="cn-flag mine">{T.edit.yourEdit}</span>
     : assessment === 'challenged' ? <span className="cn-flag hit">{T.edit.challenged}</span>
     : assessment === 'unresolved' ? <span className="cn-flag">{T.edit.unresolved}</span> : null;
 
@@ -78,7 +81,8 @@ export default function CanvasNode({ data, selected }: NodeProps<Node<CanvasData
         )}
       </div>
       {editing
-        ? <EditBox initial={claim.statement} busy={busy} onCommit={(t) => data.onEditCommit?.(t)} onCancel={() => data.onEditCancel?.()} />
+        ? <EditBox initial={editText ?? claim.statement} busy={busy} onCommit={(t) => data.onEditCommit?.(t)} onCancel={() => data.onEditCancel?.()} />
+        : pendingText ? <div className="gn-title" title={pendingText}>{pendingText}</div>
         : <div className="gn-title" title={claim.statement}>{label}</div>}
       <div className="gn-foot">
         <Evidence s={s} />

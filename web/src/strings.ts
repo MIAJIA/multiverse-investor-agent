@@ -453,4 +453,9 @@ export const T = {
       other: (raw: string) => `后端拒绝了这次修改：${raw}`,
     },
   },
+  pending: {
+    cause: '正在加进图里，后端在重算受它影响的部分…',
+    edit: '正在按你的修改重算…',
+    flag: '重算中',
+  },
 } as const;

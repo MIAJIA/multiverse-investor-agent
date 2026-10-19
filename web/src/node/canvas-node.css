@@ -53,3 +53,4 @@
 .cn-muted { font-size: 11.5px; color: #8a919c; }
 .cn-drag { text-align: center; margin-top: 4px; }
 .cn-source.react-flow__handle { width: 14px; height: 14px; background: #2f6fed; border: 2px solid #fff; box-shadow: 0 0 0 1px #2f6fed; bottom: -8px; }
+.cn-draft.frozen { border-style: solid; box-shadow: 0 0 0 4px #2f6fed1f; }
