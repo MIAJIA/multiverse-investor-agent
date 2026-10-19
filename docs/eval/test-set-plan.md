@@ -97,9 +97,11 @@ Leak check `only_allowed_excerpts_cited`: citing any excerpt or URL outside `all
 ### How grading works
 
 1. Every plan's gate at the decision date is WAIT (`gate_per_plan`).
-2. Outcome observations are mapped onto the model's conditions by series or source name (with `series_aliases`), then the core's `conditions.evaluate` decides each condition on the rule date. Entry is AND (every entry condition met; unknown means the system would still hold off); exit follows the plan's `exit_logic`. A plan passes if any rule holds; the case passes if every plan passes (`backtest_wrong_call` otherwise).
-3. A plan whose conditions match no outcome data at all is recorded as `condition_undecidable`, separately from the pass/fail call.
+2. Outcome data is matched to the model's conditions. The model never sees the outcome data, so it cannot guess our series names; matching therefore works in two steps: an exact name or `series_aliases` match first, otherwise the outcome entry's `match` keywords are searched in the condition's series, source and rule text, and the entry with the most hits wins. Only entries of the same kind are considered (numeric conditions against numeric data; event and document conditions against event data). The core's `conditions.evaluate` then decides each matched condition on the rule date.
+3. Each grading rule has three results. **Decided true**, **decided false**, or **undetermined** (a condition it needs matched no outcome data). Entry is AND: a matched condition that is not met means entry did not happen; if every matched condition is met but some are unmatched, it is undetermined. Exit follows the plan's `exit_logic` the same way. A plan **passes** if a rule is decided true, **fails** (`backtest_wrong_call`, the case is FAIL) only if every rule is decided false, and is otherwise **undetermined**: its unmatched conditions go to human review as "can condition X be decided with outcome data Y?", never as a FAIL.
 4. Leak checks as above.
+
+Re-scoring of the first real Haiku run (haiku-p6m, replayed with the core it was recorded with): R2 pass (the 85.5 ships/day recovery threshold was never met, so no entry), R3 and K3 undetermined (R3: whether "licensed shipments have started" is met is a human call; K3: the Brent price conditions name no series and leave the threshold null). No other case changed.
 
 Human review: is the key dependency the real event or the announcement; is the counter-evidence (R2: hz-010, hz-015; R3: sc-030-032) addressed.
 

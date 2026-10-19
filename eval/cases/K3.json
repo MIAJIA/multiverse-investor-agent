@@ -58,7 +58,18 @@
             "excerpt_id": "op-010"
           }
         ],
-        "note": "month-on-month fall in OPEC crude output in November, as a positive number (0.71 mb/d)"
+        "note": "month-on-month fall in OPEC crude output in November, as a positive number (0.71 mb/d)",
+        "kind": "numeric",
+        "match": [
+          "cut",
+          "reduction",
+          "decline",
+          "survey",
+          "compliance",
+          "curtail",
+          "lower output",
+          "fall in output"
+        ]
       },
       {
         "source": "opec.crude_production_mbd",
@@ -72,6 +83,14 @@
             "value": 29.01,
             "excerpt_id": "op-010"
           }
+        ],
+        "kind": "numeric",
+        "match": [
+          "production level",
+          "crude production",
+          "total production",
+          "produced",
+          "output level"
         ]
       },
       {
@@ -106,7 +125,42 @@
             "value": 76.37,
             "excerpt_id": "op-014"
           }
+        ],
+        "kind": "numeric",
+        "match": [
+          "brent",
+          "price",
+          "spot",
+          "$/bbl",
+          "usd",
+          "futures"
         ]
+      },
+      {
+        "source": "opec.output_decline_published",
+        "kind": "document",
+        "coverage": {
+          "start": "2022-10-05",
+          "end": "2022-12-31"
+        },
+        "records": [
+          {
+            "date": "2022-12-01",
+            "value": null,
+            "excerpt_id": "op-010"
+          }
+        ],
+        "match": [
+          "output data",
+          "production data",
+          "secondary sources",
+          "survey",
+          "published",
+          "reduction",
+          "below october",
+          "decline"
+        ],
+        "note": "A survey showing a month-on-month OPEC output decline (0.71 mb/d) was published on 2022-12-01 (op-010). Whether a condition's own size threshold in its rule text was met stays with human review."
       }
     ],
     "series_aliases": {
@@ -129,7 +183,8 @@
         "RBRTE",
         "brent.spot"
       ]
-    }
+    },
+    "matching_note": "Conditions are matched to outcome data by name or alias first, then by the match keywords against the condition's series, source and rule text (same kind only). Unmatched conditions go to human review, not FAIL."
   },
   "expected": {
     "gate": "WAIT",

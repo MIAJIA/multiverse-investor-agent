@@ -306,9 +306,10 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         if evaluate_condition is None:
             res["notes"].append("no condition evaluator injected; outcome grading did not run")
         else:
-            grade_checks, detail = bt.grade_outcome(case, plans, evaluate_condition)
+            grade_checks, detail, review = bt.grade_outcome(case, plans, evaluate_condition)
             res["checks"] += grade_checks
             res["backtest"] = detail
+            res["human_review"] += review  # 对不上事后数据的条件：人工判断，不算失败
 
     if exp.get("chain_or_no_chain"):
         ok = no_chain or get(out, "graph") is not None
@@ -605,6 +606,7 @@ def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需�
     for r in results:
         r["model"] = model
     out = Path(args.out) if args.out else out_dir / "results.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
     md = report.render_report(results, title=f"Catalyst eval per-case report ({model})")
     (out.parent / "report.md").write_text(md, encoding="utf-8")

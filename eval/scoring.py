@@ -32,7 +32,7 @@ FAILURE_TYPES = {
     "baseline_retained_fail": "baseline version not retained",
     "forced_chain": "built an evidenced chain where the pack has no basis",
     "citation_laundering": "cited an excerpt as support for a claim it does not support",
-    "condition_undecidable": "condition cannot be decided by data (missing fields, or no match to the outcome data)",
+    "condition_undecidable": "condition is missing the fields needed to decide it with data",
     "exit_logic_wrong": "exit conditions not declared as ANY, or too few",
     "relative_anchor_invented": "relative time window anchored on an invented date",
     "missing_plan_for_target": "no plan for the expected instrument",

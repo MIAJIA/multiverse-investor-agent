@@ -71,7 +71,18 @@
             "excerpt_id": "hz-011"
           }
         ],
-        "note": "Only the peak is a single-day value; the ~24/day average is a range mean and cannot be a daily record. Full daily data needs a PortWatch export from the evidence line."
+        "note": "Only the peak is a single-day value; the ~24/day average is a range mean and cannot be a daily record. Full daily data needs a PortWatch export from the evidence line.",
+        "kind": "numeric",
+        "match": [
+          "transit",
+          "transits",
+          "portwatch",
+          "ships",
+          "vessels",
+          "vessel",
+          "passage",
+          "tanker traffic"
+        ]
       },
       {
         "source": "hormuz.closure_or_attack",
@@ -85,7 +96,47 @@
             "value": null,
             "excerpt_id": "hz-012"
           }
+        ],
+        "kind": "event",
+        "match": [
+          "closure",
+          "closed",
+          "re-clos",
+          "reclos",
+          "attack",
+          "strike",
+          "irgc",
+          "blockade",
+          "mine",
+          "hostil",
+          "military",
+          "seiz"
         ]
+      },
+      {
+        "source": "hormuz.official_reopening_notice",
+        "kind": "event",
+        "coverage": {
+          "start": "2026-06-01",
+          "end": "2026-09-30"
+        },
+        "records": [
+          {
+            "date": "2026-06-20",
+            "value": null,
+            "excerpt_id": "hz-008"
+          }
+        ],
+        "match": [
+          "official notice",
+          "reopening",
+          "reopened",
+          "jmic",
+          "commercial transit",
+          "is open",
+          "declared open"
+        ],
+        "note": "JMIC advisory declaring the strait open (hz-008). A fact before the decision date, included so conditions about the notice can be judged."
       }
     ],
     "series_aliases": {
@@ -93,7 +144,8 @@
         "PortWatch Hormuz daily transits",
         "portwatch.hormuz.transits"
       ]
-    }
+    },
+    "matching_note": "Conditions are matched to outcome data by name or alias first, then by the match keywords against the condition's series, source and rule text (same kind only). Unmatched conditions go to human review, not FAIL."
   },
   "expected": {
     "gate": "WAIT",
