@@ -1050,7 +1050,8 @@
           ],
           "next_checks": [
             "下一步查证：主要厂商 2027 年量产 CPO 是否确实采用集成激光（正式披露），而不是在研路线"
-          ]
+          ],
+          "root_version": "c1-v1"
         },
         "support_status": "challenged",
         "graph_version": "c1-v2",
@@ -1095,7 +1096,8 @@
           "c1.assume.external_laser": "这是被改的假设本身：情景下改为集成激光",
           "c1.laser_demand": "外置光源需求以「每个 CPO 端口需要外置光源」为前提；改用集成激光后这条前提不成立",
           "c1.term.laser_vendor": "激光器供应商的营收超预期来自外置光源需求；上游前提受挑战，这个终点随之受挑战"
-        }
+        },
+        "root_version": "c1-v1"
       },
       "diff": {
         "nodes_changed": [
@@ -1716,7 +1718,8 @@
           ],
           "next_checks": [
             "下一步查证：停产时长与替代产能；激光器与 DSP 路径不受这次冲击挑战"
-          ]
+          ],
+          "root_version": "c1-v1"
         },
         "support_status": "supported",
         "graph_version": "c1-v3",
@@ -1787,7 +1790,8 @@
           "shock.siph_fab_outage": "这是加进来的冲击本身：假设，未观测",
           "c1.siph_foundry": "主力产线停产一个季度，代工利用率提升这一前提受挑战",
           "c1.term.foundry": "利用率前提受挑战，硅光代工营收占比上升至少推迟一个季度"
-        }
+        },
+        "root_version": "c1-v1"
       },
       "diff": {
         "nodes_changed": [
@@ -2404,14 +2408,17 @@
         "scenario_ref": {
           "base_version": "c1-v2",
           "challenged_claim_ids": [
+            "c1.laser_demand",
             "c1.siph_foundry",
-            "c1.term.foundry"
+            "c1.term.foundry",
+            "c1.term.laser_vendor"
           ],
           "next_checks": [
             "下一步查证：停产时长与替代产能；激光器与 DSP 路径不受这次冲击挑战"
-          ]
+          ],
+          "root_version": "c1-v1"
         },
-        "support_status": "supported",
+        "support_status": "challenged",
         "graph_version": "c1-v4",
         "meta": {
           "proposal_version": "c1-v4.p",
@@ -2429,6 +2436,14 @@
         "version": "c1-v4",
         "base_version": "c1-v2",
         "ops": [
+          {
+            "kind": "change_assumption",
+            "target": "c1.assume.external_laser",
+            "value": "主流 CPO 方案改用集成激光，不再需要外置光源",
+            "impacts": [],
+            "new_nodes": [],
+            "new_edges": []
+          },
           {
             "kind": "add_shock",
             "target": "shock.siph_fab_outage",
@@ -2468,19 +2483,23 @@
           "c1.assume.capex": "unaffected",
           "c1.assume.external_laser": "unaffected",
           "c1.cpo_ramp": "unaffected",
-          "c1.laser_demand": "unaffected",
+          "c1.laser_demand": "challenged",
           "c1.siph_foundry": "challenged",
           "c1.pluggable_dsp": "unaffected",
-          "c1.term.laser_vendor": "unaffected",
+          "c1.term.laser_vendor": "challenged",
           "c1.term.foundry": "challenged",
           "c1.term.dsp_vendor": "unaffected",
           "shock.siph_fab_outage": "unaffected"
         },
         "assessment_reason": {
+          "c1.assume.external_laser": "这是被改的假设本身：情景下改为集成激光",
+          "c1.laser_demand": "外置光源需求以「每个 CPO 端口需要外置光源」为前提；改用集成激光后这条前提不成立",
+          "c1.term.laser_vendor": "激光器供应商的营收超预期来自外置光源需求；上游前提受挑战，这个终点随之受挑战",
           "shock.siph_fab_outage": "这是加进来的冲击本身：假设，未观测",
           "c1.siph_foundry": "主力产线停产一个季度，代工利用率提升这一前提受挑战",
           "c1.term.foundry": "利用率前提受挑战，硅光代工营收占比上升至少推迟一个季度"
-        }
+        },
+        "root_version": "c1-v1"
       },
       "diff": {
         "nodes_changed": [
