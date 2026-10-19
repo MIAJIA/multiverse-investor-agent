@@ -137,6 +137,8 @@ CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run D1 --live      
 CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run C2 --live --online   # with web search
 .venv/bin/python -m eval.runner --record eval/out/<name>                               # all cases, both groups
 .venv/bin/python -m eval.runner --replay eval/results/haiku-p7 --today 2026-10-19      # re-score the recorded run, no API key
+# Note: the p7 recording predates p8, which sends every grounded and hypothesis Discover candidate to Inspect. Under the
+# current code the discover-entry cases C1, D1 and their probes P3, P4 stop with CassetteMiss until they are re-recorded.
 CATALYST_JUDGE_MODEL=claude-sonnet-5-5 .venv/bin/python -m eval.judge eval/results/haiku-p7/results.json --record eval/results/haiku-p7/judge   # LLM judge (or --replay)
 .venv/bin/python -m eval.scorecard --readme README.md eval/results/haiku-p6m/scorecard.json eval/results/haiku-p7/scorecard-offline.json eval/results/haiku-p7/scorecard.json   # refresh the scorecard table
 .venv/bin/python -m catalyst.api                      # HTTP API on :8000
