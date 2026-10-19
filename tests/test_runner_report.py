@@ -78,3 +78,21 @@ def test_committed_sample_results_render():
     path = EVAL_DIR / "sample_results.json"
     md = report.render_report(json.loads(path.read_text(encoding="utf-8")))
     assert "## pipeline 组" in md and "## baseline 组" in md and "## 两组对照" in md
+
+
+def test_abstain_before_inspect_is_not_silently_pending():
+    """D1 期望走完 Discover → Inspect；Discover 弃权时要明确记下没跑到提案，而不是只剩「待复核」。"""
+    class AbstainAll(FakeEntrypoints):
+        def discover(self, event, target=None, **kw):
+            return {"candidates": [], "abstained": True, "abstain_reason": "fake", "observations": []}
+    r = run_case(load_case("D1"), "pipeline", reasoner=FakeReasoner(), evidence=FakeEvidence(), entrypoints=AbstainAll())
+    assert r["status"] == "FAIL" and "missing_proposal" in r["failure_types"]
+    reasoner = FakeReasoner(default=json.dumps({"abstained": True, "candidates": []}))
+    b = run_case(load_case("D1"), "baseline", reasoner=reasoner, evidence=FakeEvidence())
+    assert b["status"] == "FAIL" and "missing_proposal" in b["failure_types"]
+
+
+def test_baseline_no_chain_skips_condition_checks_like_pipeline():
+    reasoner = FakeReasoner(default=json.dumps({"no_chain": True, "chain": [], "conditions": []}))
+    r = run_case(load_case("C2"), "baseline", reasoner=reasoner, evidence=FakeEvidence())
+    assert r["status"] == "PENDING_REVIEW", r["checks"]
