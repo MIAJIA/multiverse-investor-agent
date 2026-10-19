@@ -46,3 +46,12 @@
 - [x] 本文件全部勾选
 - [x] commit：实现
 - [x] 在共享笔记目录留交接说明
+
+## 8. 与核心对齐（核心 core-schema@64024cc）
+- [x] D2 改判 met：`condition_cases.json` T3 → met，新增 T7（窗口内有记录 → not_met）；INTERFACE.md、test-plan 同步
+- [x] E3 哈希先规范化：`tests/_graph.element_hashes(graph, normalize=...)`，test_fork 两边都过 `_adapter.canonical_graph`（`parse_graph(d).dump()`）
+- [x] runner：三个入口都传 `packs`；资料包未交付时注入合成包；Discover 之后传 `candidate=pick`；fork 用核心回传的 `base_graph` 做哈希基线；`ok=False` 记 structured_failure；baseline 用同一份 pack 列表
+- [x] fakes：没有输出 confirmed / confirmed_claim_ids / probability，无需删；新增实现 `complete` 协议的 ScriptedReasoner
+- [x] `tests/test_runner_core.py`：runner 对真实核心入口的契约测试
+- [x] 测试：有核心 84 passed；无核心 35 passed、5 skipped（Python 3.9 / 3.14）
+- [x] commit（不 push）

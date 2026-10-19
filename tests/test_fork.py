@@ -1,6 +1,7 @@
 """E3 Non-interference（依赖核心）。设计规则见 docs/eval/test-plan.md A3。
 
-哈希由测试自己算（tests/_graph.py），不信任核心自报。
+哈希由测试自己算（tests/_graph.py），不信任核心自报；算之前两边都过 schema 规范化
+（_adapter.canonical_graph = parse_graph(d).dump()），手写 fixture 省略的默认字段不算改动。
 """
 import copy
 
@@ -23,7 +24,8 @@ OUT_OF_SCOPE = [
 
 
 def _assert_out_of_scope_unchanged(base: dict, new: dict, scope: dict):
-    before, after = element_hashes(base), element_hashes(new)
+    before = element_hashes(base, normalize=_adapter.canonical_graph)
+    after = element_hashes(new, normalize=_adapter.canonical_graph)
     for kind in ("nodes", "edges", "conditions"):
         for elem_id, h in before[kind].items():
             if elem_id in scope[kind]:
@@ -49,6 +51,7 @@ def test_in_scope_patch_keeps_everything_else(kind):
     _assert_out_of_scope_unchanged(BASE, new, fx["expected_scope"])
     # 基线版本仍在：输入没有被原地修改；新图是新版本
     assert base == BASE, "apply_patch 原地修改了基线图"
+    assert element_hashes(base, _adapter.canonical_graph) == element_hashes(BASE, _adapter.canonical_graph)
     assert new["version"] != BASE["version"]
     assert new["parent_version"] == BASE["version"]
     # AddShock 只新增经 Stage 1 识别的节点与边

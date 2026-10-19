@@ -15,7 +15,7 @@ import traceback
 from typing import Any, Callable, Protocol
 
 from eval import scoring
-from eval.loader import load_all_cases, load_fixture
+from eval.loader import FIXTURES_DIR, load_all_cases, load_fixture, load_json
 from eval.scoring import check, get
 
 GROUPS = ("pipeline", "baseline")
@@ -50,7 +50,7 @@ def _result(case: dict, group: str) -> dict:
         "case_id": case["id"], "group": group, "case_type": case["type"], "title": case.get("title", ""),
         "entry": case["entry"], "evals": case.get("evals", []),
         "expected": _expected_summary(case), "actual": {}, "status": None,
-        "failure_types": [], "retrieval": None, "checks": [],
+        "failure_types": [], "retrieval": None, "checks": [], "notes": [],
         "human_review": list(case.get("human_review", [])),
     }
 
@@ -101,15 +101,70 @@ def _kind_checks(case: dict, conditions: list[dict]) -> list[dict]:
     return checks
 
 
+# ---- 资料包 --------------------------------------------------------------------
+
+def fixture_packs() -> dict[str, dict]:
+    """eval/fixtures 下的合成资料包（顶层就是 pack，或 golden 文件里的 evidence_pack 字段）。"""
+    found: dict[str, dict] = {}
+    for f in sorted(FIXTURES_DIR.glob("*.json")):
+        data = load_json(f)
+        for pack in (data, data.get("evidence_pack") if isinstance(data, dict) else None):
+            if isinstance(pack, dict) and "pack_id" in pack and "excerpts" in pack:
+                found.setdefault(pack["pack_id"], {k: v for k, v in pack.items() if not k.startswith("_")})
+    return found
+
+
+def prepare_packs(case: dict, evidence: Any) -> tuple[list[str], list[str]]:
+    """本案例实际可用的 pack 列表 + 说明。两个组用同一份列表，保证「同一资料」。
+
+    真实 pack 优先；还没交付时，若 evidence 支持 register，就注入同 pack_id 的合成包，并在说明里写明。
+    """
+    packs, notes = [], []
+    if evidence is None:
+        wanted = case.get("input", {}).get("evidence_packs", [])
+        return [], [f"没有注入 Evidence Provider，资料包 {wanted} 都没带"] if wanted else []
+    synthetic = None
+    for pid in case.get("input", {}).get("evidence_packs", []):
+        try:
+            evidence.load_pack(pid)
+            packs.append(pid)
+            continue
+        except (FileNotFoundError, KeyError):
+            pass
+        synthetic = fixture_packs() if synthetic is None else synthetic
+        if pid in synthetic and hasattr(evidence, "register"):
+            evidence.register(synthetic[pid])
+            packs.append(pid)
+            notes.append(f"资料包 {pid} 还没交付，用 eval/fixtures 里的合成占位片段代替（只验证流程，不验证推理）")
+        else:
+            notes.append(f"资料包 {pid} 不存在，本轮两个组都不带它")
+    return packs, notes
+
+
+def _structured_ok(res: dict, stage: str, out: Any) -> bool:
+    """核心入口在重试上限内没产出合法输出时返回 ok=False + errors；记成结构化失败。"""
+    if get(out, "ok", True) is False:
+        errs = get(out, "errors") or []
+        res["checks"].append(check(f"{stage}:structured_output", "—", False,
+                                   "; ".join(map(str, errs))[:300], "structured_failure"))
+        return False
+    return True
+
+
 # ---- pipeline 组 --------------------------------------------------------------
 
 def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidence: Any) -> None:
-    kw = {"reasoner": reasoner, "evidence": evidence}
+    packs, notes = prepare_packs(case, evidence)
+    res["notes"] += notes
+    kw = {"reasoner": reasoner, "evidence": evidence, "packs": packs}
     exp = case["expected"]
     inp = case["input"]
 
     if case["type"] == "causalt5k":
         out = ep.inspect(inp["event"], inp.get("target"), material=inp["material"], judgment_only=True, **kw)
+        if not _structured_ok(res, "judge", out):
+            res["actual"] = {"label": None}
+            return
         judgment = get(out, "judgment") or {}
         label = (get(judgment, "label") or "").upper() or None
         res["actual"] = {"label": label, "rationale": get(judgment, "rationale"), "no_chain": get(out, "no_chain")}
@@ -128,6 +183,8 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
     proposal = None
     if case["entry"] == "discover":
         d = ep.discover(inp["event"], None, **kw)
+        if not _structured_ok(res, "discover", d):
+            return
         cands = list(get(d, "candidates") or [])
         observations += list(get(d, "observations") or [])
         labels = [get(c, "label") for c in cands]
@@ -148,9 +205,12 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         if not cands:
             return
         pick = next((c for c in cands if get(c, "label") == "grounded"), cands[0])
-        out = ep.inspect(inp["event"], None, candidate_id=get(pick, "id"), **kw)
+        # 传整个候选，不只传 id：Inspect 要知道用户选中的方向是什么
+        out = ep.inspect(inp["event"], None, candidate_id=get(pick, "id"), candidate=scoring.to_plain(pick), **kw)
     else:
         out = ep.inspect(inp["event"], inp.get("target"), **kw)
+    if not _structured_ok(res, "inspect", out):
+        return
 
     observations += list(get(out, "observations") or [])
     proposal = get(out, "proposal")
@@ -181,13 +241,19 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
 
 
 def _run_fork(case: dict, res: dict, ep: Entrypoints, kw: dict) -> None:
-    base = load_fixture(case["input"]["base_graph_fixture"])
+    fixture_base = {k: v for k, v in load_fixture(case["input"]["base_graph_fixture"]).items() if not k.startswith("_")}
     parts = []
     for fx_name in case["input"]["forks"]:
         fx = load_fixture(fx_name)
         tag = fx["op"]["kind"]
-        out = ep.fork(copy.deepcopy(base), copy.deepcopy(fx["op"]), **kw)
+        out = ep.fork(copy.deepcopy(fixture_base), copy.deepcopy(fx["op"]), **kw)
+        if not _structured_ok(res, tag, out):
+            parts.append(f"{tag}: 结构化失败")
+            continue
         new = scoring.to_plain(get(out, "graph"))
+        # 哈希比对两边都用核心的规范形式：基线取核心回传的 base_graph（parse_graph(d).dump()），
+        # 不直接哈希手写 fixture，否则省略的默认字段会被误判成改动
+        base = scoring.to_plain(get(out, "base_graph")) or fixture_base
         scope = scoring.to_plain(get(out, "scope")) or {}
         ni = scoring.non_interference(base, new, fx["expected_scope"])
         res["checks"].append(check(f"{tag}:out_of_scope_hash_unchanged", "E3", ni["passed"],
@@ -198,7 +264,7 @@ def _run_fork(case: dict, res: dict, ep: Entrypoints, kw: dict) -> None:
                                    json.dumps(scope, ensure_ascii=False, default=list), "scope_violation"))
         base_back = get(out, "base_graph")
         res["checks"].append(check(f"{tag}:baseline_retained", "E3",
-                                   base_back is not None and get(base_back, "version") == base["version"],
+                                   base_back is not None and get(base_back, "version") == fixture_base["version"],
                                    failure_type="baseline_retained_fail"))
         assessment = get(get(out, "scenario") or {}, "assessment") or {}
         impact = scoring.expected_impact(assessment, fx["expected_challenged"])
@@ -221,7 +287,7 @@ BASELINE_INSTRUCTIONS = {
 }
 
 
-def build_baseline_prompt(case: dict, evidence: Evidence | None) -> str:
+def build_baseline_prompt(case: dict, evidence: Evidence | None, packs: list[str] | None = None) -> str:
     inp = case["input"]
     kind = "causalt5k" if case["type"] == "causalt5k" else case["entry"]
     lines = [BASELINE_INSTRUCTIONS[kind], "", f"事件 / 断言：{inp['event']}"]
@@ -229,13 +295,21 @@ def build_baseline_prompt(case: dict, evidence: Evidence | None) -> str:
         lines.append(f"目标标的：{inp['target']}")
     if inp.get("material"):
         lines += ["", "材料：", inp["material"]]
-    for pack in inp.get("evidence_packs", []):
+    for pack in (packs if packs is not None else inp.get("evidence_packs", [])):
         if pack == "web" or evidence is None:
             continue
         lines += ["", f"资料包 {pack}："]
         for ex in evidence.load_pack(pack):
             lines.append(f"[{ex['excerpt_id']}] {ex.get('date', '')} {ex.get('source', '')}（{ex.get('stance', '')}）：{ex['text']}")
     return "\n".join(lines)
+
+
+def single_prompt(reasoner: Any, prompt: str) -> str:
+    """同一个 reasoner 做单次 prompt：优先 single_prompt；没有时退回 complete（无 schema 约束）。"""
+    if hasattr(reasoner, "single_prompt"):
+        return reasoner.single_prompt(prompt)
+    out = reasoner.complete(stage="baseline", system="", user=prompt, schema={"type": "object"})
+    return get(out, "text", out)
 
 
 def _parse_json(text: str) -> dict:
@@ -253,7 +327,9 @@ def _run_baseline(case: dict, res: dict, reasoner: Reasoner, evidence: Evidence 
         res["actual"] = {"summary": "单次 prompt 没有可比的写范围"}
         res["human_review"] = []
         return
-    raw = reasoner.single_prompt(build_baseline_prompt(case, evidence))
+    packs, notes = prepare_packs(case, evidence)
+    res["notes"] += notes
+    raw = single_prompt(reasoner, build_baseline_prompt(case, evidence, packs))
     try:
         out = _parse_json(raw)
     except (ValueError, json.JSONDecodeError):

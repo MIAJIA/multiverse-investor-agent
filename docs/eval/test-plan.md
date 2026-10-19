@@ -23,13 +23,14 @@
 
 ### A2 条件时间语义与 Condition 校验 · `tests/test_conditions.py`
 
-设计规则：not_observed_by 只有在 observation_window 已结束且来源覆盖该窗口时才给 not_met，否则 unknown；verifiable ≠ met；null 阈值合法但必须带 threshold_note；deadline 不早于 anchor。fixture：`condition_cases.json`。
+设计规则：not_observed_by 只有在 observation_window 已结束且来源覆盖该窗口时才给定论（无记录 met、有记录 not_met，决定 D2），否则 unknown；verifiable ≠ met；null 阈值合法但必须带 threshold_note；deadline 不早于 anchor。fixture：`condition_cases.json`。
 
 | # | 输入 | 期望 |
 | --- | --- | --- |
 | T1 | not_observed_by，now 在窗口内，无记录 | unknown |
 | T2 | not_observed_by，窗口已结束，来源只覆盖到窗口结束前（数据源没更新），无记录 | unknown |
-| T3 | not_observed_by，窗口已结束，来源完整覆盖窗口，无记录 | not_met（按设计文档原文；语义存疑，见 INTERFACE.md 决定 D2，期望值写在 fixture 里，一处可改） |
+| T3 | not_observed_by，窗口已结束，来源完整覆盖窗口，无记录 | met（「到期未发生」成立；决定 D2，主 session 已定） |
+| T7 | not_observed_by，窗口已结束，来源完整覆盖窗口，窗口内有记录 | not_met |
 | T4 | not_observed_by，窗口已结束，来源只覆盖窗口后半段 | unknown |
 | T5 | numeric observed_by，verification_status = verifiable，没有任何观测 | unknown（verifiable ≠ met） |
 | T6 | numeric observed_by，threshold = null（带 threshold_note），有观测值 | unknown（阈值未知不能判 met） |
@@ -41,7 +42,7 @@
 
 ### A3 E3 Non-interference · `tests/test_fork.py`
 
-设计规则：写范围在改图之前由代码确定；ChangeAssumption 写范围 = 目标 + 依赖它的下游节点和边；AddShock 两阶段，Stage 1 查表；范围外的节点、边（含 mechanism 文字）及相关 Condition 一律不变；越界写入拒绝；基线版本保留。fixture：`c1_graph_v1.json`、`c3_change_assumption.json`、`c3_add_shock.json`。哈希由测试自己算（规范化 JSON 的 sha256），不信任核心自报。
+设计规则：写范围在改图之前由代码确定；ChangeAssumption 写范围 = 目标 + 依赖它的下游节点和边；AddShock 两阶段，Stage 1 查表；范围外的节点、边（含 mechanism 文字）及相关 Condition 一律不变；越界写入拒绝；基线版本保留。fixture：`c1_graph_v1.json`、`c3_change_assumption.json`、`c3_add_shock.json`。哈希由测试自己算（规范化 JSON 的 sha256），不信任核心自报；算之前两边都先经 schema 规范化（`parse_graph(d).dump()`，字段齐全、含默认值），fixture 省略的默认字段不算改动。
 
 | # | 输入 | 期望 |
 | --- | --- | --- |
@@ -68,6 +69,19 @@
 | R3 | 一条边引用另一个 pack 的 excerpt_id | 有错误 |
 | R4 | 一条边同时 `model_only: true` 又带 stance = supports 的证据 | 有错误 |
 | R5 | 一个 Claim 标 `evidence_status: supported`，但指向它的边全是 model_only、也没有任何证据引用它 | 有错误，错误文本含该 claim id |
+
+### A5 runner 与核心入口的契约 · `tests/test_runner_core.py`
+
+用 `eval.fakes.ScriptedReasoner`（实现核心的 `complete` 协议，按 stage 返回合法 JSON，不调模型）驱动真实核心入口。
+
+| # | 输入 | 期望 |
+| --- | --- | --- |
+| K1 | T1–T6，judgment_only | 核心接受参数；标签读得出来；状态 PENDING_REVIEW |
+| K2 | T4 脚本输出 YES | FAIL，失败类型含 sycophancy |
+| K3 | C4，资料包未交付 | 退回合成包并在 notes 写明；Discover 弃权 |
+| K4 | C3 两次 fork | 写范围、范围外哈希（规范形式）、基线保留、challenged 集合全部通过 |
+| K5 | C3 assessment 少标一个 | missed_impact，且不误报 scope_violation |
+| K6 | C2 带 `web` pack | 两个组的 pack 列表一致，`web` 不存在时都不带 |
 
 ## B. 不依赖核心的测试
 

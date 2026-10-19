@@ -49,6 +49,7 @@ tests/
   test_cases.py         案例文件与 CausalT5k 选例规则（不依赖核心）
   test_scoring.py       自动判定与失败判据（不依赖核心）
   test_runner_report.py fake reasoner 跑 runner、假结果跑报告（不依赖核心）
+  test_runner_core.py   ScriptedReasoner + 真实核心入口跑 T1–T6、C3、C4：runner 与核心的契约（依赖核心）
 docs/eval/
   implementation-plan.md  test-plan.md  eval-plan.md  step-by-step.md
 requirements-dev.txt      pytest

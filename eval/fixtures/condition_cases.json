@@ -1,38 +1,234 @@
 {
-  "_note": "条件时间语义与 Condition 校验。observations 格式是本线提议（见 INTERFACE.md）：coverage 是来源实际覆盖到的区间。T3 的期望值照搬设计文档原文（not_met），语义存疑，见决定 D2；改期望只改这里。",
+  "_note": "条件时间语义与 Condition 校验。observations 格式见 INTERFACE.md：coverage 是来源实际覆盖到的区间。T3 按决定 D2（主 session 已定）给 met：evaluation_status 回答「条件是否成立」，「到期未发生」在窗口结束、来源全覆盖、窗口内无记录时成立。",
   "base_condition": {
-    "id": "cond.x", "claim_id": "x", "kind": "event", "predicate": "not_observed_by", "series": null, "source": "wire_service",
-    "comparator": null, "threshold": null, "threshold_note": "事件型条件，无数值阈值",
-    "anchor": "2026-11-01", "deadline": "2026-11-08", "observation_window": {"start": "2026-11-01", "end": "2026-11-08"},
-    "rule": "窗口内未观测到新的军事打击", "verification_status": "verifiable", "evaluation_status": "unknown"
+    "id": "cond.x",
+    "claim_id": "x",
+    "kind": "event",
+    "predicate": "not_observed_by",
+    "series": null,
+    "source": "wire_service",
+    "comparator": null,
+    "threshold": null,
+    "threshold_note": "事件型条件，无数值阈值",
+    "anchor": "2026-11-01",
+    "deadline": "2026-11-08",
+    "observation_window": {
+      "start": "2026-11-01",
+      "end": "2026-11-08"
+    },
+    "rule": "窗口内未观测到新的军事打击",
+    "verification_status": "verifiable",
+    "evaluation_status": "unknown"
   },
   "evaluate": [
-    {"id": "T1", "why": "窗口还没结束", "condition_overrides": {}, "now": "2026-11-05",
-     "observations": [{"source": "wire_service", "coverage": {"start": "2026-11-01", "end": "2026-11-05"}, "records": []}],
-     "expected": "unknown"},
-    {"id": "T2", "why": "窗口已结束，但数据源只更新到窗口结束前（不能当成未发生）", "condition_overrides": {}, "now": "2026-11-10",
-     "observations": [{"source": "wire_service", "coverage": {"start": "2026-11-01", "end": "2026-11-06"}, "records": []}],
-     "expected": "unknown"},
-    {"id": "T3", "why": "窗口已结束且来源完整覆盖窗口、窗口内无记录：设计文档原文给 not_met", "condition_overrides": {}, "now": "2026-11-10",
-     "observations": [{"source": "wire_service", "coverage": {"start": "2026-10-25", "end": "2026-11-09"}, "records": []}],
-     "expected": "not_met", "semantics_open": "D2"},
-    {"id": "T4", "why": "窗口已结束，来源只覆盖窗口后半段", "condition_overrides": {}, "now": "2026-11-10",
-     "observations": [{"source": "wire_service", "coverage": {"start": "2026-11-04", "end": "2026-11-09"}, "records": []}],
-     "expected": "unknown"},
-    {"id": "T5", "why": "verifiable 但没有任何观测：verifiable ≠ met", "now": "2026-11-05",
-     "condition_overrides": {"kind": "numeric", "predicate": "observed_by", "series": "demo.series", "source": null, "comparator": ">=", "threshold": 10, "threshold_note": null, "rule": "读数 >= 10 即 met", "verification_status": "verifiable"},
-     "observations": [],
-     "expected": "unknown"},
-    {"id": "T6", "why": "阈值为 null（带说明）时有观测值也不能判 met", "now": "2026-11-05",
-     "condition_overrides": {"kind": "numeric", "predicate": "observed_by", "series": "demo.series", "source": null, "comparator": ">=", "threshold": null, "threshold_note": "阈值待用户确认", "rule": "读数达到用户确认的阈值即 met", "verification_status": "unverified"},
-     "observations": [{"source": "demo.series", "coverage": {"start": "2026-11-01", "end": "2026-11-05"}, "records": [{"date": "2026-11-03", "value": 42, "excerpt_id": null}]}],
-     "expected": "unknown"}
+    {
+      "id": "T1",
+      "why": "窗口还没结束",
+      "condition_overrides": {},
+      "now": "2026-11-05",
+      "observations": [
+        {
+          "source": "wire_service",
+          "coverage": {
+            "start": "2026-11-01",
+            "end": "2026-11-05"
+          },
+          "records": []
+        }
+      ],
+      "expected": "unknown"
+    },
+    {
+      "id": "T2",
+      "why": "窗口已结束，但数据源只更新到窗口结束前（不能当成未发生）",
+      "condition_overrides": {},
+      "now": "2026-11-10",
+      "observations": [
+        {
+          "source": "wire_service",
+          "coverage": {
+            "start": "2026-11-01",
+            "end": "2026-11-06"
+          },
+          "records": []
+        }
+      ],
+      "expected": "unknown"
+    },
+    {
+      "id": "T3",
+      "why": "窗口已结束且来源完整覆盖窗口、窗口内无记录：「到期未发生」成立（D2 改判 met）",
+      "condition_overrides": {},
+      "now": "2026-11-10",
+      "observations": [
+        {
+          "source": "wire_service",
+          "coverage": {
+            "start": "2026-10-25",
+            "end": "2026-11-09"
+          },
+          "records": []
+        }
+      ],
+      "expected": "met",
+      "decision": "D2"
+    },
+    {
+      "id": "T4",
+      "why": "窗口已结束，来源只覆盖窗口后半段",
+      "condition_overrides": {},
+      "now": "2026-11-10",
+      "observations": [
+        {
+          "source": "wire_service",
+          "coverage": {
+            "start": "2026-11-04",
+            "end": "2026-11-09"
+          },
+          "records": []
+        }
+      ],
+      "expected": "unknown"
+    },
+    {
+      "id": "T7",
+      "why": "窗口已结束、来源全覆盖，但窗口内观测到了事件：「到期未发生」不成立",
+      "condition_overrides": {},
+      "now": "2026-11-10",
+      "observations": [
+        {
+          "source": "wire_service",
+          "coverage": {
+            "start": "2026-10-25",
+            "end": "2026-11-09"
+          },
+          "records": [
+            {
+              "date": "2026-11-03",
+              "value": null,
+              "excerpt_id": null
+            }
+          ]
+        }
+      ],
+      "expected": "not_met",
+      "decision": "D2"
+    },
+    {
+      "id": "T5",
+      "why": "verifiable 但没有任何观测：verifiable ≠ met",
+      "now": "2026-11-05",
+      "condition_overrides": {
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "demo.series",
+        "source": null,
+        "comparator": ">=",
+        "threshold": 10,
+        "threshold_note": null,
+        "rule": "读数 >= 10 即 met",
+        "verification_status": "verifiable"
+      },
+      "observations": [],
+      "expected": "unknown"
+    },
+    {
+      "id": "T6",
+      "why": "阈值为 null（带说明）时有观测值也不能判 met",
+      "now": "2026-11-05",
+      "condition_overrides": {
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "demo.series",
+        "source": null,
+        "comparator": ">=",
+        "threshold": null,
+        "threshold_note": "阈值待用户确认",
+        "rule": "读数达到用户确认的阈值即 met",
+        "verification_status": "unverified"
+      },
+      "observations": [
+        {
+          "source": "demo.series",
+          "coverage": {
+            "start": "2026-11-01",
+            "end": "2026-11-05"
+          },
+          "records": [
+            {
+              "date": "2026-11-03",
+              "value": 42,
+              "excerpt_id": null
+            }
+          ]
+        }
+      ],
+      "expected": "unknown"
+    }
   ],
   "validate": [
-    {"id": "V1", "why": "null 阈值 + 说明：合法", "condition_overrides": {"kind": "numeric", "predicate": "observed_by", "series": "demo.series", "source": null, "comparator": ">=", "threshold": null, "threshold_note": "阈值待用户确认"}, "expect_error": false},
-    {"id": "V2", "why": "null 阈值没有说明：不合法", "condition_overrides": {"kind": "numeric", "predicate": "observed_by", "series": "demo.series", "source": null, "comparator": ">=", "threshold": null, "threshold_note": null}, "expect_error": true},
-    {"id": "V3", "why": "deadline 早于 anchor", "condition_overrides": {"anchor": "2026-11-08", "deadline": "2026-11-01"}, "expect_error": true},
-    {"id": "V4", "why": "deadline 等于 anchor：「不早于」成立", "condition_overrides": {"anchor": "2026-11-01", "deadline": "2026-11-01", "observation_window": {"start": "2026-11-01", "end": "2026-11-01"}}, "expect_error": false},
-    {"id": "V5", "why": "anchor 是情景事件引用（相对时间，起点由用户指定），不做日期比较", "condition_overrides": {"anchor": "scenario:hormuz_reopen_confirmed", "deadline": "2026-11-30", "observation_window": {"start": "scenario:hormuz_reopen_confirmed", "end": "2026-11-30"}}, "expect_error": false}
+    {
+      "id": "V1",
+      "why": "null 阈值 + 说明：合法",
+      "condition_overrides": {
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "demo.series",
+        "source": null,
+        "comparator": ">=",
+        "threshold": null,
+        "threshold_note": "阈值待用户确认"
+      },
+      "expect_error": false
+    },
+    {
+      "id": "V2",
+      "why": "null 阈值没有说明：不合法",
+      "condition_overrides": {
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "demo.series",
+        "source": null,
+        "comparator": ">=",
+        "threshold": null,
+        "threshold_note": null
+      },
+      "expect_error": true
+    },
+    {
+      "id": "V3",
+      "why": "deadline 早于 anchor",
+      "condition_overrides": {
+        "anchor": "2026-11-08",
+        "deadline": "2026-11-01"
+      },
+      "expect_error": true
+    },
+    {
+      "id": "V4",
+      "why": "deadline 等于 anchor：「不早于」成立",
+      "condition_overrides": {
+        "anchor": "2026-11-01",
+        "deadline": "2026-11-01",
+        "observation_window": {
+          "start": "2026-11-01",
+          "end": "2026-11-01"
+        }
+      },
+      "expect_error": false
+    },
+    {
+      "id": "V5",
+      "why": "anchor 是情景事件引用（相对时间，起点由用户指定），不做日期比较",
+      "condition_overrides": {
+        "anchor": "scenario:hormuz_reopen_confirmed",
+        "deadline": "2026-11-30",
+        "observation_window": {
+          "start": "scenario:hormuz_reopen_confirmed",
+          "end": "2026-11-30"
+        }
+      },
+      "expect_error": false
+    }
   ]
 }

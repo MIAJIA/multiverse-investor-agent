@@ -33,6 +33,7 @@ FAILURE_TYPES = {
     "condition_not_meaningful": "E2：条件空泛或与论点没有真实逻辑联系（人工）",
     "rationale_off": "E4：判断或弃权理由不成立（人工）",
     "unparseable": "输出无法解析",
+    "structured_failure": "重试上限内没产出合法的结构化输出",
     "error": "运行异常",
 }
 

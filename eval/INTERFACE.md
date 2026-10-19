@@ -1,5 +1,7 @@
 # eval 对核心包的接口提议
 
+> 2026-10-18 更新：核心已在 `core-schema` 分支落地（commit 64024cc），决定记录在 `docs/core-design.md`。D1、D3–D9 按本文默认采纳，D2 改判 met（已同步）；E3 哈希比对前两边先经 `parse_graph(d).dump()` 规范化。下文保留提议原文，与实现不同处以核心为准。
+
 2026-10-18 · eval 线 → 主 session
 
 这是**提议**，不是规格。主 session 照着实现，或者直接改这份文件；改了之后 eval 线只需要改 `tests/_adapter.py`（测试侧唯一 import catalyst 的地方）和 `eval/runner.py` 的 `load_core_entrypoints()`（runner 侧唯一 import catalyst 的地方）。字段名一律沿用 `docs/engineering-design.md`「核心数据模型」；设计文档没写到、本线需要的字段在下文标「新增」。
@@ -15,7 +17,7 @@
 | 函数 | 签名 | 行为要求（测试会查的） |
 | --- | --- | --- |
 | 进场判定 | `catalyst.gate.evaluate_entry(conditions: list[Condition]) -> "WAIT" \| "BLOCKED" \| "READY_FOR_REVIEW"` | AND；任一 not_met → BLOCKED；否则任一 unknown → WAIT；空集 → WAIT；全 met → READY_FOR_REVIEW；只看 evaluation_status，verification_status = verifiable 不算满足 |
-| 条件判定 | `catalyst.conditions.evaluate(condition, observations: list[Observation], now: date) -> "met" \| "not_met" \| "unknown"` | not_observed_by：只有 `now > observation_window.end` 且某个同源 observation 的 coverage 覆盖整个窗口、窗口内无记录时才给定论（见决定 D2），否则 unknown；threshold 为 null 时数值条件永远 unknown |
+| 条件判定 | `catalyst.conditions.evaluate(condition, observations: list[Observation], now: date) -> "met" \| "not_met" \| "unknown"` | not_observed_by：`now > observation_window.end` 且某个同源 observation 的 coverage 覆盖整个窗口、窗口内无记录 → met；窗口内有记录 → not_met；其余 unknown（决定 D2）；threshold 为 null 时数值条件永远 unknown |
 | Condition 校验 | `catalyst.validator.validate_condition(condition) -> list[Error]` | numeric 且 threshold 为 null 时 threshold_note 必须非空；anchor、deadline 都是日期时 deadline ≥ anchor；anchor 以 `scenario:` 开头时跳过日期比较；predicate、kind 在枚举内 |
 | 引用校验 | `catalyst.validator.validate_references(graph, evidence_pack) -> list[Error]` | excerpt_id 必须存在于**当前** pack；`model_only: true` 的边不得带 stance = supports 的证据；evidence_status = supported 的 Claim 必须至少有一条非 model_only 的入边带 supports 证据 |
 | 写范围 | `catalyst.fork.compute_write_scope(graph, op) -> (node_ids: set[str], edge_ids: set[str])` | 见决定 D4 |
@@ -70,12 +72,20 @@ runner 的 CLI 另外需要 `catalyst.reasoner.default_reasoner()`（返回的�
 
 `judgment_only=True` 是给 CausalT5k 的：scenario 作为 `material` 直接给出，只输出因果判断，不生成提案。
 
+## 4b. runner 实际怎么调核心（对齐后）
+
+- 三个入口都传 `packs=<本案例可用的 pack>`。pack 列表由 `eval.runner.prepare_packs` 算：真实 pack 优先；还没交付时用 `EvidenceProvider.register` 注入 `eval/fixtures` 里同 pack_id 的合成包，并在结果的 `notes` 里写明；不存在的 pack（如 `web`）两个组都不带。baseline 组的 prompt 用同一份列表，保证「同一资料」。
+- Discover 之后的 inspect 传 `candidate=<整个候选 dict>`（同时带 `candidate_id`）。
+- fork 传 `packs`，不传 `pack`；E3 哈希的基线取核心回传的 `base_graph`（已是规范形式），不直接哈希手写 fixture。
+- 入口返回 `ok=False` 时记 `structured_failure`，附核心给的 errors。
+- baseline 组优先调 `reasoner.single_prompt(prompt)`；reasoner 没有这个方法时退回 `complete(stage="baseline", system="", user=prompt, schema={"type": "object"})`。
+
 ## 5. 需要主 session 决定的问题
 
 | # | 问题 | 本线的默认（测试按它写） | 改了要动哪里 |
 | --- | --- | --- | --- |
 | D1 | edge / condition 的 `id`、graph 上的 `conditions`、node 的 `role` 是否加进 schema | 加 | fixture 全部 |
-| D2 | not_observed_by 在「窗口结束 + 来源全覆盖 + 窗口内无记录」时给什么？设计文档原文写 not_met；但如果 evaluation_status 表示「条件是否满足」，「到期未发生」这个条件此时其实是**满足**（met）。不存疑的部分是：其他情况一律 unknown | 照原文 not_met | `eval/fixtures/condition_cases.json` 的 T3 `expected` 一处 |
+| D2 | not_observed_by 在「窗口结束 + 来源全覆盖 + 窗口内无记录」时给什么 | **已定（主 session，docs/core-design.md）：met。** evaluation_status 回答「条件是否成立」，「到期未发生」此时成立；窗口内看到记录给 not_met；其余一律 unknown。设计文档原文写的 not_met 待同步 | `eval/fixtures/condition_cases.json` 的 T3 `expected` |
 | D3 | 进场条件里 unknown 与 not_met 同时出现时 | BLOCKED（已证实未满足优先） | `gate_truth_table.json` 的 G6 |
 | D4 | 写范围的边怎么算：ChangeAssumption = 目标 + 全部后代节点 + **这些节点的出边**；指向后代节点、但起点在范围外的入边（如 C1 的 `c1.e3`）**不在**范围内。AddShock = Stage 1 新节点与新边 + `impacts` 及其后代 + 这些节点的出边 | 如左 | `c3_*.json` 的 expected_scope；`tests/test_fixtures.py` 里的参考实现 |
 | D5 | patch 格式、`assessment` 放在 patch 里由模型提议还是由代码从 diff 推出 | 放在 patch 里，代码只接受范围内的 claim | `c3_*.json` |

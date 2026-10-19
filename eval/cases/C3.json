@@ -8,7 +8,11 @@
     "forks": [
       "c3_change_assumption.json",
       "c3_add_shock.json"
-    ]
+    ],
+    "evidence_packs": [
+      "semiconductor"
+    ],
+    "evidence_packs_note": "fork 的上下文带同一份资料包；核心只校验 Stage 1 新增边的引用"
   },
   "expected": {
     "behavior": "写范围由代码先定；范围外节点、边、Condition 哈希不变；AddShock 只新增 Stage 1 识别的边；challenged 集合 = golden；基线版本仍在；提案 v2 的变化能追溯到被改的假设",

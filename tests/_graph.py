@@ -6,7 +6,17 @@ from __future__ import annotations
 
 import copy
 
-from eval.scoring import canonical_hash, element_hashes  # noqa: F401  —— 与 runner 用同一套哈希
+from eval import scoring
+from eval.scoring import canonical_hash  # noqa: F401  —— 与 runner 用同一套哈希
+
+
+def element_hashes(graph: dict, normalize=None) -> dict[str, dict[str, str]]:
+    """按 id 算每个节点、边、Condition 的哈希。
+
+    normalize：先把图转成规范形式再哈希（依赖核心的测试传 _adapter.canonical_graph，
+    即 parse_graph(d).dump()）。两边必须用同一个 normalize，否则默认字段的有无会被当成改动。
+    """
+    return scoring.element_hashes(normalize(graph) if normalize else graph)
 
 
 def by_id(items: list[dict]) -> dict[str, dict]:

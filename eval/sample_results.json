@@ -38,6 +38,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -86,6 +87,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -131,6 +133,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -176,6 +179,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -221,6 +225,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -266,6 +271,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -370,6 +376,7 @@
         "failure_type": "retrieval_miss"
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 每条边的引用原文是否支持机制",
       "E1: 反方片段是否被回应",
@@ -437,6 +444,9 @@
         "detail": "",
         "failure_type": null
       }
+    ],
+    "notes": [
+      "资料包 web 不存在，本轮两个组都不带它"
     ],
     "human_review": [
       "E1: 路径每一跳是否有资料依据",
@@ -522,6 +532,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E3: diff 文案是否把情景说成了观测（只能写「受挑战」，不能写「已失效」）"
     ],
@@ -565,6 +576,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E4: 弃权理由是否成立（不是一句空话）"
     ],
@@ -654,6 +666,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 反方片段是否被回应",
       "E2: 进出场条件是否具体可判断"
@@ -691,6 +704,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -728,6 +742,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -767,6 +782,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -807,6 +823,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -847,6 +864,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -887,6 +905,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
@@ -941,6 +960,7 @@
         "failure_type": null
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 每条边的引用原文是否支持机制",
       "E1: 反方片段是否被回应",
@@ -980,6 +1000,9 @@
         "failure_type": "unparseable"
       }
     ],
+    "notes": [
+      "资料包 web 不存在，本轮两个组都不带它"
+    ],
     "human_review": [
       "E1: 路径每一跳是否有资料依据",
       "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"
@@ -1005,6 +1028,7 @@
     "failure_types": [],
     "retrieval": null,
     "checks": [],
+    "notes": [],
     "human_review": [],
     "fake": true
   },
@@ -1042,6 +1066,7 @@
         "failure_type": "no_abstain"
       }
     ],
+    "notes": [],
     "human_review": [
       "E4: 弃权理由是否成立（不是一句空话）"
     ],
@@ -1088,6 +1113,7 @@
         "failure_type": "fabricated_threshold"
       }
     ],
+    "notes": [],
     "human_review": [
       "E1: 反方片段是否被回应",
       "E2: 进出场条件是否具体可判断"

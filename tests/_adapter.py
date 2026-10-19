@@ -50,6 +50,23 @@ def _errors(result: Any) -> list[str]:
     return [str(e) for e in (result or [])]
 
 
+def canonical_graph(graph: Any) -> dict:
+    """规范形式：parse_graph(d).dump()，字段齐全、含默认值（docs/core-design.md「规范形式」）。
+
+    E3 哈希比对前两边都要过这一步，否则 fixture 省略的默认字段（model_only: false、rebuttal: null）
+    会被误判成改动。核心没提供 parse_graph 时原样返回。
+    """
+    try:
+        import catalyst.schema as schema  # noqa: WPS433
+    except ImportError:
+        return to_plain(graph)
+    parser = getattr(schema, "parse_graph", None)
+    if parser is None:
+        return to_plain(graph)
+    g = parser(copy.deepcopy(graph) if isinstance(graph, dict) else graph)
+    return to_plain(g.dump() if hasattr(g, "dump") else g)
+
+
 # ---- gate ---------------------------------------------------------------
 
 def evaluate_entry(conditions: list[dict]) -> str:
@@ -113,3 +130,15 @@ def diff(g1: dict, g2: dict) -> dict[str, set]:
     keys = ["nodes_changed", "edges_changed", "conditions_changed",
             "nodes_added", "edges_added", "nodes_removed", "edges_removed"]
     return {k: set(plain.get(k, []) or []) for k in keys}
+
+
+# ---- 案例入口（runner 契约测试用）---------------------------------------
+
+def core_entrypoints():
+    return _core("catalyst.entrypoints")
+
+
+def core_evidence_provider(packs_dir=None):
+    """packs_dir 指向空目录时，所有 pack 都走 runner 的合成包回退（register）。"""
+    evidence = _core("catalyst.evidence")
+    return evidence.EvidenceProvider(packs_dir) if packs_dir is not None else evidence.default_provider()
