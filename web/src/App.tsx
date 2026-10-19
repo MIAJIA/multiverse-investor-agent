@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import * as api from './api';
 import ApproveCard from './components/approve/ApproveCard';
 import { EMPTY_DRAFT, type PlanDraft, type Understood } from './components/approve/model';
+import BusyHint, { type BusyKind } from './components/BusyHint';
 import Scenario from './components/Scenario';
 import Workspace from './components/Workspace';
 import type { RunCreated, VersionBundle, WriteResult } from './types';
@@ -27,12 +28,14 @@ export interface AppState {
   notices: string[] | null;
   runNote: string | null; // 没有图的运行：弃权或找不到因果链的理由（后端原话）
   webMessage: string | null; // 上一次建 run 返回的 web.message（联网：开，拿到 N 段 / 失败原因）
+  busyKind: BusyKind | null; // 正在等哪一类请求（等待提示用）
+  busySince: number | null; // 开始等待的时间（Date.now）
 }
 
 const INITIAL: AppState = {
   runId: null, versions: {}, baseVersion: null, scenarioVersion: null, viewing: 'base', tab: 'workspace',
   selectedNodeId: null, selectedTerminalId: null, understood: { confirmed: false, text: null }, drafts: {},
-  busy: false, errors: null, notices: null, runNote: null, webMessage: null,
+  busy: false, errors: null, notices: null, runNote: null, webMessage: null, busyKind: null, busySince: null,
 };
 
 const TABS: [Tab, string][] = [['workspace', T.app.tabs.workspace], ['signoff', T.app.tabs.signoff], ['scenario', T.app.tabs.scenario]];
@@ -46,8 +49,8 @@ export default function App() {
   /** 发一个写操作；成功后取回新版本并存进缓存。 */
   async function write(run: () => Promise<RunCreated | WriteResult>,
     after: (version: string, bundle: VersionBundle, runId: string) => Partial<AppState>,
-    onNoVersion?: (res: RunCreated) => Partial<AppState> | null) {
-    patch({ busy: true, errors: null, notices: null });
+    onNoVersion?: (res: RunCreated) => Partial<AppState> | null, kind: BusyKind = 'sign') {
+    patch({ busy: true, errors: null, notices: null, busyKind: kind, busySince: Date.now() });
     try {
       const res = await run();
       const noVersion = res.ok && !res.version && onNoVersion?.(res as RunCreated);
@@ -78,7 +81,7 @@ export default function App() {
         const reason = res.discover?.abstained ? res.discover.abstain_reason
           : res.inspect?.no_chain ? res.inspect.no_chain_reason : null;
         return reason ? { ...INITIAL, runId: res.run_id, runNote: reason, webMessage: res.web?.message ?? null } : null;
-      });
+      }, 'analyze');
   };
 
   // MOCK：页头选一份 fixture，输入框换成它的事件原话
@@ -118,7 +121,7 @@ export default function App() {
     write(() => api.fork(s.runId!, {
       base_version: s.baseVersion!,
       op: { kind: 'change_assumption', target, value, impacts: [], new_nodes: [], new_edges: [] },
-    }), (version) => ({ scenarioVersion: version, viewing: 'scenario', selectedNodeId: null }));
+    }), (version) => ({ scenarioVersion: version, viewing: 'scenario', selectedNodeId: null }), undefined, 'fork');
 
   const reapproveHere = () => patch({
     baseVersion: s.scenarioVersion, scenarioVersion: null, viewing: 'base', tab: 'signoff', drafts: {}, selectedNodeId: null,
@@ -139,7 +142,6 @@ export default function App() {
         </label>
         {s.webMessage && <span className="small web-status">{T.app.webStatus(s.webMessage)}</span>}
         <span className="spacer" />
-        {s.busy && <span className="muted">{T.app.busy}</span>}
         {base && <span className="muted small">{T.app.runInfo(s.runId, base.graph.version, scen?.graph.version)}</span>}
         <a href="#playground" className="small" style={{ color: '#aab4c8' }}>{T.app.linkPlayground}</a>
         <a href="#plan-b" className="small" style={{ color: '#aab4c8' }}>{T.app.linkPlanB}</a>
@@ -158,10 +160,16 @@ export default function App() {
             onClick={() => patch({ tab: id })}>{label}</button>
         ))}
       </nav>
+      {s.busy && s.busyKind && s.busySince && (base || s.busyKind !== 'analyze') && (
+        <BusyHint kind={s.busyKind} since={s.busySince} online={online} />
+      )}
       {s.errors && <div className="banner error">{s.errors.map((e) => <div key={e}>{e}</div>)}</div>}
       {s.notices && <div className="banner notice">{s.notices.map((e) => <div key={e}>{e}</div>)}</div>}
       <main className="main">
-        {!base && !s.runNote && <div className="empty">{T.app.empty}</div>}
+        {!base && !s.runNote && s.busy && s.busyKind === 'analyze' && s.busySince && (
+          <div className="empty"><BusyHint kind="analyze" since={s.busySince} online={online} center /></div>
+        )}
+        {!base && !s.runNote && !(s.busy && s.busyKind === 'analyze') && <div className="empty">{T.app.empty}</div>}
         {!base && s.runNote && (
           <div className="empty abstain">
             <h2>{T.app.abstainTitle}</h2>

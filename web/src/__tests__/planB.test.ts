@@ -4,7 +4,7 @@ import approvedFx from '../../fixtures/c1_approved.json';
 import c1Fx from '../../fixtures/c1.json';
 import * as api from '../api';
 import { branchViewOf } from '../components/Workspace';
-import { approvedPlan, keyClaimIds, planOf } from '../lookup';
+import { approvedPlan, isUserEventNode, keyClaimIds, planOf } from '../lookup';
 import type { Fixture } from '../types';
 
 const c1 = (c1Fx as unknown as Fixture).versions;
@@ -45,6 +45,16 @@ describe('方案 B 的版本包', () => {
     expect(planOf(after, TSM)).toMatchObject({ approval_reset: false, rival_changed: true });
     // 批准的是 TSM 时改同一处：TSM 不受影响，保留批准
     expect(planOf(ap['c1-v5'], TSM)).toMatchObject({ user_judgment: { confirmed: true }, rival_changed: true });
+  });
+});
+
+describe('用户自己的事件', () => {
+  it('重述 user_event 的节点被认出来（忽略大小写和句末标点）', () => {
+    const g = structuredClone(c1['c1-v1'].graph);
+    g.user_event = 'photonic chips are being adopted FASTER than expected.';
+    g.nodes[0].original_statement = 'Photonic chips are being adopted faster than expected';
+    expect(isUserEventNode(g, g.nodes[0].id)).toBe(true);
+    expect(isUserEventNode(g, g.nodes[1].id)).toBe(false);
   });
 });
 

@@ -1,5 +1,5 @@
 // B2「批准计划」（Mia 选定的答案卡）：OpenEvidence 式。顶部一排胶囊切换结论（像 Robinhood 的 1D / 1W）；下面只有一张卡：大标题 + 前提（带引用）+ 信号；底部是批准胶囊。
-import { ancestors, changedTargets } from '../../lookup';
+import { ancestors, changedTargets, isUserEventNode } from '../../lookup';
 import { BRANCH_KIND, GATE } from '../../status';
 import { T } from '../../strings';
 import { BranchTag } from '../BranchSwatch';
@@ -15,7 +15,9 @@ export default function ApproveCard(props: ApproveProps) {
   // 横幅里写清楚是哪个假设：这条分支上的冲击节点，或者情景里改过的假设（只查表：scenario.ops 的 target、分支的祖先）
   const chain = b ? new Set([...b.own_node_ids, ...ancestors(bundle.graph, b.terminal_id)]) : new Set<string>();
   const changed = changedTargets(bundle.scenario).find((id) => chain.has(id));
-  const shock = b?.own_node_ids.map(m.node).find((n) => n.role === 'shock') ?? (changed ? m.node(changed) : undefined);
+  // 先说情景里改过的假设；没有再找冲击节点，但跳过重述用户自己事件的那个（它不是「尚未发生的假设」）
+  const shock = (changed ? m.node(changed) : undefined)
+    ?? [...chain].map(m.node).find((n) => n.role === 'shock' && !isUserEventNode(bundle.graph, n.id));
   const needIdea = m.uj.requires_user_confirmation && !understood.confirmed;
   return (
     <div className="ap-page">
