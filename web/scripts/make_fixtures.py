@@ -94,7 +94,7 @@ class DemoReasoner(ScriptedReasoner):
 
     def complete(self, *, stage, system, user, schema):
         if stage == "fork":
-            user = next((l for l in user.splitlines() if l.startswith("操作：")), user)
+            user = next((l for l in user.splitlines() if l.startswith(("Operation:", "操作："))), user)
         c = super().complete(stage=stage, system=system, user=user, schema=schema)
         if stage == "fork":
             out = json.loads(c.text)
