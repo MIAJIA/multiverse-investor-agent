@@ -4,7 +4,8 @@
   CATALYST_REPLAY=runs/D1/<ts> ...            # 用录音回放，不调模型（演示 / 无 key 时用）
 
 接口（所有写操作都返回 {ok, errors, version}，前端再 GET 这个版本）：
-  POST /api/runs                          {event, target?, packs?}
+  POST /api/runs                          {event, target?, packs?, online?}
+                                          → 返回体另有 web: {online, status, excerpts, message…}：联网开 / 关、拿到几段或失败原因
   GET  /api/runs/{run_id}/versions/{v}    → {graph, proposal, scenario, diff, excerpts}
   POST /api/runs/{run_id}/fork            {base_version, op}
   POST /api/runs/{run_id}/sign            {version, clarified_statement, criteria, deadline,
@@ -40,6 +41,15 @@ def _reasoner(store: RunStore):
     return RecordingReasoner(default_reasoner(), store.cassette)
 
 
+def _web(event, target, *, cfg, ev, store, reasoner):
+    """联网检索（默认关）。CATALYST_REPLAY 时读录制目录里冻结的资料包，不上网。"""
+    from catalyst.__main__ import attach_web
+
+    replay = os.environ.get("CATALYST_REPLAY")
+    return attach_web(event, target, cfg=cfg, ev=ev, store=store, reasoner=reasoner,
+                      replay_dir=Path(replay) if replay else None)
+
+
 def _store(run_id: str) -> RunStore:
     if not re.fullmatch(r"[\w.-]+", run_id) or not (RUNS / run_id).is_dir():
         raise KeyError(f"run {run_id} 不存在")
@@ -50,10 +60,14 @@ def create_run(body: dict) -> dict:
     store = RunStore.new(RUNS, "")
     run_id = store.root.name
     ev, packs, notes = _provider(body.get("packs") or [])
-    cfg = ep.Config(packs=packs, run_prefix="r", today=body.get("today") or ep.Config().today)
-    (store.root / "case.json").write_text(json.dumps({"case": {"id": run_id, "input": body}, "packs": packs,
-                                                      "notes": notes, "today": cfg.today}, ensure_ascii=False))
+    cfg = ep.Config(packs=packs, run_prefix="r", today=body.get("today") or ep.Config().today,
+                    online=bool(body.get("online")))
     reasoner, event, target = _reasoner(store), body["event"], body.get("target")
+    web = _web(event, target, cfg=cfg, ev=ev, store=store, reasoner=reasoner)
+    notes = [web.message(), *notes]
+    (store.root / "case.json").write_text(json.dumps({"case": {"id": run_id, "input": body}, "packs": cfg.packs,
+                                                      "notes": notes, "today": cfg.today, "online": cfg.online,
+                                                      "web": web.dump()}, ensure_ascii=False))
     disc = None
     candidate = None
     if not target:
@@ -61,13 +75,13 @@ def create_run(body: dict) -> dict:
         cands = disc.get("candidates") or []
         if not disc["ok"] or not cands:
             return {"ok": disc["ok"], "errors": disc["errors"], "version": None, "run_id": run_id,
-                    "discover": disc, "inspect": None, "notes": notes}
+                    "discover": disc, "inspect": None, "notes": notes, "web": web.dump()}
         candidate = next((c for c in cands if c["label"] == "grounded"), cands[0])
     ins = ep.inspect(event, target, candidate=candidate, candidate_id=candidate and candidate["id"],
                      reasoner=reasoner, evidence=ev, config=cfg, store=store)
     version = ins["graph"]["version"] if ins.get("graph") else None
     return {"ok": ins["ok"], "errors": ins["errors"], "version": version, "run_id": run_id,
-            "discover": disc, "inspect": ins, "notes": notes}
+            "discover": disc, "inspect": ins, "notes": notes, "web": web.dump()}
 
 
 def fork_run(run_id: str, body: dict) -> dict:
