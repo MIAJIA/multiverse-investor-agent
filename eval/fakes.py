@@ -8,18 +8,44 @@ import copy
 import json
 from typing import Any
 
-from eval.loader import load_case, load_fixture
+from eval.loader import EVAL_DIR, load_case, load_fixture
 
 
 class FakeEvidence:
-    """和核心的 EvidenceProvider 一样：不存在的 pack 抛 FileNotFoundError。"""
+    """和核心的 EvidenceProvider 一样：不存在的 pack 抛 FileNotFoundError；支持 register。"""
+
+    def __init__(self):
+        self.registered: dict[str, dict] = {}
+
+    def register(self, pack: dict) -> dict:
+        self.registered[pack["pack_id"]] = copy.deepcopy(pack)
+        return pack
+
+    def pack(self, pack_id: str) -> dict:
+        if pack_id in self.registered:
+            return self.registered[pack_id]
+        return {"pack_id": pack_id, "synthetic": False, "excerpts": self.load_pack(pack_id)}
 
     def load_pack(self, pack_id: str) -> list[dict]:
+        if pack_id in self.registered:
+            return copy.deepcopy(self.registered[pack_id]["excerpts"])
         if pack_id == "semiconductor":
             return load_fixture("c1_evidence_pack.json")["excerpts"]
         if pack_id == "hormuz":
             return load_fixture("d1_hormuz.json")["evidence_pack"]["excerpts"]
         raise FileNotFoundError(pack_id)
+
+
+class RealPackEvidence(FakeEvidence):
+    """读仓库 packs/ 下的真实资料包（只读 JSON，不 import catalyst），给回测和探针的单测用。"""
+
+    def load_pack(self, pack_id: str) -> list[dict]:
+        if pack_id in self.registered:
+            return copy.deepcopy(self.registered[pack_id]["excerpts"])
+        path = EVAL_DIR.parent / "packs" / f"{pack_id}.json"
+        if not path.exists():
+            raise FileNotFoundError(pack_id)
+        return json.loads(path.read_text(encoding="utf-8"))["excerpts"]
 
 
 class _Completion:
@@ -50,7 +76,7 @@ class ScriptedReasoner:
             return _Completion(json.dumps({"judgment": {"label": label, "rationale": "scripted"}}))
         if stage == "discover":
             return _Completion(json.dumps({"candidates": [], "abstained": True,
-                                           "abstain_reason": "scripted：资料包里没有从事件到标的的因果依据"}))
+                                           "abstain_reason": "scripted: the pack has no causal basis linking the event to the target"}))
         if stage == "fork":
             kind = "change_assumption" if '"change_assumption"' in user else "add_shock"
             fx = load_fixture(f"c3_{kind}.json")
@@ -65,7 +91,7 @@ class ScriptedReasoner:
                 "next_checks": [fx["expected_next_checks_hint"]],
             }
             return _Completion(json.dumps(out, ensure_ascii=False))
-        raise NotImplementedError(f"ScriptedReasoner 不覆盖 stage={stage}")
+        raise NotImplementedError(f"ScriptedReasoner does not cover stage={stage}")
 
     def single_prompt(self, prompt: str) -> str:
         return json.dumps({"label": "YES", "rationale": "scripted baseline"})
@@ -100,31 +126,76 @@ def _apply_patch_for_fake(graph: dict, patch: dict, version: str) -> dict:
     return g
 
 
+def _fake_plan(terminal_id: str, instrument: str, conditions: list[dict], uj: dict, gate: str = "WAIT") -> dict:
+    """方案 B 的一份计划（TradeProposal 的子集，eval 读到的字段都在）。"""
+    return {"terminal_id": terminal_id, "status": "draft", "gate": gate,
+            "direction": {"instrument": instrument, "side": "long", "horizon": "fake"},
+            "entry_conditions": conditions, "exit_conditions": [], "exit_logic": "ANY",
+            "key_dependency": None, "user_judgment": uj, "support_status": "unknown",
+            "graph_version": "fake", "meta": {"proposal_version": f"fake.{terminal_id}", "approval_required": True},
+            "approval_reset": False, "rival_changed": False}
+
+
+def c1_fake_plans(gates: dict[str, str] | None = None) -> list[dict]:
+    """C1 golden 图有 3 个并列 terminal（LITE、TSM、MRVL），每个一份计划；共用 CPO 出货条件，各加一条本路径的条件。"""
+    g = load_fixture("c1_graph_v1.json")
+    conds = {c["id"]: c for c in g["conditions"]}
+    shared = conds["cond.c1.cpo_shipments"]
+    own = {"c1.term.laser_vendor": "cond.c1.els_design_wins", "c1.term.foundry": "cond.c1.foundry_utilization",
+           "c1.term.dsp_vendor": "cond.c1.dsp_guidance"}
+    uj = {"original_statement": "Photonic chips are being adopted faster than expected", "clarified_statement": "fake", "requires_user_confirmation": True}
+    gates = gates or {}
+    return [_fake_plan(n["id"], n["instruments"][0], [shared, conds[own[n["id"]]]], dict(uj), gates.get(n["id"], "WAIT"))
+            for n in g["nodes"] if n["role"] == "terminal"]
+
+
 class FakeEntrypoints:
-    """pipeline 组的假入口。labels 覆盖 CausalT5k 的预测（默认等于 gold）；leak_edge 让 fork 偷改一条范围外的边。"""
+    """pipeline 组的假入口，返回方案 B 的形状（proposals 列表，每个 terminal 一份）。
+
+    labels 覆盖 CausalT5k 的预测（默认等于 gold）；leak_edge 让 fork 偷改一条范围外的边；
+    plan_gates 覆盖 C1 某个 terminal 的 gate；legacy=True 返回旧的单数 proposal，用来测「缺字段直接报错」。
+    """
 
     def __init__(self, labels: dict[str, str] | None = None, leak_edge: str | None = None,
-                 raise_on: set[str] | None = None, observations: list[str] | None = None):
+                 raise_on: set[str] | None = None, observations: list[str] | None = None,
+                 plan_gates: dict[str, str] | None = None, legacy: bool = False,
+                 plans: list[dict] | None = None, edges: list[dict] | None = None, no_chain: bool = False,
+                 branch_kind: str = "model_only"):
         self.labels = labels or {}
         self.leak_edge = leak_edge
         self.raise_on = raise_on or set()
+        self.explicit_observations = observations is not None
         if observations is None:  # 默认命中所有案例声明的关键片段（happy path）
             observations = sorted({x for c in ("C1", "C2", "D1") for x in load_case(c)["expected"].get("key_excerpts", [])})
         self.observations = observations
+        self.plan_gates = plan_gates or {}
+        self.legacy = legacy
+        self.plans_override = plans          # 指定 inspect 返回的计划（回测、B 层单测用）
+        self.edges = edges or []             # 指定图上的边（含证据引用）
+        self.no_chain = no_chain
+        self.branch_kind = branch_kind
+        self.seen_kw: list[dict] = []
         self.calls: list[tuple[str, str]] = []
 
     def _maybe_raise(self, event: str):
         if any(k in event for k in self.raise_on):
             raise RuntimeError(f"fake failure for {event}")
 
+    def _shape(self, out: dict) -> dict:
+        if self.legacy:  # 旧契约：单数 proposal，没有 proposals
+            plans = out.pop("proposals")
+            out["proposal"] = plans[0] if plans else None
+        return out
+
     def discover(self, event: str, target: str | None = None, **kw) -> dict:
         self.calls.append(("discover", event))
         self._maybe_raise(event)
-        if "选举" in event:
-            return {"candidates": [], "abstained": True, "abstain_reason": "fake: 缺少因果依据", "observations": []}
-        return {"candidates": [{"id": "cand-1", "direction": "fake", "label": "grounded", "rationale": "fake"},
-                               {"id": "cand-2", "direction": "fake", "label": "hypothesis", "rationale": "fake"}],
-                "abstained": False, "observations": list(self.observations)}
+        if "midterm" in event:
+            return self._shape({"candidates": [], "abstained": True, "abstain_reason": "fake: no causal basis",
+                                "proposals": [], "observations": []})
+        return self._shape({"candidates": [{"id": "cand-1", "direction": "fake", "label": "grounded", "rationale": "fake"},
+                                           {"id": "cand-2", "direction": "fake", "label": "hypothesis", "rationale": "fake"}],
+                            "abstained": False, "proposals": [], "observations": list(self.observations)})
 
     def inspect(self, event: str, target: str | None = None, **kw) -> dict:
         self.calls.append(("inspect", event))
@@ -133,45 +204,57 @@ class FakeEntrypoints:
             case_id = next(c for c in ("T1", "T2", "T3", "T4", "T5", "T6")
                            if load_case(c)["input"]["material"] == kw.get("material"))
             label = self.labels.get(case_id, load_case(case_id)["expected"]["label"])
-            return {"graph": None, "no_chain": False, "proposal": None,
-                    "judgment": {"label": label, "rationale": "fake rationale"}, "observations": []}
-        if "霍尔木兹" in event:
-            conds = load_fixture("d1_hormuz.json")["entry_conditions"]
-            uj = {"requires_user_confirmation": True}
+            return self._shape({"graph": None, "no_chain": False, "proposals": [], "branches": [],
+                                "judgment": {"label": label, "rationale": "fake rationale"}, "observations": []})
+        self.seen_kw.append({k: v for k, v in kw.items() if k not in ("reasoner", "evidence")})
+        if self.no_chain:
+            return self._shape({"graph": None, "no_chain": True, "no_chain_reason": "fake", "proposals": [],
+                                "branches": [], "judgment": None, "observations": self._context(kw)})
+        if self.plans_override is not None:
+            plans = copy.deepcopy(self.plans_override)
+        elif "Hormuz" in event:
+            uj = {"original_statement": event, "clarified_statement": "fake", "requires_user_confirmation": True}
+            plans = [_fake_plan("d1.term.brent", "BZ", load_fixture("d1_hormuz.json")["entry_conditions"], uj)]
         elif target:
-            conds = [{"id": "cond.fake.doc", "kind": "document", "predicate": "observed_by", "threshold": None,
-                      "threshold_note": "文件型条件"}]
-            uj = {}
+            cond = {"id": "cond.fake.doc", "kind": "document", "predicate": "observed_by", "threshold": None,
+                    "threshold_note": "document condition"}
+            plans = [_fake_plan(f"term.{target.lower()}", target, [cond], {"requires_user_confirmation": False})]
         else:
-            conds = load_fixture("c1_graph_v1.json")["conditions"][:1]
-            uj = {}
-        proposal = {"entry_conditions": conds, "exit_conditions": [], "gate": "WAIT", "support_status": "draft",
-                    "user_judgment": uj, "meta": {"approval_required": True}}
-        return {"graph": {"version": "fake"}, "no_chain": False, "proposal": proposal,
-                "judgment": None, "observations": list(self.observations)}
+            plans = c1_fake_plans(self.plan_gates)
+        branches = [{"terminal_id": p["terminal_id"], "kind": self.branch_kind} for p in plans]
+        graph = {"version": "fake", "nodes": [], "edges": copy.deepcopy(self.edges)}
+        return self._shape({"graph": graph, "no_chain": False, "proposals": plans, "branches": branches,
+                            "judgment": None, "observations": self._context(kw)})
+
+    def _context(self, kw: dict) -> list[str]:
+        """和核心一样：本轮资料包里的全部片段 id 就是 observations；没给资料包时用预设值。"""
+        evidence, packs = kw.get("evidence"), kw.get("packs")
+        if evidence is not None and packs and not self.explicit_observations:
+            return sorted({x["excerpt_id"] for p in packs for x in evidence.load_pack(p)})
+        return list(self.observations)
 
     def fork(self, graph: dict, op: dict, **kw) -> dict:
         self.calls.append(("fork", op["kind"]))
         fx = load_fixture("c3_change_assumption.json" if op["kind"] == "change_assumption" else "c3_add_shock.json")
         new = _apply_patch_for_fake(graph, fx["patch_in_scope"], graph["version"] + "-" + op["kind"])
         if self.leak_edge:
-            next(e for e in new["edges"] if e["id"] == self.leak_edge)["mechanism"] = "fake 越界写入"
+            next(e for e in new["edges"] if e["id"] == self.leak_edge)["mechanism"] = "fake out-of-scope write"
         return {"graph": new, "base_graph": graph, "scope": fx["expected_scope"], "diff": {},
                 "scenario": {"version": new["version"], "base_version": graph["version"], "ops": [op],
                              "assessment": dict(fx["patch_in_scope"]["assessment"])},
-                "proposal": None}
+                "proposals": copy.deepcopy(kw.get("proposals") or [])}
 
 
 def sample_baseline_reasoner() -> FakeReasoner:
     """生成 sample_results.json 用的 baseline：故意制造几种失败，检验报告能把它们写出来。"""
     return FakeReasoner(responses={
-        "中期选举": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "hypothesis"}]}),
-        "霍尔木兹": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
+        "midterm": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "hypothesis"}]}),
+        "Hormuz": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
                               "conditions": [{"kind": "numeric", "series": "portwatch.hormuz.daily_transits",
                                               "threshold": 20, "threshold_note": None}]}),
-        "光子芯片": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
+        "Photonic chips": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
                               "conditions": [{"kind": "numeric", "series": "fake", "threshold": None, "threshold_note": "fake"}]}),
-        "出口限制": "抱歉，我无法给出 JSON",
+        "export restrictions": "Sorry, I cannot return JSON",
     })
 
 

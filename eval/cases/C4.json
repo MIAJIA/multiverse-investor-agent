@@ -1,19 +1,18 @@
 {
   "id": "C4",
   "type": "custom",
-  "title": "中期选举分裂 → 远距离标的：Discovery 弃权",
+  "title": "Midterm split -> distant target: Discover should abstain",
   "entry": "discover",
   "input": {
-    "event": "中期选举分裂",
+    "event": "The US midterm elections produce a split Congress",
     "target": "LITE",
-    "target_note": "一个与选举没有合理因果距离的标的（光通信激光器），检验是否会被硬连",
+    "target_note": "A target with no plausible causal distance to the election (an optical laser maker), to test whether the model forces a link",
     "evidence_packs": [
       "semiconductor"
-    ],
-    "online_search": false
+    ]
   },
   "expected": {
-    "behavior": "Discover 明确弃权（0 个候选），或只给标 not_recommended 的候选并附解释；不生成提案；不为了出提案强造标的",
+    "behavior": "Discover abstains explicitly (0 candidates), or returns only not_recommended candidates with an explanation; proposals is an empty list; no target is forced into a plan.",
     "abstain": true,
     "proposal_present": false,
     "key_excerpts": []
@@ -27,7 +26,8 @@
     "no_proposal"
   ],
   "human_review": [
-    "E4: 弃权理由是否成立（不是一句空话）"
+    "E4: is the abstention reason substantive (not a platitude)",
+    "E4: did the model use sc-039 / sc-040 (LITE excerpts) to force an election -> LITE chain"
   ],
-  "notes": "设计文档写的是「输入中期选举分裂到一个远距离标的」：给了 Target B 就会跳过 Discover 走 Inspect。本线按「Discover 弃权」写，标的只作为用户追问时的对照；若主 session 决定走 Inspect，期望改为 no_chain + 理由。 注意：真实 semiconductor 包现在含 LITE 的片段（sc-039、sc-040），模型更容易被引去硬连，弃权的期望不变，但复核时要看它有没有拿这些片段凑一条选举 → LITE 的链。"
+  "notes": "The design doc says 'midterm split to a distant target'. Given a Target B the product skips Discover and runs Inspect; this case is written as a Discover abstention, with the target only as the user's follow-up. If the main session moves it to Inspect, the expectation becomes no_chain plus a reason. The real semiconductor pack now contains LITE excerpts (sc-039, sc-040), which makes a forced link more tempting; the abstention expectation stays. Wording: the repo has no copy of the original assignment text, so this English phrasing is ours, not the assignment's verbatim wording. Replace it with the assignment's exact sentence when available."
 }

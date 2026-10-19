@@ -1,68 +1,195 @@
 {
-  "_note": "C3-b：对 C1 基线图做一次预定义 AddShock。Stage 1 Impact Identification 由代码查表（stage1_lookup），不调模型；写范围 = Stage 1 新增节点与边 + 受影响既有节点及其下游节点 + 这些节点的出边。expected_challenged 是人工指定的 golden 集合：冲击只打到硅光代工这一条路径，激光器与 DSP 两条路径应保持 unaffected（一条路径受挑战不等于论点失效）。",
+  "_note": "C3-b: one predefined AddShock on the C1 baseline graph. Stage 1 Impact Identification is a code lookup (stage1_lookup), no model call; write scope = Stage 1 new nodes and edges + impacted existing nodes and their descendants + those nodes' outgoing edges. expected_challenged is the hand-specified golden set: the shock only hits the silicon-photonics foundry path; the laser and DSP paths should stay unaffected (one challenged path does not invalidate the thesis).",
   "base_graph": "c1_graph_v1.json",
   "op": {
     "kind": "add_shock",
     "target": "shock.siph_fab_outage",
-    "value": "硅光代工主力产线因地震停产一个季度（预定义 demo shock）",
-    "impacts": ["c1.siph_foundry"],
+    "value": "The main silicon-photonics foundry line shuts down for one quarter after an earthquake (predefined demo shock)",
+    "impacts": [
+      "c1.siph_foundry"
+    ],
     "new_nodes": [
-      {"id": "shock.siph_fab_outage", "role": "shock", "statement": "情景冲击：硅光代工主力产线停产一个季度", "original_statement": "硅光代工主力产线因地震停产一个季度", "evidence_status": "unknown", "time_bucket": "2027Q1", "instruments": []}
+      {
+        "id": "shock.siph_fab_outage",
+        "role": "shock",
+        "statement": "Scenario shock: the main silicon-photonics foundry line shuts down for one quarter",
+        "original_statement": "The main silicon-photonics foundry line shuts down for one quarter after an earthquake",
+        "evidence_status": "unknown",
+        "time_bucket": "2027Q1",
+        "instruments": []
+      }
     ],
     "new_edges": [
-      {"id": "shock.e1", "from": "shock.siph_fab_outage", "to": "c1.siph_foundry", "channel": "supply", "sign": "-", "lag_days": 0, "mechanism": "产线停产直接压低硅光代工产能利用率", "model_only": true}
+      {
+        "id": "shock.e1",
+        "from": "shock.siph_fab_outage",
+        "to": "c1.siph_foundry",
+        "channel": "supply",
+        "sign": "-",
+        "lag_days": 0,
+        "mechanism": "The line shutdown directly lowers silicon-photonics foundry utilization",
+        "model_only": true
+      }
     ]
   },
-  "stage1_lookup": {"shock.siph_fab_outage": {"impacts": ["c1.siph_foundry"], "new_edges": ["shock.e1"]}},
-  "expected_scope": {
-    "nodes": ["shock.siph_fab_outage", "c1.siph_foundry", "c1.term.foundry"],
-    "edges": ["shock.e1", "c1.e8"],
-    "conditions": ["cond.c1.foundry_utilization"]
+  "stage1_lookup": {
+    "shock.siph_fab_outage": {
+      "impacts": [
+        "c1.siph_foundry"
+      ],
+      "new_edges": [
+        "shock.e1"
+      ]
+    }
   },
-  "expected_challenged": ["c1.siph_foundry", "c1.term.foundry"],
-  "expected_unaffected": ["c1.event", "c1.assume.capex", "c1.assume.external_laser", "c1.cpo_ramp", "c1.laser_demand", "c1.pluggable_dsp", "c1.term.laser_vendor", "c1.term.dsp_vendor"],
-  "expected_next_checks_hint": "下一步查证：停产时长与替代产能；激光器与 DSP 路径不受这次冲击挑战",
+  "expected_scope": {
+    "nodes": [
+      "shock.siph_fab_outage",
+      "c1.siph_foundry",
+      "c1.term.foundry"
+    ],
+    "edges": [
+      "shock.e1",
+      "c1.e8"
+    ],
+    "conditions": [
+      "cond.c1.foundry_utilization"
+    ]
+  },
+  "expected_challenged": [
+    "c1.siph_foundry",
+    "c1.term.foundry"
+  ],
+  "expected_unaffected": [
+    "c1.event",
+    "c1.assume.capex",
+    "c1.assume.external_laser",
+    "c1.cpo_ramp",
+    "c1.laser_demand",
+    "c1.pluggable_dsp",
+    "c1.term.laser_vendor",
+    "c1.term.dsp_vendor"
+  ],
+  "expected_next_checks_hint": "Next check: shutdown duration and replacement capacity; the laser and DSP paths are not challenged by this shock",
   "patch_in_scope": {
     "base_version": "c1-v1",
     "node_updates": [
-      {"id": "c1.siph_foundry", "fields": {"statement": "硅光代工产能利用率提升（情景下受停产冲击挑战）"}}
+      {
+        "id": "c1.siph_foundry",
+        "fields": {
+          "statement": "Silicon-photonics foundry utilization rises (challenged by the shutdown shock in this scenario)"
+        }
+      }
     ],
     "edge_updates": [
-      {"id": "c1.e8", "fields": {"mechanism": "情景下利用率前提受挑战，营收占比上升推迟至少一个季度"}}
+      {
+        "id": "c1.e8",
+        "fields": {
+          "mechanism": "Under the scenario the utilization premise is challenged, so the rise in revenue share is delayed by at least a quarter"
+        }
+      }
     ],
     "condition_updates": [],
     "node_adds": [
-      {"id": "shock.siph_fab_outage", "role": "shock", "statement": "情景冲击：硅光代工主力产线停产一个季度", "original_statement": "硅光代工主力产线因地震停产一个季度", "evidence_status": "unknown", "time_bucket": "2027Q1", "instruments": []}
+      {
+        "id": "shock.siph_fab_outage",
+        "role": "shock",
+        "statement": "Scenario shock: the main silicon-photonics foundry line shuts down for one quarter",
+        "original_statement": "The main silicon-photonics foundry line shuts down for one quarter after an earthquake",
+        "evidence_status": "unknown",
+        "time_bucket": "2027Q1",
+        "instruments": []
+      }
     ],
     "edge_adds": [
-      {"id": "shock.e1", "from": "shock.siph_fab_outage", "to": "c1.siph_foundry", "channel": "supply", "sign": "-", "lag_days": 0, "mechanism": "产线停产直接压低硅光代工产能利用率", "model_only": true}
+      {
+        "id": "shock.e1",
+        "from": "shock.siph_fab_outage",
+        "to": "c1.siph_foundry",
+        "channel": "supply",
+        "sign": "-",
+        "lag_days": 0,
+        "mechanism": "The line shutdown directly lowers silicon-photonics foundry utilization",
+        "model_only": true
+      }
     ],
-    "assessment": {"c1.siph_foundry": "challenged", "c1.term.foundry": "challenged"}
+    "assessment": {
+      "c1.siph_foundry": "challenged",
+      "c1.term.foundry": "challenged"
+    }
   },
   "patches_out_of_scope": [
     {
       "name": "unidentified_new_edge",
-      "why": "补丁新增一条 Stage 1 没有识别的影响关系（冲击 → CPO 出货），AddShock 只能新增经明确识别的影响关系",
-      "touches": {"edges": ["shock.e2"]},
+      "why": "The patch adds an impact edge Stage 1 did not identify (shock -> CPO shipments); AddShock may only add explicitly identified impacts",
+      "touches": {
+        "edges": [
+          "shock.e2"
+        ]
+      },
       "patch": {
         "base_version": "c1-v1",
         "node_updates": [],
         "edge_updates": [],
         "condition_updates": [],
         "node_adds": [
-          {"id": "shock.siph_fab_outage", "role": "shock", "statement": "情景冲击：硅光代工主力产线停产一个季度", "original_statement": "硅光代工主力产线因地震停产一个季度", "evidence_status": "unknown", "time_bucket": "2027Q1", "instruments": []}
+          {
+            "id": "shock.siph_fab_outage",
+            "role": "shock",
+            "statement": "Scenario shock: the main silicon-photonics foundry line shuts down for one quarter",
+            "original_statement": "The main silicon-photonics foundry line shuts down for one quarter after an earthquake",
+            "evidence_status": "unknown",
+            "time_bucket": "2027Q1",
+            "instruments": []
+          }
         ],
         "edge_adds": [
-          {"id": "shock.e1", "from": "shock.siph_fab_outage", "to": "c1.siph_foundry", "channel": "supply", "sign": "-", "lag_days": 0, "mechanism": "产线停产直接压低硅光代工产能利用率", "model_only": true},
-          {"id": "shock.e2", "from": "shock.siph_fab_outage", "to": "c1.cpo_ramp", "channel": "supply", "sign": "-", "lag_days": 30, "mechanism": "未经 Stage 1 识别的新边：代码不应接受", "model_only": true}
+          {
+            "id": "shock.e1",
+            "from": "shock.siph_fab_outage",
+            "to": "c1.siph_foundry",
+            "channel": "supply",
+            "sign": "-",
+            "lag_days": 0,
+            "mechanism": "The line shutdown directly lowers silicon-photonics foundry utilization",
+            "model_only": true
+          },
+          {
+            "id": "shock.e2",
+            "from": "shock.siph_fab_outage",
+            "to": "c1.cpo_ramp",
+            "channel": "supply",
+            "sign": "-",
+            "lag_days": 30,
+            "mechanism": "New edge not identified by Stage 1: code must not accept this",
+            "model_only": true
+          }
         ]
       }
     },
     {
       "name": "edge_on_other_path",
-      "why": "改激光器路径上的边（范围外），冲击不该碰它",
-      "touches": {"edges": ["c1.e7"]},
-      "patch": {"base_version": "c1-v1", "node_updates": [], "edge_updates": [{"id": "c1.e7", "fields": {"mechanism": "被偷改：代码不应接受"}}], "condition_updates": [], "node_adds": [], "edge_adds": []}
+      "why": "Changes an edge on the laser path (out of scope); the shock should not touch it",
+      "touches": {
+        "edges": [
+          "c1.e7"
+        ]
+      },
+      "patch": {
+        "base_version": "c1-v1",
+        "node_updates": [],
+        "edge_updates": [
+          {
+            "id": "c1.e7",
+            "fields": {
+              "mechanism": "Tampered: code must not accept this"
+            }
+          }
+        ],
+        "condition_updates": [],
+        "node_adds": [],
+        "edge_adds": []
+      }
     }
   ]
 }

@@ -1,0 +1,44 @@
+{
+  "id": "B6",
+  "type": "custom",
+  "layer": "B",
+  "title": "Do not abstain when evidenced: NVIDIA purchase commitment -> LITE",
+  "entry": "inspect",
+  "input": {
+    "event": "NVIDIA's multi-billion-dollar purchase commitment to Lumentum will lift Lumentum's revenue",
+    "target": "LITE",
+    "evidence_packs": [
+      "semiconductor"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "The pack supports this chain directly: sc-040 (NVIDIA's purchase commitment and $2B investment in Lumentum), sc-039 (Lumentum's first ELS order, rising CPO laser demand). Expect a path, not a cautious no_chain, and a plan with LITE as the instrument. Counter-evidence such as sc-025 (ELS cuts the total laser count to 1/4) may be raised.",
+    "no_chain": false,
+    "plan_instruments_include": [
+      "LITE"
+    ],
+    "gate": "WAIT",
+    "key_excerpts": [
+      "sc-039",
+      "sc-040",
+      "sc-025"
+    ]
+  },
+  "evals": [
+    "E4",
+    "E1"
+  ],
+  "auto_checks": [
+    "no_chain_is_false",
+    "plan_for_instrument",
+    "gate_per_plan"
+  ],
+  "human_review": [
+    "E4: did the model abstain with a platitude",
+    "E1: is sc-025 addressed"
+  ],
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py). Product version of the Skepticism Trap, paired with T1."
+}

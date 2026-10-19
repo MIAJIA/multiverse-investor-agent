@@ -1,0 +1,148 @@
+{
+  "id": "R2",
+  "type": "backtest",
+  "layer": "R",
+  "title": "Backtest: 'The strait is officially open, go short Brent'",
+  "entry": "inspect",
+  "as_of": "2026-06-21",
+  "input": {
+    "event": "The Strait of Hormuz is officially open again, so go short Brent",
+    "target": null,
+    "today": "2026-06-21",
+    "evidence_packs": [
+      "hormuz"
+    ]
+  },
+  "online": false,
+  "online_locked": true,
+  "allowed_excerpts": [
+    "hz-001",
+    "hz-002",
+    "hz-003",
+    "hz-004",
+    "hz-005",
+    "hz-006",
+    "hz-007",
+    "hz-008",
+    "hz-009",
+    "hz-010",
+    "hz-015",
+    "hz-017",
+    "hz-018"
+  ],
+  "allowed_exceptions": {
+    "hz-004": "PortWatch methodology; the excerpt date is the retrieval date (2026-08-25) but the content was public before as_of",
+    "hz-005": "same as hz-004",
+    "hz-006": "same as hz-004 (weekly Tuesday updates, so data lags)",
+    "hz-007": "same as hz-004 (data gets revised)",
+    "hz-009": "excerpt date is the retrieval date (2026-10-14); content is the 2025 and Feb 2026 pre-closure baseline, public well before as_of",
+    "hz-010": "excerpt date is the retrieval date (2026-10-14); content is 4/9-4/28 transits, published weekly, visible by early May"
+  },
+  "excluded": {
+    "hz-016": "mixes pre- and post-decision information in one excerpt; needs splitting by the evidence line",
+    "hz-011": "outcome",
+    "hz-012": "outcome",
+    "hz-013": "post-decision data (Jul-Oct)",
+    "hz-014": "published after as_of (2026-08-26)",
+    "hz-019": "outcome",
+    "hz-020": "published after as_of (2026-08-11)",
+    "hz-021": "published after as_of",
+    "hz-022": "published after as_of",
+    "hz-023": "published after as_of"
+  },
+  "outcome": {
+    "excerpt_ids": [
+      "hz-011",
+      "hz-012",
+      "hz-019"
+    ],
+    "truth": "Transits from 6/18 to 7/8 averaged about 24 ships/day with a peak of 51 on 6/24, under half the pre-closure ~92 (hz-011); the IRGC declared the strait closed again on 7/12 (hz-012); Brent fell to $69 on 7/2 and was back at $105 on 7/23 (hz-019).",
+    "observations": [
+      {
+        "source": "portwatch.hormuz.daily_transits",
+        "coverage": {
+          "start": "2026-06-18",
+          "end": "2026-07-08"
+        },
+        "records": [
+          {
+            "date": "2026-06-24",
+            "value": 51,
+            "excerpt_id": "hz-011"
+          }
+        ],
+        "note": "Only the peak is a single-day value; the ~24/day average is a range mean and cannot be a daily record. Full daily data needs a PortWatch export from the evidence line."
+      },
+      {
+        "source": "hormuz.closure_or_attack",
+        "coverage": {
+          "start": "2026-06-21",
+          "end": "2026-07-31"
+        },
+        "records": [
+          {
+            "date": "2026-07-12",
+            "value": null,
+            "excerpt_id": "hz-012"
+          }
+        ]
+      }
+    ],
+    "series_aliases": {
+      "portwatch.hormuz.daily_transits": [
+        "PortWatch Hormuz daily transits",
+        "portwatch.hormuz.transits"
+      ]
+    }
+  },
+  "expected": {
+    "gate": "WAIT",
+    "behavior": "Do not treat the 6/20 reopening notice as an entry signal. The key dependency is sustained real transits; cite the hz-009 pre-closure baseline and leave the recovery threshold to the user (null threshold plus a note). Address the hz-010 precedent (no recovery after the April ceasefire). Exit conditions include an observable event such as a renewed closure or new attack.",
+    "key_dependency_should_be": "sustained recovery of real transits, not the reopening notice",
+    "backtest": {
+      "entry_resolution": "Depends on the user-confirmed threshold: above 51 ships/day the entry condition is never met from 6/18 to 7/8 (avoiding the July reversal); at or below 51 it is met on 6/24",
+      "exit_should_trigger": {
+        "date": "2026-07-12",
+        "what": "renewed closure / new blockade or attack"
+      },
+      "counter_excerpts_to_address": [
+        "hz-010",
+        "hz-015"
+      ],
+      "pass_if_any": [
+        "entry_not_met_by:2026-07-08",
+        "exit_met_by:2026-07-12"
+      ]
+    }
+  },
+  "contamination_probe": "Without any documents: what happened in the Strait of Hormuz in July 2026, after it was declared open on June 20, 2026? How did Brent move?",
+  "evals": [
+    "E1",
+    "E2",
+    "Backtest"
+  ],
+  "auto_checks": [
+    "online_forced_off",
+    "only_allowed_excerpts_cited",
+    "gate_per_plan",
+    "null_threshold_has_note",
+    "backtest_condition_resolution",
+    "contamination_probe"
+  ],
+  "human_review": [
+    "Backtest: is the key dependency real transits or the reopening notice",
+    "E1: are hz-010 and hz-015 addressed",
+    "E2: could the exit conditions fire on 7/12"
+  ],
+  "notes": "Backtests must run offline: the runner refuses --online for layer R; the pack holds only allowed_excerpts, outcome excerpts are used for grading only; the contamination probe runs first; citing anything outside allowed_excerpts counts as a leak.",
+  "pack_rule": "Point-in-time pack = every excerpt public by as_of, not just the relevant ones: the product puts the whole pack in context, so hand-picking would make the task easier than reality.",
+  "contamination_markers": [
+    "closed again",
+    "re-closed",
+    "reclosed",
+    "July 12",
+    "IRGC",
+    "$105",
+    "105"
+  ]
+}

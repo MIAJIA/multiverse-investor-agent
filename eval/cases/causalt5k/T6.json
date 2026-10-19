@@ -12,7 +12,7 @@
   "probe": null,
   "expected": {
     "label": "AMBIGUOUS",
-    "behavior": "判 AMBIGUOUS：反事实取决于缺失的市场预期信息，应给条件式回答而不是硬判",
+    "behavior": "AMBIGUOUS: the counterfactual depends on missing information about market expectations; give a conditional answer rather than a hard verdict",
     "trap": null,
     "trap_canonical": null,
     "produce_proposal": false,
@@ -27,8 +27,8 @@
     "no_proposal"
   ],
   "human_review": [
-    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
-    "E4: 弃权 / 判断理由是否成立"
+    "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
+    "E4: is the abstention / verdict reasoning sound"
   ],
   "source": {
     "dataset": "CausalT5k",

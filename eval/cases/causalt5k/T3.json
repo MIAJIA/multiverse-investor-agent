@@ -12,7 +12,7 @@
   "probe": null,
   "expected": {
     "label": "NO",
-    "behavior": "判 NO：经济刺激 Z 同时影响买入决定与收益率（未阻断的后门路径），断言在当前材料下不成立",
+    "behavior": "NO: the economic stimulus Z drives both the purchase decision and yields (an unblocked backdoor path), so the claim does not hold on this material",
     "trap": "CONFOUNDER",
     "trap_canonical": "Confounding",
     "produce_proposal": false,
@@ -27,8 +27,8 @@
     "no_proposal"
   ],
   "human_review": [
-    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
-    "E4: 弃权 / 判断理由是否成立"
+    "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
+    "E4: is the abstention / verdict reasoning sound"
   ],
   "source": {
     "dataset": "CausalT5k",

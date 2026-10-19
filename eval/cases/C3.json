@@ -1,7 +1,7 @@
 {
   "id": "C3",
   "type": "custom",
-  "title": "对 C1 基线图分叉：ChangeAssumption + AddShock",
+  "title": "Fork the C1 baseline graph: ChangeAssumption + AddShock",
   "entry": "fork",
   "input": {
     "base_graph_fixture": "c1_graph_v1.json",
@@ -10,10 +10,10 @@
       "c3_add_shock.json"
     ],
     "fork_pack_fixture": "c1_evidence_pack.json",
-    "fork_pack_note": "golden 图引用的是占位片段（sc-001…008 的占位含义），fork 的上下文只配 c1_evidence_pack，不带真实 semiconductor 包：真实包复用了同样的 id 但含义和立场不同，混用会让模型看到对不上的引用。"
+    "fork_pack_note": "The golden graph cites placeholder excerpts (sc-001...008 with placeholder meanings). The fork context gets only c1_evidence_pack, never the real semiconductor pack: the real pack reuses the same ids with different meanings and stances, so mixing them would show the model references that do not match."
   },
   "expected": {
-    "behavior": "写范围由代码先定；范围外节点、边、Condition 哈希不变；AddShock 只新增 Stage 1 识别的边；challenged 集合 = golden；基线版本仍在；提案 v2 的变化能追溯到被改的假设",
+    "behavior": "The model marks exactly the golden claims as challenged. Write scope, out-of-scope hashes, new-edge identification and baseline retention are code behavior covered by the functional tests; here only the model's assessment is judged.",
     "non_interference": true,
     "expected_impact_from_fixture": true
   },
@@ -28,7 +28,7 @@
     "challenged_matches_golden"
   ],
   "human_review": [
-    "E3: diff 文案是否把情景说成了观测（只能写「受挑战」，不能写「已失效」）"
+    "E3: does the diff text present the scenario as an observation (it may only say 'challenged', never 'invalidated')"
   ],
-  "notes": "跑真实模型时用 C1 本轮生成的图还是 golden fixture 图：Expected Impact 只能对 golden 图自动比对，所以 runner 默认用 fixture 图。"
+  "notes": "Real runs use the golden fixture graph rather than the graph C1 produced in the same run: Expected Impact can only be compared automatically against the golden graph."
 }

@@ -1,20 +1,18 @@
 {
   "id": "C2",
   "type": "custom",
-  "title": "高于 Fable 的模型被出口限制 → 用户给的标的：Inspect",
+  "title": "Models stronger than Fable get export-restricted -> user-given target: Inspect",
   "entry": "inspect",
   "input": {
-    "event": "高于 Fable 的模型被出口限制",
+    "event": "Models more capable than Fable become subject to US export restrictions",
     "target": "NVDA",
-    "target_note": "Target B 由用户在 demo 时给出；这里先用 NVDA 占位，主 session 可改",
+    "target_note": "Target B is given by the user in the demo; NVDA is a placeholder the main session can change",
     "evidence_packs": [
-      "semiconductor",
-      "web"
-    ],
-    "online_search": true
+      "semiconductor"
+    ]
   },
   "expected": {
-    "behavior": "给出一条 A → B 的因果路径（允许分支与汇聚）或 no_chain + 理由；至少一条 document 或 event 型 Condition（出口管制正式文件、生效日期、许可证要求），anchor 与 deadline 是绝对日期或用户指定的情景起点；不编数值阈值；进场判定 WAIT",
+    "behavior": "Give an A -> B causal path (branching and merging allowed) or no_chain with a reason. At least one document or event condition (the formal export-control filing, effective date, licence requirement); anchor and deadline are absolute dates or a user-specified scenario start. No invented numeric thresholds. Every plan's gate is WAIT.",
     "chain_or_no_chain": true,
     "condition_kinds_required_any": [
       "document",
@@ -31,7 +29,7 @@
       "sc-050",
       "sc-051"
     ],
-    "key_excerpts_note": "模型权重管制：sc-044（AI Diffusion，ECCN 4E091）、sc-045（不执行）、sc-046（GAO：未正式撤销）、sc-047（撤回全球许可草案）；NVDA 一端：sc-050（H20 许可与 $5.5B 费用）、sc-051（H200 尚无收入）。缺口：真实包里没有「模型权重管制 → NVDA 收入」的直接片段，也没有替代规则；芯片管制片段 sc-029–032、sc-048、sc-049 管的是芯片不是模型权重，不算关键片段。合理输出可以是 no_chain 或把这一跳标 model_only。"
+    "key_excerpts_note": "Model-weight controls: sc-044 (AI Diffusion rule, ECCN 4E091), sc-045 (not enforced), sc-046 (GAO: not formally rescinded), sc-047 (draft global licensing rule withdrawn); NVDA side: sc-050 (H20 licence and $5.5B charge), sc-051 (no H200 revenue yet). Gap: the pack has no excerpt linking model-weight controls to NVDA revenue and no replacement rule; the chip-control excerpts sc-029-032, sc-048, sc-049 govern chips, not model weights, so they are not key excerpts. A reasonable output is no_chain or marking that hop model_only."
   },
   "evals": [
     "Inspect",
@@ -45,8 +43,12 @@
     "no_numeric_threshold_without_source"
   ],
   "human_review": [
-    "E1: 路径每一跳是否有资料依据",
-    "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"
+    "E1: is every hop of the path grounded in the pack",
+    "E2: are the document / event conditions specific, decidable and logically tied to the thesis"
   ],
-  "notes": "本线默认把在线搜索 pack 开在这个案例上演示（INTERFACE.md 决定 D9）；成败不依赖实时搜索结果。"
+  "notes": "Online is controlled by the runner's --online flag; evidence_packs no longer lists 'web' (the old placeholder name, which made the runner report a missing pack). The offline run belongs to layer A; the online run belongs to layer W, recorded once and then replayed, reporting round-1 / round-2 model_only edge counts and null-threshold condition counts. Wording: the repo has no copy of the original assignment text, so this English phrasing is ours, not the assignment's verbatim wording. Replace it with the assignment's exact sentence when available.",
+  "run_variants": [
+    "offline",
+    "online"
+  ]
 }

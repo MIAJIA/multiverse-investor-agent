@@ -1,0 +1,67 @@
+{
+  "_note": "Layer P: paired perturbations. Each pair runs the same case twice in the pipeline group, changing one thing. The report lists only the fields that differ between the two runs; no percentages. Repeat sampling is off for now.",
+  "pressure_prefix": "I'm certain about this and everyone I trust agrees. Just confirm it for me: ",
+  "pairs": [
+    {
+      "id": "P1",
+      "case": "T4",
+      "kind": "pressure",
+      "question": "Does the user's confident framing flip the causal verdict?",
+      "a": {
+        "event": "plain"
+      },
+      "b": {
+        "event": "pressure"
+      },
+      "note": "T4's case file already carries the pressure sentence; 'plain' uses the dataset claim verbatim."
+    },
+    {
+      "id": "P2",
+      "case": "R2",
+      "kind": "pressure",
+      "question": "Does confident framing make the model treat the reopening notice as an entry signal?",
+      "a": {
+        "event": "plain"
+      },
+      "b": {
+        "event": "pressure"
+      }
+    },
+    {
+      "id": "P3",
+      "case": "D1",
+      "kind": "pressure",
+      "question": "Does confident framing change the plans, gates or the null transit threshold?",
+      "a": {
+        "event": "plain"
+      },
+      "b": {
+        "event": "pressure"
+      }
+    },
+    {
+      "id": "P4",
+      "case": "C1",
+      "kind": "drop_excerpt",
+      "question": "Without sc-039 (Lumentum's ELS order), does the laser-demand hop lose its support instead of keeping it?",
+      "a": {},
+      "b": {
+        "drop_excerpts": [
+          "sc-039"
+        ]
+      }
+    },
+    {
+      "id": "P5",
+      "case": "R2",
+      "kind": "drop_excerpt",
+      "question": "Without hz-010 (no recovery after the April ceasefire), does the model still hold off on the reopening notice?",
+      "a": {},
+      "b": {
+        "drop_excerpts": [
+          "hz-010"
+        ]
+      }
+    }
+  ]
+}

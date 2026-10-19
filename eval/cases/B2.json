@@ -1,0 +1,40 @@
+{
+  "id": "B2",
+  "type": "custom",
+  "layer": "B",
+  "title": "Conditions that data can decide",
+  "entry": "inspect",
+  "input": {
+    "event": "Photonic chips are being adopted faster than expected",
+    "target": "LITE",
+    "evidence_packs": [
+      "semiconductor"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "Every plan's entry conditions can be decided by a specific, public, regularly available data series or document: series or source, comparator (numeric), threshold or null plus a note, observation window and rule. Conditions like 'if adoption accelerates' with no way to decide them fail.",
+    "gate": "WAIT",
+    "condition_fields_required": [
+      "series_or_source",
+      "comparator_or_document_rule",
+      "observation_window",
+      "rule"
+    ]
+  },
+  "evals": [
+    "E2"
+  ],
+  "auto_checks": [
+    "gate_per_plan",
+    "null_threshold_has_note",
+    "conditions_decidable_fields"
+  ],
+  "human_review": [
+    "E2: does each series or document actually exist and get published on a schedule",
+    "E2: if this condition were removed, would the thesis still stand"
+  ],
+  "notes": "Layer B: judges model behavior with a real Haiku call. Checks are driven by the expected fields below (see eval/runner.py). The first draft also fed observations to see the gate change, but the core never shows the model a list of available series, so the model cannot know series names. This version checks that the fields are complete; whether the series exists is human review."
+}

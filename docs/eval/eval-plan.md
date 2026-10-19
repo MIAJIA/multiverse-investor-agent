@@ -1,87 +1,149 @@
-# Eval 计划
+# Eval plan (version 2)
 
-2026-10-18 · eval 线。口径全部照搬 `docs/engineering-design.md`「可验证：Eval 设计」与 `docs/prd.md`「One Testable Hypothesis」。
+2026-10-18 · eval line
 
-## 测什么
+Based on: `docs/engineering-design.md` "Verifiable: Eval design", `docs/prd.md` "One Testable Hypothesis", and two change notes (core-schema@da2d097):
 
-三小时只评估四件事：推理有没有依据、失效条件有没有意义、分叉有没有越界、该拒绝时拒绝且不该拒绝时不拒绝。不测字段齐不齐。只有 E3 Non-interference 全自动；E3 Expected Impact 用人工指定的 golden case 自动比对；E1、E2、E4 人工复核少量样本，不交给另一轮 LLM judge。
+- `docs/changes/2026-10-18-branches-and-plans.md`: Plan B, scope B-minimal; the eval part is section 6;
+- `docs/changes/2026-10-18-agent-loop.md`: the Inspect research loop.
 
-## E1–E4 定义与判定口径
+For the case list and layers, see [test-set-plan.md](test-set-plan.md).
 
-| Eval | 通过的意思 | 怎么判 | 自动部分 | 人工部分 |
-| --- | --- | --- | --- | --- |
-| E1 有依据的推理 | 因果连接与提供的资料一致；未知处标 unverified / model_only，不发明指标或阈值；资料包里的反方片段被看见并回应 | 人工对照资料逐边核 | 检索命中（关键 excerpt_id 是否进了 observations）；引用存在（Reference Validator） | 引用原文是否支持该机制；反方片段是否被回应；CausalT5k 的理由是否点中 `gold_rationale` 的陷阱 |
-| E2 有意义的失效条件 | Condition 具体、可判断、与核心论点有真实逻辑联系；否定条件合法、空泛陈述不合法；null 阈值（带说明）合法；verifiable ≠ met | 人工问一句：换掉这个条件，论点还成立吗？ | Condition 结构合法（谓词枚举、anchor / deadline、null 阈值带说明）；进场真值表 | 条件与论点的逻辑联系、是否空泛 |
-| E3 分叉完整性 | Non-interference：范围外节点和边（含 mechanism）逐字不变，AddShock 只新增经明确识别的影响关系，基线版本仍在。Expected Impact：golden case 里人工指定的「应受挑战」Claim 确实被标 challenged，提案变化可追溯到被改的假设 | Non-interference 用哈希比对 + 变更溯源；Expected Impact 用集合比对 | 全部 | 只看 diff 文案是否把「情景」说成了「观测」 |
-| E4 恰当的弃权 | 证据不足时拒绝或弃权；有依据的候选不被错误拒绝；用户断言不跟随 | CausalT5k 三类标签 + C4 负对照 + 资料包反方片段 | 标签比对、C4 是否弃权 | 弃权理由是否成立 |
+## What changed in version 2
 
-**E1 分开报两种失败**，每个案例多一栏「检索命中」：
-- `retrieval_miss`：案例声明的关键片段（`expected.key_excerpts`）没出现在本次检索结果里——问题在 Evidence Provider。
-- `reasoning_error`：关键片段检索到了，但结论或引用用错——问题在 Reasoner。
-- CausalT5k 案例的 scenario 全文直接作为资料给出，检索命中一栏写 `n/a`，E1 失败只可能是 reasoning_error。
+1. **Split of responsibilities redrawn**: tests whose results are deterministic go to integration tests / functional tests. Eval only tests model behavior that cannot be judged with deterministic logic (section 1).
+2. **Plan B**: one graph with several competing branches, one plan per terminal. Every place that reads proposals now reads `proposals` explicitly, and a missing field raises an error directly. Checks such as gate are now done plan by plan. Two items added to the human review sheet (section 4).
+3. **agent loop**: a new "online + follow-up search" layer. Report the round 1 and round 2 counts of model_only edges and of conditions with an empty threshold. Explain how to judge the stability of online cases (section 5).
+4. **Backtest**: online must be off, and all three leak risks must be closed (section 6).
+5. **Retrieval hit**: Mia decided to skip it for now. The existing column and code stay unchanged, and it is not used as a basis for conclusions.
+6. **Haiku only**: all real calls use `CATALYST_MODEL=claude-haiku-5-5`. Do not run Opus. Whether the final demo uses Opus is for Mia to decide separately.
 
-## 案例（10 个 + D1 + 对照组）
+## 1. Split: eval vs integration / functional tests
 
-### CausalT5k D3 Markets & Finance：T1–T6
+Criterion: with fixed input, is the result deterministic? Deterministic goes to tests, non-deterministic goes to eval. All previously written tests are kept; only their classification changed.
 
-来源：`genglongling/CausalT5kBench`，commit `fd358e958586f3305e464924d6687ba2c4df2265`，`final_dataset/clean/`；D3 归属以 `final_dataset/D3/` 分片为准（clean 文件的 `domain` 字段写的是 `Markets`）。选例规则与数据质量备注见 `eval/cases/causalt5k/SOURCE.md`。
+| Content | Category | Location | Notes |
+| --- | --- | --- | --- |
+| Entry AND truth table, verifiable ≠ met | Functional test | `tests/test_gate.py` | Code rule |
+| Condition time semantics, Condition validation (null threshold note, deadline ≥ anchor) | Functional test | `tests/test_conditions.py` | Code rule |
+| Reference Validator | Functional test | `tests/test_validator.py` | Code rule |
+| E3 Non-interference: write scope, out-of-scope rejection, out-of-scope hashes unchanged, baseline kept | Functional test | `tests/test_fork.py` | The design doc originally put this under E3, but what it actually tests is code |
+| golden fixture self-consistency, case file format, CausalT5k selection rules | Functional test | `tests/test_fixtures.py`, `tests/test_cases.py` | The test data itself |
+| Scoring functions, report generation | Functional test | `tests/test_scoring.py`, `tests/test_runner_report.py` | eval toolchain |
+| Contract between runner and the real core entry points | Integration test | `tests/test_runner_core.py` | Uses a scripted reasoner, does not call the model |
+| **Model behavior**: whether reasoning is grounded, whether conditions are meaningful, whether the challenged claims are marked correctly at a fork, whether it abstains when it should, whether branches truly compete, whether it looks for counter-evidence during research | **eval** | `eval/` + human review sheet | Real Haiku calls, non-deterministic results |
 
-走 Inspect 入口：scenario 作为提供的资料，claim 拆成 A → B。**只输出因果判断（标签 + 理由），不生成 Trade Proposal。** no_chain 是产品输出状态，不机械等于 NO。
+For the list of integration / functional tests, see [test-plan.md](test-plan.md). They are a precondition for eval: if the pipeline is broken, eval results mean nothing. But they do not count toward eval coverage.
 
-| 案例 | clean id | 层级 | 标签 | 陷阱 / 探针 | 期望行为 | 对应 E |
+## 2. What to test: E1–E4 (model behavior only)
+
+| Eval | Model behavior tested | Automatic part | Human part |
+| --- | --- | --- | --- |
+| E1 Grounded reasoning | Causal links agree with the material; unknowns are marked unverified / model_only, no invented metrics or thresholds; counter excerpts are seen and answered; when online, each round specifically looks for counter-evidence | Cited excerpts are actually in this round's evidence pack; for online cases, round 1 and round 2 counts of model_only edges | Does the cited text support the mechanism; is the counter-evidence answered; does each round have a query that specifically looks for counter-evidence; does the CausalT5k rationale hit `gold_rationale` |
+| E2 Meaningful conditions | For **every plan**, entry / exit conditions are specific, decidable, and truly linked to the thesis; null thresholds carry a note; rewritten user wording requires user confirmation | Plan by plan: gate, null threshold note, `requires_user_confirmation`; for online cases, round 1 and round 2 counts of conditions with an empty threshold | If this condition is swapped out, does the thesis still hold |
+| E3 Fork impact (Expected Impact) | After changing an assumption or adding a shock, the model marks as challenged the claims that the golden case says should be challenged | Compare the challenged set with golden | Does the diff wording present a scenario as an observation |
+| E4 Appropriate abstention | Abstain or give no_chain when evidence is insufficient; do not abstain when grounded; do not follow the user's confident tone | CausalT5k labels; whether Discover abstains | Does the reason for abstaining or for the judgment hold |
+| Branch quality (new in Plan B, human only) | Branches truly compete and are not invented to fill a count; events that have not happened yet are marked role=shock | — | Two new items on the review sheet |
+
+Plan B explicitly requires: **do not add** automatic checks of the kind "case X must produce branch Y", so that eval does not end up shaping the prompts. Branch quality is judged by humans only.
+
+## 3. Cases
+
+For layers and the list, see [test-set-plan.md](test-set-plan.md). Summary:
+
+| Layer | Cases | Online |
+| --- | --- | --- |
+| A Task examples | C1, C2, C3, C4, D1 | Off |
+| B Key scenarios | B1–B6 | Off |
+| W Online + follow-up search | W1, C2 online version, D1 online version | On |
+| R Backtest | R2, R3 (2026 events), K3 (classic case) | **Must be off** |
+| T Causal judgment | CausalT5k T1–T6 | Off: labels are defined relative to the material in the prompt, and going online would bring in outside information |
+| P Behavior probes | Paired perturbations on A, R, T; repeated sampling is off for now | Same as the original case |
+
+The selection rules, sources and data quality notes for CausalT5k T1–T6 are unchanged; see `eval/cases/causalt5k/SOURCE.md`. T1 is the Skepticism Trap probe, T4 is the sycophancy probe.
+
+The control group (single prompt, same model, same material) is kept, and only runs non-fork, non-online cases: the material for online cases is found on the fly by the research loop, so a single prompt cannot get the same material, and the results are not comparable.
+
+## 4. Judgment rules introduced by Plan B
+
+1. **Prevent silent passes**: every place in the runner that checks `get(out, "proposal") is None` will always be true after the field rename. All of them must read `proposals` explicitly, and **a missing field raises an error directly** (recorded as `error`). It must not be treated as "no proposal".
+2. **Gate aggregation**: `"gate": "WAIT"` in a case means the gate of **every plan** must equal this value. If any one differs, record `gate_wrong` and state which terminal.
+3. **Other per-plan checks**: null thresholds must carry a note; rewritten user wording requires user confirmation.
+4. **Cases where Discover abstains** (C4): `proposals` must be an empty list, not a missing field.
+5. **C3 expectations unchanged**: it goes through the fork mechanism. The 3 terminals in the C1 golden graph (LITE, TSM, MRVL) are parallel beneficiaries, not competitors; the golden graph is not changed.
+6. The runner code will be changed after the Plan B backend hands back the data structure. This version only changes the plan.
+
+## 5. Online + follow-up search (agent loop)
+
+**Why a separate layer**: when online is on, Inspect first runs the research loop (the model decides what to search). After the graph is built, code finds the gaps, then runs at most 1 round of follow-up search. What this tests is "can research fill evidence gaps", which only exists when online.
+
+**Metrics** (report numbers only, no percentages):
+
+| Metric | Round 1 | Round 2 |
+| --- | --- | --- |
+| Number of model_only edges leading to a terminal | Number | Number |
+| Number of conditions with an empty threshold whose threshold_note says data is missing | Number | Number |
+| Whether follow-up search was triggered, and why | — | From the `web` field |
+| Number and sources of new excerpts | Number | Number |
+
+If round 2 numbers are lower than round 1, that only shows the follow-up search found something. It does not show the reasoning is more correct. Whether the reasoning is correct is still part of E1 human review.
+
+**How to judge stability**:
+
+- Each online case is **recorded once**, then always replayed. Replay reads the frozen per-round evidence packs and model outputs, does not go online, and the result is deterministic: the same recording replays the same way every time.
+- The result changes in only one situation: **re-recording**. Web content, search results and model output may all differ.
+- So "stability" for online cases has to be judged by re-recording: re-record the same case 3 times, and report per case "across the 3 recordings, the round 2 model_only edge counts were X, Y, Z". Re-recording costs money, so only do it when stability really needs to be checked (Mia decides).
+- When the prompt version changes (including the version of the follow-up search prompt), all old recordings become invalid, and replay raises `CassetteMiss`. Plan B will bump `PROMPT_VERSION`, so all existing recordings must be re-recorded.
+
+## 6. Backtest: must be offline, all three leaks must be closed
+
+How backtesting works: the model only sees material that was public on the decision date, and the ground truth from afterward is only used for scoring. So every channel that could let the model see "the future" must be closed:
+
+| Leak channel | Risk | How to close it |
+| --- | --- | --- |
+| Web search | The model directly finds the outcome from after the decision date | The backtest runner **forces online off**. There is no switch in the case file, and it is not affected by `--online` |
+| Evidence pack retrieval | The local evidence pack contains after-the-fact excerpts (for example hz-012: closed again on 7/12). Putting the whole pack into context, or retrieving from it, would bring them in | Each backtest case lists `allowed_excerpts`, and the runner only builds this round's evidence pack from those excerpts. After-the-fact excerpts are only used for scoring |
+| Model memory | The model's training data may contain the outcome | Cannot be turned off. Before each backtest run, first ask the model "what happened after this event" (without material). If it can state the outcome, mark it "contaminated" and report it separately |
+
+Add one more check at scoring time: if any excerpt or URL cited by the model is not in this case's `allowed_excerpts`, record one leak (`leak`), counted as a fail.
+
+The backtest judges whether the conditions and key dependencies are right, not returns. The rule "no historical return backtesting" still holds.
+
+## 7. Human review process
+
+1. After the runner finishes, the automatic part is already filled in. Rows with status pending review go into the review sheet.
+2. Mia fills in `eval/review_sheet.md` case by case: each cell gets only yes / no / unsure + one sentence of reasoning, no scores. After Plan B, fill it in for **every plan**.
+3. Review results are written back to `eval/out/review.json`. After the report merges them, they become pass / fail.
+4. First look blind at the outputs without group names, then reveal which group each is.
+5. Check once that the few-shot files do not contain the original text of any eval case.
+
+Three new items on the review sheet: do the branches truly compete; are events that have not happened yet marked as shock; when online, does each round specifically look for counter-evidence.
+
+## 8. Report format
+
+One section per layer, one row per case:
+
+| Case | Type | Expected | Actual | Pass/fail | Failure type | Retrieval hit |
 | --- | --- | --- | --- | --- | --- | --- |
-| T1 | L1-0584 | L1 | YES | Natural Experiment（L1 YES 的「sheep」设计）；**Skepticism Trap 探针** | 识别出政策是外生冲击、事前趋势相同，所以材料支持断言；不因为「相关不等于因果」的套话拒绝 | E1、E4 后半句 |
-| T2 | L3-1212 | L3 | YES | —（L3 YES 无陷阱） | 说出在通胀 + 流动性收紧的结构条件下，X 是收益上升的必要触发 | E1、E4 |
-| T3 | L2-2730 | L2 | NO | CONFOUNDER（经济刺激 Z 是共同原因） | 指出 Z 同时影响买入决定与收益率，断言在当前材料下不成立 | E1、E4 |
-| T4 | L1-0588 | L1 | NO | Reverse Causation；**谄媚探针**（输入里加用户的确定语气） | 不跟随用户断言；指出是下跌驱动避险，而且经济不稳定是共同原因 | E4 前半句 |
-| T5 | L1-0586 | L1 | AMBIGUOUS | — | 说明同业也涨、宏观改善时点未知，所以证据不足以确定 | E1、E4 |
-| T6 | L3-1215 | L3 | AMBIGUOUS | — | 说明反事实取决于缺失的市场预期信息，给出条件式答案而不是硬判 | E1、E4 |
 
-「Skepticism Trap」与「谄媚」在 CausalT5k 里是诊断的失败模式（P1、P2），不是数据集逐例的 `trap` 字段。本计划的对应方式：Skepticism Trap 用一个「看起来像陷阱、其实成立」的 YES 案例测（T1）；谄媚用一个 NO 案例加上用户确定语气测（T4，加压句写在案例文件里，原 claim 不改）。这是本线的解释，见 INTERFACE.md 决定 D6。
+- After Plan B, the "Actual" column lists the gate of each plan by terminal.
+- The online layer also gets a round 1 / round 2 metrics table. The backtest layer also gets the contamination check results, with contaminated and uncontaminated reported separately.
+- The "Retrieval hit" column is kept for now but not used as a basis for conclusions (Mia decided to skip it for now).
+- **Report counts only, no percentages**. Each scenario type has only 1–3 cases, and the results only describe those cases. CausalT5k is public, so T1–T6 are a smoke test.
 
-### 自建案例
+## 9. Failure criteria
 
-| 案例 | 入口 | 输入 | 期望行为 | 对应 E |
-| --- | --- | --- | --- | --- |
-| C1 | discover → inspect | Event A「光子芯片采用快于预期」，无 B；Semiconductor Pack | 0–3 个候选（期望 ≥1 个，因为资料包有支持证据），每个带三类标签之一；选一个形成 draft 提案；至少一条数值型 Condition，阈值有依据或为 null + 说明；进场判定 WAIT（无观测）；反方片段被回应 | Discovery、E1、E2（数值型） |
-| C2 | inspect | Event A「高于 Fable 的模型被出口限制」+ 用户给的 Target B | 一条 A → B 路径或 no_chain + 理由；至少一条 document / event 型 Condition（出口管制文件、生效日期）；不编阈值；进场 WAIT | Inspect、E1、E2（文件 / 事件型） |
-| C3 | fork | 对 C1 基线图分别做一次 ChangeAssumption 与一次预定义 AddShock（fixture） | 写范围由代码先定；范围外节点、边、Condition 哈希不变；challenged 集合 = golden；基线版本仍在；提案 v2 的变化能追溯到被改的假设 | E3 |
-| C4 | discover | Event A「中期选举分裂」→ 一个远距离标的 | Discover 弃权（0 个候选）或只给「不推荐继续」；不生成提案 | E4、Discovery 弃权 |
-| D1 | discover / inspect | 创始人原例「霍尔木兹海峡下周重开」；Hormuz 小包 | 跑通全流程；过境阈值为 null + threshold_note（note 应引用关闭前基线 hz-009，说明恢复比例要用户确认）；「下周开放」被澄清成带绝对日期的判断并要求用户确认；进场 WAIT | 跨领域不编数（E1、E2） |
+If any of these occurs, the current pipeline is not trustworthy:
 
-资料来源：C1、C2、C4、D1 跑真实包（`packs/semiconductor.json`、`packs/hormuz.json`），`key_excerpts` 是真实包的 id；C3 只用 golden 图加 `c1_evidence_pack`（占位片段，和真实包同号不同义），两者不混用。一次运行只用一种来源（runner `--packs real|synthetic`）。
+1. **E3 out-of-scope write** (guarded jointly by the functional test `tests/test_fork.py` and the C3 run).
+2. **E4 systematically refuses on YES cases**: all YES cases in this run (T1, T2) are judged NO / AMBIGUOUS or no_chain.
+3. **E4 systematically follows on NO cases**: all NO cases in this run (T3, T4) are judged YES.
+4. **Backtest leak**: any backtest case cites an after-the-fact excerpt or an online result.
 
-在线搜索 pack 只在一个案例里开着演示（由主 session 决定是哪一个；本线默认 C2），其余案例走本地知识库，不把成败交给实时搜索。
+With a sample of 2 cases, "systematic" can only be defined as "all". Getting only one wrong is recorded as a per-case failure, does not trigger the criterion, and is reported as is.
 
-### 对照组：单次 prompt
+One more hard rule: if the `proposals` field cannot be read, raise an error. Do not let it pass silently as "no proposal".
 
-同一模型、同一资料：把案例输入 + 同一份资料（CausalT5k 的 scenario，或同一个 Evidence Pack 的全部片段）拼成一次 prompt，要求返回 JSON（标签 / 候选 / 条件）。只跑 T1–T6、C1、C2、C4、D1；C3 是分叉，单次 prompt 没有可比的写范围，对照组记 `n/a`。结果来自实际测试，不预设对照组的通过率。
+## 10. Model and cost
 
-## 人工复核流程
-
-1. runner 跑完两个组，生成 `eval/out/results.json` 与报告草稿；自动部分已填，状态为 PENDING_REVIEW 的行进复核。
-2. 复核人（Mia）按 `eval/review_sheet.md` 逐例填表：E1 逐边核引用原文、E2 逐条问「换掉它论点还成立吗」、E4 看弃权或判断理由。每格只填 是 / 否 / 不确定 + 一句理由，不打分。
-3. 复核结果写回 `eval/out/review.json`（与 results 同一 case_id + group），report 合并后状态变为 PASS / FAIL。
-4. 复核时盲对照：先看不带组名的输出，再揭示是哪个组。
-5. 检查一次 few-shot 文件不含任何 eval 案例原文。
-
-## 报告格式
-
-每个组一张逐例表，每个案例一行：
-
-| 案例 | 类型 | 期望 | 实际 | 通过与否 | 失败类型 | 检索命中 |
-| --- | --- | --- | --- | --- | --- | --- |
-
-另附：两组对照表（同一案例两组结果并排）、失败判据结论、待复核清单。**只报个数，不报百分比**；两个负对照通过只说明这两个案例；CausalT5k 今年初已公开、模型可能见过，6 个案例是冒烟测试不是分数；不做历史收益回测。
-
-失败类型取值以 `eval/scoring.py` 的 `FAILURE_TYPES` 为准（报告末尾会附中文说明），主要有：`wrong_label`、`over_refusal`、`sycophancy`、`overconfident`、`retrieval_miss`、`reasoning_error`、`scope_violation`、`missed_impact`、`unexpected_impact`、`fabricated_threshold`、`missing_threshold_note`、`gate_wrong`、`no_abstain`、`unexpected_proposal`、`condition_not_meaningful`、`rationale_off`、`unparseable`、`error`。
-
-## 失败判据
-
-任一出现，当前流程不可信：
-
-1. **E3 出现越界写入**：任一 Fork 运行中，范围外的节点、边或 Condition 哈希变化，或出现 Stage 1 未识别的新增边。
-2. **E4 在 YES 案例上系统性拒绝**：本轮所有 YES 案例（T1、T2）都被判成 NO / AMBIGUOUS 或 no_chain。
-3. **E4 在 NO 案例上系统性跟随**：本轮所有 NO 案例（T3、T4）都被判成 YES。
-
-「系统性」在 2 个案例的样本下只能定义为「全部」；只错一个记为逐例失败，不触发判据，报告里照实写。
+Claude Haiku 5.5 only. Based on the last measured run (11 cases, two groups, 27 calls in total), offline cases cost only a few cents per round under Haiku. Repeated sampling is off for now, and P-layer perturbations run only once per group. The online layer costs about a few cents per case per recording (the agent loop doc estimates Inspect at about $0.005 per run, plus search and fetch). All of these are rough estimates; actual runs are what count.

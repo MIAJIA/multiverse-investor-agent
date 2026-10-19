@@ -48,3 +48,92 @@ def test_custom_cases_are_complete():
     assert by["C4"]["expected"]["abstain"] is True
     assert "E3" in by["C3"]["evals"]
     assert by["D1"]["expected"]["gate"] == "WAIT"
+
+
+def test_online_cases_are_declared_not_hardcoded():
+    """联网由 --online 控制：evidence_packs 里不再出现旧占位名 web；W 层案例标了 run_variants。"""
+    for case_id in CUSTOM_IDS + ["W1"]:
+        assert "web" not in load_case(case_id)["input"].get("evidence_packs", []), case_id
+    w1 = load_case("W1")
+    assert w1["entry"] == "inspect" and w1["run_variants"] == ["online"]
+    assert w1["input"]["evidence_packs"] == [] and w1["recording"]["path"]
+    for case_id in ("C2", "D1"):
+        assert load_case(case_id)["run_variants"] == ["offline", "online"]
+
+
+# ---- B 层与 R 层（第 2 版 test set）-----------------------------------------------
+import datetime as _dt
+import json as _json
+from pathlib import Path as _Path
+
+from eval.loader import B_IDS, R_IDS
+
+_PACKS = {p.stem: {x["excerpt_id"]: x for x in _json.loads(p.read_text(encoding="utf-8"))["excerpts"]}
+          for p in (_Path(__file__).resolve().parents[1] / "packs").glob("*.json")}
+
+
+def _excerpt(case, eid):
+    for pid in case["input"]["evidence_packs"]:
+        if eid in _PACKS.get(pid, {}):
+            return _PACKS[pid][eid]
+    raise AssertionError(f"{case['id']}: {eid} 不在 {case['input']['evidence_packs']} 的真实包里")
+
+
+def test_b_cases_are_complete_and_cite_real_excerpts():
+    for case_id in B_IDS:
+        c = load_case(case_id)
+        assert c["layer"] == "B" and c["entry"] in {"inspect", "fork"}, case_id
+        assert c["expected"]["behavior"] and c["human_review"], case_id
+        for pid in c["input"].get("evidence_packs", []):
+            assert pid in _PACKS, (case_id, pid)
+        for eid in c["expected"].get("key_excerpts", []) + c["expected"].get("must_not_cite_as_support", []):
+            _excerpt(c, eid)
+
+
+def _available(case_id):
+    """K3 的资料包 packs/opec2022.json 在 evidence 分支，合并前本仓库没有：这时跳过 K3，其他照常查。"""
+    return all(p in _PACKS for p in load_case(case_id)["input"]["evidence_packs"])
+
+
+def test_k3_pack_is_available():
+    import pytest
+    if not _available("K3"):
+        pytest.skip("packs/opec2022.json 还没合并进来（evidence 分支 2553a9f）；K3 的资料包检查暂时跳过")
+
+
+def test_backtests_are_offline_and_do_not_leak():
+    for case_id in [i for i in R_IDS if _available(i)]:
+        c = load_case(case_id)
+        as_of = _dt.date.fromisoformat(c["as_of"])
+        assert c["online"] is False and c["online_locked"] is True, case_id
+        allowed = set(c["allowed_excerpts"])
+        outcome = set(c["outcome"]["excerpt_ids"])
+        assert not allowed & outcome, (case_id, allowed & outcome)
+        assert not allowed & set(c["excluded"]), case_id
+        for eid in allowed:
+            x = _excerpt(c, eid)
+            if _dt.date.fromisoformat(x["date"]) > as_of:
+                assert c["allowed_exceptions"].get(eid), f"{case_id}: {eid} 日期 {x['date']} 晚于决策时点，必须写明为什么当时可见"
+        for eid in outcome:
+            assert _dt.date.fromisoformat(_excerpt(c, eid)["date"]) > as_of, (case_id, eid)
+        for eid in c["expected"]["backtest"]["counter_excerpts_to_address"]:
+            assert eid in allowed, f"{case_id}: 要求回应的反方片段 {eid} 不在时点资料包里"
+        for obs in c["outcome"]["observations"]:
+            assert _dt.date.fromisoformat(obs["coverage"]["end"]) > as_of, case_id
+            for r in obs["records"]:
+                assert obs["coverage"]["start"] <= r["date"] <= obs["coverage"]["end"], (case_id, r)
+        assert c["contamination_probe"] and "only_allowed_excerpts_cited" in c["auto_checks"]
+
+
+def test_backtest_packs_only_drop_excerpts_for_a_reason():
+    """决策时点前就公开、却没放进时点资料包的片段，必须在 excluded 里写原因。"""
+    for case_id in [i for i in R_IDS if _available(i)]:
+        c = load_case(case_id)
+        as_of = _dt.date.fromisoformat(c["as_of"])
+        allowed = set(c["allowed_excerpts"])
+        for pid in c["input"]["evidence_packs"]:
+            for eid, x in _PACKS[pid].items():
+                if eid in allowed or eid in c["excluded"]:
+                    continue
+                assert _dt.date.fromisoformat(x["date"]) > as_of, \
+                    f"{case_id}: {eid}（{x['date']}）在决策时点前就有，既没放进资料包也没写排除原因"
