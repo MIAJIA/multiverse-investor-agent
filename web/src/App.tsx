@@ -113,6 +113,7 @@ export default function App() {
         {base && <span className="muted small">run {s.runId} · {base.graph.version}{scen ? ` → ${scen.graph.version}` : ''}</span>}
         <a href="#playground" className="small" style={{ color: '#aab4c8' }}>节点视觉 playground</a>
         <a href="#scenarios" className="small" style={{ color: '#aab4c8' }}>多情景 playground</a>
+        <a href="#plan-b" className="small" style={{ color: '#aab4c8' }}>方案 B 预览</a>
         {api.MOCK && (
           <span className="badge mock">
             MOCK ·{' '}

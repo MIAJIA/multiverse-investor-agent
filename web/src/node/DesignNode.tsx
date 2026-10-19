@@ -1,6 +1,8 @@
 // 画布节点（应用和 playground 共用）：同一份数据，按 Look 的五个维度画成不同样子。
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
-import type { AssessmentStatus, Claim, Condition } from '../types';
+import { BranchTag } from '../components/BranchSwatch';
+import { BRANCH_KIND } from '../status';
+import type { AssessmentStatus, BranchKind, Claim, Condition } from '../types';
 import './node.css';
 import { Bars, Ring } from './StrengthGlyph';
 import type { Strength } from './strength';
@@ -24,6 +26,9 @@ export interface DesignData extends Record<string, unknown> {
   assessment?: AssessmentStatus;
   expanded: boolean;
   tint?: string; // 叠图时按情景上色（#rrggbb）；有 tint 时盖过 assessment 的颜色
+  kind?: BranchKind; // 方案 B：节点所属分支的类别（后端 node_kinds），决定底纹、线型、标签
+  synthetic?: boolean; // 仅推断是因为资料为占位
+  dimmed?: boolean; // 高亮另一条分支时，这个节点退后
 }
 
 const ROLE_TINT: Record<Claim['role'], string> = {
@@ -42,7 +47,8 @@ function Target() {
 }
 
 export default function DesignNode({ data, selected }: NodeProps<Node<DesignData>>) {
-  const { claim, label, look, s, isKey, isChanged, assessment, expanded, conditions, tint } = data;
+  const { claim, label, look, s, isKey, isChanged, assessment, expanded, conditions, tint, kind, synthetic, dimmed } = data;
+  const k = kind ? BRANCH_KIND[kind] : null;
   const challenged = assessment === 'challenged';
   const receded = assessment && !challenged && !isChanged && look.scenario === 'dim';
   const glyph = look.strength === 'ring' ? <Ring s={s} size={expanded ? 30 : 22} /> : <Bars s={s} />;
@@ -50,12 +56,16 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
 
   const bg = tint ? `${tint}1f` : challenged ? 'var(--pg-orange-bg)' : look.color === 'role' ? ROLE_TINT[claim.role] : 'var(--pg-surface)';
   const border = tint ? tint : challenged || isKey ? 'var(--pg-orange)' : isChanged ? 'var(--pg-blue)' : 'var(--pg-line)';
+  // 有分支类别时：底色、底纹、线型、标题色都按 BRANCH_KIND；关键依赖仍是橙框
+  const kindBg = k && kind !== 'evidenced' ? k.bg : bg;
   const style = {
-    background: bg,
-    borderColor: border,
-    borderWidth: tint || challenged || isKey || isChanged ? 2 : 1,
-    borderStyle: s.modelOnly || claim.role === 'shock' ? 'dashed' : 'solid',
-    opacity: receded ? 0.32 : 1,
+    background: k && !tint && !challenged ? kindBg : bg,
+    backgroundImage: k && !tint && !challenged ? k.pattern : undefined,
+    borderColor: k && !tint && !challenged && !isKey ? (kind === 'evidenced' ? border : k.border) : border,
+    borderWidth: tint || challenged || isKey || isChanged || kind === 'hypothetical' ? 2 : 1,
+    borderStyle: k ? k.line : s.modelOnly || claim.role === 'shock' ? 'dashed' : 'solid',
+    color: k?.title,
+    opacity: receded || dimmed ? 0.32 : 1,
     outline: selected ? '2px solid var(--pg-blue)' : undefined,
     outlineOffset: 3,
   } as const;
@@ -71,6 +81,7 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
         <div className="pg-row">
           {glyph}
           <div style={{ minWidth: 0 }}>
+            {kind && kind !== 'evidenced' && <BranchTag kind={kind} synthetic={synthetic} />}
             <div className="pg-title">{label} {isKey && <Target />}</div>
             <div className="pg-sub">{claim.statement}</div>
           </div>
@@ -93,6 +104,7 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
   return (
     <div className={`pg-node ${look.shape === 'pill' ? 'pg-pill' : 'pg-card'}`} style={style}>
       <Handle type="target" position={Position.Top} className="pg-handle" />
+      {kind && kind !== 'evidenced' && <div className="pg-tagline"><BranchTag kind={kind} synthetic={synthetic} /></div>}
       <div className="pg-row">
         {glyph}
         <span className="pg-title">{label}</span>

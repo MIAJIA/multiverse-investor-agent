@@ -5,8 +5,9 @@ import './styles.css';
 import App from './App';
 import Playground from './playground/Playground';
 import ScenarioPlayground from './scenarios/ScenarioPlayground';
+import PlanBPreview from './preview/PlanBPreview';
 
-// #playground：节点视觉 A/B；#scenarios：多情景 A/B；其余都是应用本身。
+// #playground：节点视觉 A/B；#scenarios：多情景 A/B；#plan-b：方案 B 视觉预览；其余都是应用本身。
 function Root() {
   const [hash, setHash] = useState(location.hash);
   useEffect(() => {
@@ -16,6 +17,7 @@ function Root() {
   }, []);
   if (hash === '#playground') return <Playground />;
   if (hash === '#scenarios') return <ScenarioPlayground />;
+  if (hash === '#plan-b') return <PlanBPreview />;
   return <App />;
 }
 

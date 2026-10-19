@@ -31,3 +31,5 @@
 .pg-bars { position: relative; display: inline-flex; }
 .pg-contra { position: absolute; top: -6px; right: -8px; background: var(--pg-red); color: #fff; font-size: 9px; font-weight: 700; border-radius: 999px; min-width: 13px; height: 13px; line-height: 13px; text-align: center; padding: 0 3px; }
 .react-flow__handle.pg-handle { opacity: 0; }
+.pg-tagline { margin: -1px 0 4px 0; }
+.pg-node .pg-title { color: inherit; }

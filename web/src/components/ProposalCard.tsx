@@ -4,9 +4,10 @@ import type { Condition, ConditionOverride, Graph, TradeProposal } from '../type
 import Badge from './Badge';
 import ConditionRow from './ConditionRow';
 
-export default function ProposalCard({ proposal, graph, overrides, onOverride, compact }: {
+export default function ProposalCard({ proposal, graph, overrides, onOverride, compact, planB }: {
   proposal: TradeProposal; graph: Graph; compact?: boolean;
   overrides?: Record<string, ConditionOverride>; onOverride?: (id: string, o: ConditionOverride | null) => void;
+  planB?: boolean; // 方案 B：「研究判断」移到页面顶部的理解确认行；null 阈值高亮「需要你确认」
 }) {
   const { direction: d, user_judgment: uj, key_dependency: kd } = proposal;
   const name = (id: string | null) => graph.nodes.find((n) => n.id === id)?.statement ?? id;
@@ -16,7 +17,7 @@ export default function ProposalCard({ proposal, graph, overrides, onOverride, c
       <div key={c.id}>
         {i > 0 && <div className="joiner">{joiner}</div>}
         <div className="small muted">{name(c.claim_id)}</div>
-        <ConditionRow c={c} override={overrides?.[c.id]} onOverride={onOverride && ((o) => onOverride(c.id, o))} />
+        <ConditionRow c={c} override={overrides?.[c.id]} onOverride={onOverride && ((o) => onOverride(c.id, o))} highlightMissing={planB} />
       </div>
     ));
   return (
@@ -38,7 +39,7 @@ export default function ProposalCard({ proposal, graph, overrides, onOverride, c
           {rows(proposal.entry_conditions, '且')}
           <h4>退出条件 · <Badge look={EXIT_LOGIC[proposal.exit_logic]} /></h4>
           {rows(proposal.exit_conditions, proposal.exit_logic === 'ANY' ? '或' : '且')}
-          <h4>研究判断</h4>
+          {!planB && <><h4>研究判断</h4>
           <p className="small">{uj.clarified_statement}</p>
           {uj.requires_user_confirmation && uj.original_statement !== uj.clarified_statement && (
             <p className="small muted">原话：{uj.original_statement}（改写过，需要你确认）</p>
@@ -46,7 +47,7 @@ export default function ProposalCard({ proposal, graph, overrides, onOverride, c
           {uj.confirmed && (
             <p className="small">已确认的假设：{uj.confirmed_claim_ids.map(name).join('；') || '无'}
               {uj.criteria && <><br />判定条件：{uj.criteria}</>}{uj.deadline && <><br />期限：{uj.deadline}</>}</p>
-          )}
+          )}</>}
         </>
       )}
       <div className="critic small" style={{ color: CRITIC[proposal.critic.status].color }}>

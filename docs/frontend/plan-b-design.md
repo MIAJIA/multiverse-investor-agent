@@ -286,3 +286,9 @@ type AppState = {
 
 - `types.ts` 加了方案 B 的类型（`Branch`、`BranchKind`、`PlanBBundle`、`ApproveBody`，`TradeProposal` / `UserJudgment` 的新字段）。`VersionBundle` 暂时不切，等第 1 步和 fixture 一起切，保证每个 commit 都能编译。
 - `status.ts` 的 `BRANCH_KIND`（文案、颜色、线型、底纹）和 `components/BranchSwatch.tsx`（行首缩略 + 「假设 · 未观测」胶囊）。
+
+### 视觉预览（/#plan-b，开工前先做）
+
+- 用 `c1_multi` 的 c1-v3（加了「代工停产」冲击）做演示数据（`src/preview/demoPlanB.ts`）：LITE 分支手动指定为有资料支持，TSM 分支是假设（含冲击节点），MRVL 是仅推断 · 资料为占位；TSM、MRVL 两份计划是手写的。页头常驻「演示数据」说明。后端交付后删掉这份演示数据，换成真实 fixture。
+- 预览里用到的都是正式实现要复用的：`GraphCanvas` 加了可选的 `branchView`（`node_kinds` / `edge_kinds` / 高亮）和 `labelOf`；`DesignNode` 加了 `kind` / `synthetic` / `dimmed`；`ConditionRow` / `ProposalCard` 加了「需要你确认」和 `planB`；新组件 `ApprovePlans`（B2 整页）；`lookup.ancestors`。
+- 浏览器里走过：B1 点 LITE、TSM 高亮整条分支；B2 理解确认前不能批准；批准 TSM；改批 LITE 时弹「会撤销对硅光代工的批准」；撤销批准后显示「本版本没有批准任何计划（= 不交易）」；勾「演示：改了假设之后回到这里」后，已批准的那份显示「前提已改动，请重新批准」，其余显示「另一份计划受了影响，值得再看一眼」（真实数据里这两个由后端字段决定）。截图 `screenshots/pb-*`。

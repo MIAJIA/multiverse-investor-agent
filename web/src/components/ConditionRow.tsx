@@ -4,14 +4,17 @@ import { EVALUATION, VERIFICATION } from '../status';
 import type { Condition, ConditionOverride } from '../types';
 import Badge from './Badge';
 
-export default function ConditionRow({ c, override, onOverride }: {
+export default function ConditionRow({ c, override, onOverride, highlightMissing }: {
   c: Condition; override?: ConditionOverride; onOverride?: (o: ConditionOverride | null) => void;
+  highlightMissing?: boolean; // 方案 B 的批准页：阈值为 null 的数值条件高亮「需要你确认」
 }) {
   const threshold = override && 'threshold' in override ? override.threshold : c.threshold;
   const deadline = override?.deadline ?? c.deadline;
   const set = (o: ConditionOverride) => onOverride?.({ ...override, ...o });
+  const missing = highlightMissing && c.kind === 'numeric' && threshold == null;
   return (
-    <div className="condition">
+    <div className={`condition${missing ? ' need-confirm' : ''}`}>
+      {missing && <div className="need-confirm-tag">需要你确认：资料里没有可依据的阈值</div>}
       <div className="cond-rule">{c.rule}</div>
       <div className="cond-fields small">
         <span>{c.kind} · {c.predicate}</span>

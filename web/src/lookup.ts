@@ -40,3 +40,19 @@ export function keyClaimId(proposal: TradeProposal | null | undefined, graph: Gr
 export function changedTargets(scenario: Scenario | null | undefined): string[] {
   return (scenario?.ops ?? []).filter((o) => o.kind === 'change_assumption' && o.target).map((o) => o.target as string);
 }
+
+/** 一个节点的全部祖先（沿入边往上找）。B1 高亮整条分支用：分支 = 独有部分 + 它的祖先。只按边查找，不做判断。 */
+export function ancestors(graph: Graph, id: string): Set<string> {
+  const parents = new Map<string, string[]>();
+  for (const e of graph.edges) parents.set(e.to, [...(parents.get(e.to) ?? []), e.from]);
+  const seen = new Set<string>();
+  const todo = [...(parents.get(id) ?? [])];
+  while (todo.length) {
+    const p = todo.pop()!;
+    if (!seen.has(p)) {
+      seen.add(p);
+      todo.push(...(parents.get(p) ?? []));
+    }
+  }
+  return seen;
+}
