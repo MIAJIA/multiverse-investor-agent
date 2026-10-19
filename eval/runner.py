@@ -388,20 +388,53 @@ def run_all(cases: list[dict], groups=GROUPS, *, reasoner: Any, evidence: Any = 
 
 
 def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需要核心与真实 reasoner
+    """真实运行。模型由核心的 CATALYST_MODEL / CATALYST_EFFORT 决定（默认 claude-opus-5-5 / high）。
+
+    例：CATALYST_MODEL=claude-haiku-5-5 python -m eval.runner --case T1 --record eval/out/haiku
+    --record 会把每次模型请求（含 baseline 的单次 prompt）录进 <DIR>/cassette.jsonl，之后可零成本回放。
+    """
+    from pathlib import Path
+
     ap = argparse.ArgumentParser(description="跑 eval 案例（需要核心包与真实 reasoner）")
     ap.add_argument("--group", action="append", choices=GROUPS)
     ap.add_argument("--case", action="append")
-    ap.add_argument("--out", default="eval/out/results.json")
+    ap.add_argument("--out", default=None, help="results.json 路径；默认 <record 目录>/results.json 或 eval/out/results.json")
+    ap.add_argument("--record", metavar="DIR", help="录制目录（cassette.jsonl、results.json、report.md）")
+    ap.add_argument("--today", help="条件判定用的日期，默认今天")
     args = ap.parse_args(argv)
-    import catalyst.reasoner as reasoner_mod  # noqa: WPS433
+
     import catalyst.evidence as evidence_mod  # noqa: WPS433
+    import catalyst.reasoner as reasoner_mod  # noqa: WPS433
+    from eval import report
+
+    reasoner = reasoner_mod.default_reasoner()
+    model = getattr(reasoner, "name", "unknown")
+    out_dir = Path(args.record) if args.record else Path("eval/out")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if args.record:
+        reasoner = reasoner_mod.RecordingReasoner(reasoner, out_dir / "cassette.jsonl")
+    entrypoints = load_core_entrypoints()
+    if args.today:
+        import functools
+        ep = entrypoints
+        cfg = {"today": args.today}
+
+        class _WithToday:
+            discover = staticmethod(functools.partial(ep.discover, config=cfg))
+            inspect = staticmethod(functools.partial(ep.inspect, config=cfg))
+            fork = staticmethod(functools.partial(ep.fork, config=cfg))
+        entrypoints = _WithToday
     results = run_all(load_all_cases(args.case), args.group or GROUPS,
-                      reasoner=reasoner_mod.default_reasoner(), evidence=evidence_mod.default_provider(),
-                      entrypoints=load_core_entrypoints())
-    from pathlib import Path
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"wrote {len(results)} results → {args.out}")
+                      reasoner=reasoner, evidence=evidence_mod.default_provider(), entrypoints=entrypoints)
+    for r in results:
+        r["model"] = model
+    out = Path(args.out) if args.out else out_dir / "results.json"
+    out.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+    md = report.render_report(results, title=f"Catalyst eval 逐例报告（{model}）")
+    (out.parent / "report.md").write_text(md, encoding="utf-8")
+    print(f"wrote {len(results)} results → {out}；report → {out.parent / 'report.md'}")
+    for r in results:
+        print(f"  {r['case_id']:3} {r['group']:8} {r['status']:15} {','.join(r['failure_types']) or '-'}")
 
 
 if __name__ == "__main__":  # pragma: no cover
