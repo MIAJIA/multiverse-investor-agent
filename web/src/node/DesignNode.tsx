@@ -23,6 +23,7 @@ export interface DesignData extends Record<string, unknown> {
   isChanged: boolean;
   assessment?: AssessmentStatus;
   expanded: boolean;
+  tint?: string; // 叠图时按情景上色（#rrggbb）；有 tint 时盖过 assessment 的颜色
 }
 
 const ROLE_TINT: Record<Claim['role'], string> = {
@@ -41,25 +42,26 @@ function Target() {
 }
 
 export default function DesignNode({ data, selected }: NodeProps<Node<DesignData>>) {
-  const { claim, label, look, s, isKey, isChanged, assessment, expanded, conditions } = data;
+  const { claim, label, look, s, isKey, isChanged, assessment, expanded, conditions, tint } = data;
   const challenged = assessment === 'challenged';
   const receded = assessment && !challenged && !isChanged && look.scenario === 'dim';
   const glyph = look.strength === 'ring' ? <Ring s={s} size={expanded ? 30 : 22} /> : <Bars s={s} />;
   const ticker = claim.instruments.length > 0 && <span className="pg-ticker">{claim.instruments.join(' ')}</span>;
 
-  const bg = challenged ? 'var(--pg-orange-bg)' : look.color === 'role' ? ROLE_TINT[claim.role] : 'var(--pg-surface)';
-  const border = challenged || isKey ? 'var(--pg-orange)' : isChanged ? 'var(--pg-blue)' : 'var(--pg-line)';
+  const bg = tint ? `${tint}1f` : challenged ? 'var(--pg-orange-bg)' : look.color === 'role' ? ROLE_TINT[claim.role] : 'var(--pg-surface)';
+  const border = tint ? tint : challenged || isKey ? 'var(--pg-orange)' : isChanged ? 'var(--pg-blue)' : 'var(--pg-line)';
   const style = {
     background: bg,
     borderColor: border,
-    borderWidth: challenged || isKey || isChanged ? 2 : 1,
+    borderWidth: tint || challenged || isKey || isChanged ? 2 : 1,
     borderStyle: s.modelOnly || claim.role === 'shock' ? 'dashed' : 'solid',
     opacity: receded ? 0.32 : 1,
     outline: selected ? '2px solid var(--pg-blue)' : undefined,
     outlineOffset: 3,
   } as const;
 
-  const meta = s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断' : `正方 ${s.support}${s.contra ? ` · 反方 ${s.contra}` : ''}`;
+  const meta = s.noInEdges ? '没有入边证据' : s.modelOnly ? '仅模型推断'
+    : `正方 ${s.support}${s.contra ? ` · 反方 ${s.contra}` : ''}${s.neutral ? ` · 背景 ${s.neutral}` : ''}`;
 
   if (expanded) {
     const deadline = conditions.map((c) => c.deadline).sort()[0];
@@ -76,7 +78,8 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
         </div>
         <div className="pg-facts">
           {!s.noInEdges && !s.modelOnly && <span><i className="pg-dot" style={{ background: 'var(--pg-green)' }} />正方 {s.support}</span>}
-          {s.contra > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-red)' }} />反方 {s.contra} · 已回应</span>}
+          {s.contra > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-red)' }} />反方 {s.contra}</span>}
+          {s.neutral > 0 && <span><i className="pg-dot" style={{ background: 'var(--pg-muted)' }} />背景 {s.neutral}</span>}
           {(s.noInEdges || s.modelOnly) && <span>{meta}</span>}
           {deadline && <span>截止 {deadline}</span>}
           {challenged && <span style={{ color: 'var(--pg-orange)' }}>情景下受挑战</span>}

@@ -1,7 +1,7 @@
 // 证据符号的两种画法：圆环（Activity 圆环）和信号格（手机信号）。
 import { SLOTS, type Strength } from './strength';
 
-const COLOR = { support: 'var(--pg-green)', contra: 'var(--pg-red)', empty: 'var(--pg-track)' };
+const COLOR = { support: 'var(--pg-green)', contra: 'var(--pg-red)', neutral: 'var(--pg-muted)', empty: 'var(--pg-track)' };
 
 export function Ring({ s, size = 22 }: { s: Strength; size?: number }) {
   const r = 9;

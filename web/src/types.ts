@@ -2,7 +2,7 @@
 
 export const ROLES = ['event', 'assumption', 'intermediate', 'terminal', 'shock'] as const;
 export const EVIDENCE_STATUSES = ['supported', 'contradicted', 'unknown'] as const;
-export const STANCES = ['supports', 'contradicts'] as const;
+export const STANCES = ['supports', 'contradicts', 'neutral'] as const; // neutral：背景信息，不算正方也不算反方
 export const CONDITION_KINDS = ['numeric', 'document', 'event'] as const;
 export const VERIFICATION_STATUSES = ['verifiable', 'unverified'] as const;
 export const EVALUATION_STATUSES = ['met', 'not_met', 'unknown'] as const;
@@ -12,6 +12,7 @@ export const PROPOSAL_STATUSES = ['draft', 'needs_review'] as const;
 export const SUPPORT_STATUSES = ['supported', 'challenged', 'unknown'] as const;
 export const EXIT_LOGICS = ['ANY', 'ALL'] as const;
 export const SIDES = ['long', 'short'] as const;
+export const CRITIC_STATUSES = ['disabled', 'ok', 'failed'] as const;
 export const OP_KINDS = ['generate', 'discover', 'inspect', 'change_assumption', 'add_shock', 'sign'] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -26,6 +27,7 @@ export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 export type SupportStatus = (typeof SUPPORT_STATUSES)[number];
 export type ExitLogic = (typeof EXIT_LOGICS)[number];
 export type Side = (typeof SIDES)[number];
+export type CriticStatus = (typeof CRITIC_STATUSES)[number];
 export type OpKind = (typeof OP_KINDS)[number];
 
 export interface Claim {
@@ -33,7 +35,7 @@ export interface Claim {
   role: Role;
   statement: string;
   original_statement: string;
-  label?: string | null; // 短标题：模型写，10 个汉字以内；后端还没加时为空，前端截短 statement
+  label: string | null; // 短标题：模型写，10 个汉字以内；为空时前端截短 statement
   evidence_status: EvidenceStatus;
   time_bucket: string | null;
   instruments: string[];
@@ -45,7 +47,7 @@ export interface EvidenceRef {
   excerpt_id: string;
   stance: Stance;
   supports: string;
-  rebuttal: string | null;
+  rebuttal: string | null; // 只用于 contradicts
 }
 
 export interface Mechanism {
@@ -109,6 +111,7 @@ export interface Scenario {
   ops: Op[];
   assessment: Record<string, AssessmentStatus>;
   assessment_reason: Record<string, string>;
+  root_version: string | null; // 最初的非情景基线；叠加时 ops / assessment 都继承父情景
 }
 
 export interface Direction {
@@ -137,8 +140,15 @@ export interface UserJudgment {
 
 export interface ScenarioRef {
   base_version: string;
-  challenged_claim_ids: string[];
+  challenged_claim_ids: string[]; // 叠加后的全部受挑战 claim
   next_checks: string[];
+  root_version: string | null;
+}
+
+export interface CriticReport {
+  status: CriticStatus;
+  reason: string;
+  items: { claim_id: string; challenge: string }[];
 }
 
 export interface TradeProposal {
@@ -154,6 +164,7 @@ export interface TradeProposal {
   scenario_ref: ScenarioRef | null;
   support_status: SupportStatus;
   graph_version: string;
+  critic: CriticReport; // 本期一律 disabled
   meta: { proposal_version: string; prompt_version: string; model: string; approval_required: true };
 }
 

@@ -1,7 +1,7 @@
 {
   "pack_id": "semiconductor",
   "synthetic": false,
-  "note": "主要论点：AI 算力需求正在加速先进制程、先进封装与光互连（CPO / 硅光）的采用，并把需求传导到代工、封测、存储与光学供应链。stance 相对这个论点：supports = 支撑链上某一环（需求、产能扩张、供应链关系、技术平台）；contradicts = 削弱它（产能瓶颈拖慢采用、认证周期、单位光源需求下降、出口管制限制对华需求传导、CPO 放量推迟、可插拔与集成激光路线并存）。出口管制片段里，放宽对华或盟友出口记 supports，收紧或维持限制记 contradicts。研究时点以各片段 date 为准，不代表 2026-10 的最新状态；TrendForce、Third Bridge 等研究机构片段是发布时的预测与判断，不是已兑现结果。收入占比不是产能占比，HPC 不等于 AI。",
+  "note": "主要论点：AI 算力需求正在加速先进制程、先进封装与光互连（CPO / 硅光）的采用，并把需求传导到代工、封测、存储与光学供应链。stance 相对这个论点（supports / contradicts / neutral）：supports = 支撑链上某一环（需求增长、产能扩张与扩产计划、CPO 投产与出货、激光与硅光订单）；contradicts = 削弱它（产能瓶颈拖慢采用、认证周期、单位光源需求下降、CPO 放量推迟、可插拔与集成激光路线并存、出口管制限制对华需求传导）；neutral = 只提供背景（定义、供应链关系披露、没有方向的收入或销售水平、研究动机）。出口管制片段里，放宽对华或盟友出口记 supports，收紧或维持限制记 contradicts。研究时点以各片段 date 为准，不代表 2026-10 的最新状态；TrendForce、Third Bridge 等研究机构片段是发布时的预测与判断，不是已兑现结果。收入占比不是产能占比，HPC 不等于 AI。",
   "_provenance": {
     "built": "2026-10-18，证据线（evidence 分支）",
     "material_root": "/Users/mia/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/outputs",
@@ -60,7 +60,10 @@
       "sc-051": "补充调研",
       "sc-052": "补充调研"
     },
-    "tickers": "交易代码只写同一份文件里写明的：sc-034 TSM/2330、sc-039 LITE、sc-040 NVDA/LITE、sc-041 TSEM、sc-042 AVGO、sc-052 COHR；外置光源（ELS）供应方依据：sc-039（Lumentum 首笔 ELS 订单）、sc-052（Coherent ELS 模块，仅展示）。"
+    "tickers": "交易代码只写同一份文件里写明的：sc-034 TSM/2330、sc-039 LITE、sc-040 NVDA/LITE、sc-041 TSEM、sc-042 AVGO、sc-052 COHR；外置光源（ELS）供应方依据：sc-039（Lumentum 首笔 ELS 订单）、sc-052（Coherent ELS 模块，仅展示）。",
+    "stance_decisions": {
+      "neutral_2026-10-18": "schema 支持 neutral 后，把 sc-001、sc-002、sc-003、sc-011、sc-012、sc-013、sc-015、sc-016、sc-017、sc-018、sc-019、sc-021、sc-022、sc-024、sc-027 由 supports / contradicts 改为 neutral（规则见 note）。"
+    }
   },
   "excerpts": [
     {
@@ -68,7 +71,7 @@
       "excerpt_id": "sc-001",
       "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 6 页",
       "date": "2026-04-16",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
       "text": "TSMC 1Q26 按平台划分的收入中，HPC 占 61%，智能手机占 26%（HPC 不等于 AI）。"
     },
@@ -77,7 +80,7 @@
       "excerpt_id": "sc-002",
       "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 5 页",
       "date": "2026-04-16",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
       "text": "TSMC 1Q26 晶圆收入中 3nm 占 25%、5nm 占 36%、7nm 占 13%（收入占比，不是产能或出货量占比）。"
     },
@@ -86,7 +89,7 @@
       "excerpt_id": "sc-003",
       "source": "TSMC 2026 第一季度业绩会简报（T1 正式公告）· PDF 第 8 页",
       "date": "2026-04-16",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-04/a7e3abe65a3fbc342aa55f9f53a5490dd621c1ac/1Q26%20Presentation%20%28E%29.pdf",
       "text": "TSMC 1Q26 资本支出为 NT$350.76 billion（4Q25 为 NT$356.91 billion），是当季现金流项目，不是全年指引。"
     },
@@ -158,7 +161,7 @@
       "excerpt_id": "sc-011",
       "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
       "date": "2026-02-25",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
       "text": "NVIDIA 采用 fabless、委外制造模式，披露 TSMC 与 Samsung 为其晶圆代工厂。"
     },
@@ -167,7 +170,7 @@
       "excerpt_id": "sc-012",
       "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
       "date": "2026-02-25",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
       "text": "NVIDIA 披露其产品使用 CoWoS 先进封装。"
     },
@@ -176,7 +179,7 @@
       "excerpt_id": "sc-013",
       "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
       "date": "2026-02-25",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
       "text": "NVIDIA 披露 SK hynix、Micron、Samsung 为其存储供应商（原文写 memory，未分配到 HBM）。"
     },
@@ -194,7 +197,7 @@
       "excerpt_id": "sc-015",
       "source": "NVIDIA FY2026 Form 10-K（T1 正式公告）· Item 1 Manufacturing",
       "date": "2026-02-25",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
       "text": "NVIDIA 列出 Hon Hai、Wistron、Fabrinet 等为最终产品的委外制造商。"
     },
@@ -203,7 +206,7 @@
       "excerpt_id": "sc-016",
       "source": "AMD FY2025 Form 10-K（T1 正式公告）· Item 7 Overview",
       "date": "2026-02-04",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
       "text": "AMD FY2025 数据中心业务收入约 $16.6 billion（含 EPYC 服务器 CPU，不只是 AI 加速器）。"
     },
@@ -212,7 +215,7 @@
       "excerpt_id": "sc-017",
       "source": "AMD FY2025 Form 10-K（T1 正式公告）· Item 1 Third-Party Wafer Foundry Facilities",
       "date": "2026-02-04",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
       "text": "AMD 披露其 HPC、FPGA 和自适应 SoC 晶圆由 TSMC 生产。"
     },
@@ -221,7 +224,7 @@
       "excerpt_id": "sc-018",
       "source": "AMD FY2025 Form 10-K（T1 正式公告）· Item 1 Assembly, Test, Mark and Packaging",
       "date": "2026-02-04",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
       "text": "AMD 披露其封装测试由 ATMP 合资公司、SPIL 和 KYEC 提供。"
     },
@@ -230,7 +233,7 @@
       "excerpt_id": "sc-019",
       "source": "Amkor FY2025 Form 10-K（T1 正式公告）· Item 1 Overview",
       "date": "2026-02-20",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://www.sec.gov/Archives/edgar/data/1047127/000104712726000014/amkr-20251231.htm",
       "text": "Amkor 是 OSAT（委外封装测试）厂商，提供先进封装、晶圆级加工和系统级封装（SiP）服务。"
     },
@@ -248,7 +251,7 @@
       "excerpt_id": "sc-021",
       "source": "ASML 2025 年报（T1 正式公告）· 2025 at a glance / System sales in units",
       "date": "2026-02-25",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://investor.asml.com/annual-reports/2025",
       "text": "ASML 2025 年系统销售包括 48 台 EUV 和 279 台 DUV（系统销售口径，不是产量或装机量）。"
     },
@@ -257,7 +260,7 @@
       "excerpt_id": "sc-022",
       "source": "NVIDIA 技术博客（T3 厂商技术描述）· How Industry Collaboration Fosters NVIDIA Co-Packaged Optics",
       "date": "2025-08-26",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://developer.nvidia.com/blog/how-industry-collaboration-fosters-nvidia-co-packaged-optics/",
       "text": "NVIDIA 描述其共封装光学（CPO）平台集成了光子 IC、电子 IC、光纤、封装、连接器和激光器。"
     },
@@ -275,7 +278,7 @@
       "excerpt_id": "sc-024",
       "source": "NVIDIA 技术博客（T3 厂商技术描述）· How Industry Collaboration Fosters NVIDIA Co-Packaged Optics",
       "date": "2025-08-26",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://developer.nvidia.com/blog/how-industry-collaboration-fosters-nvidia-co-packaged-optics/",
       "text": "NVIDIA 的 CPO 平台包括 Quantum-X InfiniBand 与 Spectrum-X Ethernet Photonics 交换机；文章未给出出货年份。"
     },
@@ -302,7 +305,7 @@
       "excerpt_id": "sc-027",
       "source": "光电集成电路综述，arXiv 2403.14806v2（T3 预印本）· 摘要",
       "date": "2024-03-21",
-      "stance": "supports",
+      "stance": "neutral",
       "url": "https://arxiv.org/abs/2403.14806v2",
       "text": "该综述把带宽、时延和光复用列为光子集成电路用于 AI 计算的研究动机（是研究动机，不是能效或成本证明）。"
     },

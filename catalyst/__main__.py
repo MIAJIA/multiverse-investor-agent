@@ -159,11 +159,12 @@ def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
     """C3：在基线图上依次执行案例列出的每个分叉。基线默认用案例指定的 golden 图（Expected Impact
     只能对 golden 图自动比对）；--base 给出录制目录时改用录制的图。每个分叉都从同一基线出发。"""
     fx_dir = cases_dir.parent / "fixtures"
-    proposal, pack = None, None
+    proposal, pack, scenario = None, None, None
     if a.base:
         rec = RunStore(a.base)
         version = rec.latest_version()
         base_graph, proposal = rec.get_snapshot(version), rec.get_proposal(version)
+        scenario = rec.bundle(version)["scenario"]  # 录制的基线本身是情景版本时，分叉叠加在它之上
         obs = rec.root / "observations" / f"{version}.json"
         if obs.exists():
             pack = {"pack_id": f"recorded:{version}", "excerpts": json.loads(obs.read_text())["excerpts"]}
@@ -177,7 +178,7 @@ def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
         fx = json.loads((fx_dir / name).read_text())
         print(f"→ fork {name}: {fx['op']['kind']} {fx['op'].get('target') or fx['op'].get('impacts')}")
         res = ep.fork(base_graph, fx["op"], reasoner=reasoner, evidence=ev, config=cfg, pack=pack,
-                      proposal=proposal, store=store)
+                      proposal=proposal, scenario=scenario, store=store)
         print("\n".join(_summary(res)))
         if res.get("scope") and "expected_scope" in fx:
             ok = all(set(res["scope"][k]) == set(fx["expected_scope"][k]) for k in ("nodes", "edges"))

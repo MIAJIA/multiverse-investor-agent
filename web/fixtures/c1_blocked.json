@@ -33,6 +33,7 @@
             "id": "c1.event",
             "role": "event",
             "statement": "光子芯片（硅光 / CPO）在 AI 数据中心的采用快于预期",
+            "label": null,
             "original_statement": "光子芯片采用快于预期",
             "evidence_status": "supported",
             "time_bucket": "2026H2-2027H2",
@@ -42,6 +43,7 @@
             "id": "c1.assume.capex",
             "role": "assumption",
             "statement": "2027 年超大规模云厂商 AI 资本开支不下修",
+            "label": null,
             "original_statement": "2027 年超大规模云厂商 AI 资本开支不下修",
             "evidence_status": "supported",
             "time_bucket": "2027",
@@ -51,6 +53,7 @@
             "id": "c1.assume.external_laser",
             "role": "assumption",
             "statement": "主流 CPO 方案采用外置 CW 激光光源（ELS）",
+            "label": null,
             "original_statement": "主流 CPO 方案采用外置 CW 激光光源（ELS）",
             "evidence_status": "supported",
             "time_bucket": "2027",
@@ -60,6 +63,7 @@
             "id": "c1.cpo_ramp",
             "role": "intermediate",
             "statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
+            "label": null,
             "original_statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -69,6 +73,7 @@
             "id": "c1.laser_demand",
             "role": "intermediate",
             "statement": "外置 CW 激光光源需求随 CPO 端口数上升",
+            "label": null,
             "original_statement": "外置 CW 激光光源需求随 CPO 端口数上升",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -78,6 +83,7 @@
             "id": "c1.siph_foundry",
             "role": "intermediate",
             "statement": "硅光代工产能利用率提升",
+            "label": null,
             "original_statement": "硅光代工产能利用率提升",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -87,6 +93,7 @@
             "id": "c1.pluggable_dsp",
             "role": "intermediate",
             "statement": "可插拔光模块 DSP 需求增速放缓",
+            "label": null,
             "original_statement": "可插拔光模块 DSP 需求增速放缓",
             "evidence_status": "unknown",
             "time_bucket": "2028",
@@ -96,6 +103,7 @@
             "id": "c1.term.laser_vendor",
             "role": "terminal",
             "statement": "激光器供应商的数据中心光源营收超预期",
+            "label": null,
             "original_statement": "激光器供应商的数据中心光源营收超预期",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -107,6 +115,7 @@
             "id": "c1.term.foundry",
             "role": "terminal",
             "statement": "硅光代工营收占比上升",
+            "label": null,
             "original_statement": "硅光代工营收占比上升",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -118,6 +127,7 @@
             "id": "c1.term.dsp_vendor",
             "role": "terminal",
             "statement": "可插拔 DSP 供应商相关业务增速承压",
+            "label": null,
             "original_statement": "可插拔 DSP 供应商相关业务增速承压",
             "evidence_status": "unknown",
             "time_bucket": "2028",
@@ -478,9 +488,14 @@
         "graph_version": "c1-v1",
         "meta": {
           "proposal_version": "c1-v1.p",
-          "prompt_version": "p2",
+          "prompt_version": "p4",
           "model": "scripted",
           "approval_required": true
+        },
+        "critic": {
+          "status": "disabled",
+          "reason": "未启用：不在本期范围",
+          "items": []
         }
       },
       "scenario": null,
@@ -577,6 +592,7 @@
             "id": "c1.event",
             "role": "event",
             "statement": "光子芯片（硅光 / CPO）在 AI 数据中心的采用快于预期",
+            "label": null,
             "original_statement": "光子芯片采用快于预期",
             "evidence_status": "supported",
             "time_bucket": "2026H2-2027H2",
@@ -586,6 +602,7 @@
             "id": "c1.assume.capex",
             "role": "assumption",
             "statement": "2027 年超大规模云厂商 AI 资本开支不下修",
+            "label": null,
             "original_statement": "2027 年超大规模云厂商 AI 资本开支不下修",
             "evidence_status": "supported",
             "time_bucket": "2027",
@@ -595,6 +612,7 @@
             "id": "c1.assume.external_laser",
             "role": "assumption",
             "statement": "情景假设：主流 CPO 方案改用集成激光，不再需要外置光源",
+            "label": null,
             "original_statement": "主流 CPO 方案采用外置 CW 激光光源（ELS）",
             "evidence_status": "supported",
             "time_bucket": "2027",
@@ -604,6 +622,7 @@
             "id": "c1.cpo_ramp",
             "role": "intermediate",
             "statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
+            "label": null,
             "original_statement": "CPO 交换机在 AI 集群中的出货时间表提前到 2027 年下半年",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -613,6 +632,7 @@
             "id": "c1.laser_demand",
             "role": "intermediate",
             "statement": "外置 CW 激光光源需求随 CPO 端口数上升",
+            "label": null,
             "original_statement": "外置 CW 激光光源需求随 CPO 端口数上升",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -622,6 +642,7 @@
             "id": "c1.siph_foundry",
             "role": "intermediate",
             "statement": "硅光代工产能利用率提升",
+            "label": null,
             "original_statement": "硅光代工产能利用率提升",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -631,6 +652,7 @@
             "id": "c1.pluggable_dsp",
             "role": "intermediate",
             "statement": "可插拔光模块 DSP 需求增速放缓",
+            "label": null,
             "original_statement": "可插拔光模块 DSP 需求增速放缓",
             "evidence_status": "unknown",
             "time_bucket": "2028",
@@ -640,6 +662,7 @@
             "id": "c1.term.laser_vendor",
             "role": "terminal",
             "statement": "激光器供应商的数据中心光源营收超预期",
+            "label": null,
             "original_statement": "激光器供应商的数据中心光源营收超预期",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -651,6 +674,7 @@
             "id": "c1.term.foundry",
             "role": "terminal",
             "statement": "硅光代工营收占比上升",
+            "label": null,
             "original_statement": "硅光代工营收占比上升",
             "evidence_status": "supported",
             "time_bucket": "2027H2",
@@ -662,6 +686,7 @@
             "id": "c1.term.dsp_vendor",
             "role": "terminal",
             "statement": "可插拔 DSP 供应商相关业务增速承压",
+            "label": null,
             "original_statement": "可插拔 DSP 供应商相关业务增速承压",
             "evidence_status": "unknown",
             "time_bucket": "2028",
@@ -1025,15 +1050,21 @@
           ],
           "next_checks": [
             "下一步查证：主要厂商 2027 年量产 CPO 是否确实采用集成激光（正式披露），而不是在研路线"
-          ]
+          ],
+          "root_version": "c1-v1"
         },
         "support_status": "challenged",
         "graph_version": "c1-v2",
         "meta": {
           "proposal_version": "c1-v2.p",
-          "prompt_version": "p2",
+          "prompt_version": "p4",
           "model": "scripted",
           "approval_required": true
+        },
+        "critic": {
+          "status": "disabled",
+          "reason": "未启用：不在本期范围",
+          "items": []
         }
       },
       "scenario": {
@@ -1065,7 +1096,8 @@
           "c1.assume.external_laser": "这是被改的假设本身：情景下改为集成激光",
           "c1.laser_demand": "外置光源需求以「每个 CPO 端口需要外置光源」为前提；改用集成激光后这条前提不成立",
           "c1.term.laser_vendor": "激光器供应商的营收超预期来自外置光源需求；上游前提受挑战，这个终点随之受挑战"
-        }
+        },
+        "root_version": "c1-v1"
       },
       "diff": {
         "nodes_changed": [

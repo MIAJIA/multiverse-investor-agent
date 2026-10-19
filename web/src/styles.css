@@ -62,6 +62,8 @@ input, textarea { font: inherit; }
 
 .evidence { border: 1px solid var(--line); border-left: 3px solid #1f7a4d; border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
 .evidence.contradicts { border-left-color: var(--red); }
+.evidence.neutral { border-left-color: #9aa1ab; }
+.critic { margin-top: 8px; }
 .quote { margin: 4px 0; font-size: 13px; }
 .rebuttal { color: #7a5300; margin-top: 2px; }
 .key-why { color: var(--orange); }

@@ -26,8 +26,10 @@ ENUMS = {
     "ASSESSMENT_STATUSES": "AssessmentStatus", "GATES": "Gate", "PROPOSAL_STATUSES": "ProposalStatus",
     "SUPPORT_STATUSES": "SupportStatus", "EXIT_LOGICS": "ExitLogic", "SIDES": "Side", "OP_KINDS": "OpKind",
 }
+# 不是独立 Literal 别名的枚举：从模型字段的注解里取
+FIELD_ENUMS = {"CRITIC_STATUSES": ("CriticReport", "status")}
 # 主 session 已决定、后端还没合进 schema 的取值：前端先认，schema 加上后从这里删掉
-PENDING = {"OpKind": {"sign"}}
+PENDING: dict[str, set[str]] = {}
 
 
 def check_enums() -> list[str]:
@@ -43,6 +45,12 @@ def check_enums() -> list[str]:
         extra = got - want - PENDING.get(py_name, set())
         if extra or want - got:
             errs.append(f"{ts_name} 与 schema.{py_name} 不一致：多 {sorted(extra)}，少 {sorted(want - got)}")
+    for ts_name, (model, field) in FIELD_ENUMS.items():
+        m = re.search(rf"export const {ts_name} = \[(.*?)\] as const", ts, re.S)
+        got = set(re.findall(r"'([^']+)'", m.group(1))) if m else set()
+        want = set(typing.get_args(getattr(schema, model).model_fields[field].annotation))
+        if got != want:
+            errs.append(f"{ts_name} 与 schema.{model}.{field} 不一致：{sorted(got)} vs {sorted(want)}")
     return errs
 
 
@@ -95,7 +103,7 @@ def main() -> None:
         errs += check_fixture(path)
     for e in errs:
         print(f"FAIL {e}")
-    print(f"{'OK' if not errs else 'FAILED'}: {len(paths)} fixture(s), {len(ENUMS)} enums")
+    print(f"{'OK' if not errs else 'FAILED'}: {len(paths)} fixture(s), {len(ENUMS) + len(FIELD_ENUMS)} enums")
     sys.exit(1 if errs else 0)
 
 
