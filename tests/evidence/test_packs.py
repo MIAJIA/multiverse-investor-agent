@@ -82,6 +82,11 @@ def test_combined(provider):
     ("CoWoS 产能 2027 扩产", "sc-008"),
     ("PortWatch 更新 数据滞后", "hz-006"),
     ("霍尔木兹 石油流量 消费", "hz-002"),
+    ("CPO 激光器 订单 需求", "sc-039"),
+    ("集成激光 替代", "sc-043"),
+    ("模型权重 出口管制", "sc-044"),
+    ("宣布开放 过境 恢复", "hz-011"),
+    ("曼德海峡 停火", "hz-016"),
 ])
 def test_search_top3(provider, query, expected):
     top = [x["excerpt_id"] for x in provider.search(query, ["semiconductor", "hormuz"], k=3)]
