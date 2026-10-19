@@ -1,0 +1,260 @@
+[
+  {
+    "terminal_id": "n.tlt_long",
+    "status": "draft",
+    "gate": "WAIT",
+    "direction": {
+      "instrument": "TLT",
+      "side": "long",
+      "horizon_days": 40,
+      "note": "Long TLT if the cut takes long yields down. Horizon runs to the 2026-11-27 deadline and is pending user confirmation."
+    },
+    "entry_conditions": [
+      {
+        "id": "cond.cut",
+        "claim_id": "n.cut",
+        "kind": "event",
+        "predicate": "observed_by",
+        "series": null,
+        "source": "FOMC post-meeting statement, federalreserve.gov",
+        "comparator": null,
+        "threshold": null,
+        "threshold_note": "The 25bp size is the user's stated size; no numeric threshold is needed for an event. User to confirm the 2026-10-28 statement counts.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-10-28",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-10-28"
+        },
+        "rule": "Met if the FOMC statement released 2026-10-28 lowers the federal funds target range by 25 basis points. Not met if the range is held or moved by another amount.",
+        "verification_status": "verifiable",
+        "evaluation_status": "unknown"
+      },
+      {
+        "id": "cond.yield_fall",
+        "claim_id": "n.yield_down",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+        "source": "US Treasury yield curve via FRED",
+        "comparator": "<",
+        "threshold": null,
+        "threshold_note": "The size of the required yield decline is not in the material. User should set it, for example relative to the 2026-10-27 close. Data source should confirm the series.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-27",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-27"
+        },
+        "rule": "Met if the 20-year yield closes below its 2026-10-27 level on any trading day through the deadline. Not met if it never does.",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_conditions": [
+      {
+        "id": "cond.curve_rise",
+        "claim_id": "n.curve",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+        "source": "US Treasury yield curve via FRED",
+        "comparator": ">",
+        "threshold": null,
+        "threshold_note": "The rise needed to signal a term-premium shock is unknown. User should set it. The 2-year yield comparison needs the same data source.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-27",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-27"
+        },
+        "rule": "Met if the 20-year yield closes above its 2026-10-27 level while the 2-year yield closes below its 2026-10-27 level on the same day. Not met otherwise.",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      },
+      {
+        "id": "cond.cut_not",
+        "claim_id": "n.cut",
+        "kind": "event",
+        "predicate": "not_observed_by",
+        "series": null,
+        "source": "FOMC post-meeting statement, federalreserve.gov",
+        "comparator": null,
+        "threshold": null,
+        "threshold_note": "Negative form of cond.cut; no threshold needed.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-10-28",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-10-28"
+        },
+        "rule": "Met if the FOMC statement released 2026-10-28 does not lower the target range by 25 basis points. Not met if the 25bp cut is announced.",
+        "verification_status": "verifiable",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_logic": "ANY",
+    "key_dependency": {
+      "condition_id": "cond.curve_rise",
+      "claim_id": "n.curve",
+      "why": "Whether the cut anchors inflation expectations decides whether long yields fall (this branch) or the term premium rises (the rival branch). The material shows inflation at 3.7% and markets pricing hikes, so this is the premise most worth checking first."
+    },
+    "user_judgment": {
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "clarified_statement": "The FOMC lowers the federal funds target range by 25 basis points at its 2026-10-27 to 2026-10-28 meeting, and the trade is tested by long-end Treasury yields and TLT over the following month.",
+      "criteria": "Met if the 2026-10-28 FOMC statement announces a 25bp reduction in the target range.",
+      "deadline": "2026-11-27",
+      "probability": null,
+      "requires_user_confirmation": true,
+      "confirmed": false,
+      "confirmed_claim_ids": [],
+      "note": null
+    },
+    "market_reference": null,
+    "scenario_ref": null,
+    "support_status": "challenged",
+    "graph_version": "g-v1",
+    "meta": {
+      "proposal_version": "g-v1.n.tlt_long",
+      "prompt_version": "p7",
+      "model": "claude-haiku-5-5",
+      "approval_required": true
+    },
+    "critic": {
+      "status": "disabled",
+      "reason": "Not enabled: out of scope for this phase",
+      "items": []
+    },
+    "approval_reset": false,
+    "rival_changed": false
+  },
+  {
+    "terminal_id": "n.tlt_short",
+    "status": "draft",
+    "gate": "WAIT",
+    "direction": {
+      "instrument": "TLT",
+      "side": "short",
+      "horizon_days": 40,
+      "note": "Short TLT if the cut fails to anchor inflation and the long-end term premium rises. Horizon runs to the 2026-11-27 deadline and is pending user confirmation."
+    },
+    "entry_conditions": [
+      {
+        "id": "cond.cut",
+        "claim_id": "n.cut",
+        "kind": "event",
+        "predicate": "observed_by",
+        "series": null,
+        "source": "FOMC post-meeting statement, federalreserve.gov",
+        "comparator": null,
+        "threshold": null,
+        "threshold_note": "The 25bp size is the user's stated size; no numeric threshold is needed for an event. User to confirm the 2026-10-28 statement counts.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-10-28",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-10-28"
+        },
+        "rule": "Met if the FOMC statement released 2026-10-28 lowers the federal funds target range by 25 basis points. Not met if the range is held or moved by another amount.",
+        "verification_status": "verifiable",
+        "evaluation_status": "unknown"
+      },
+      {
+        "id": "cond.curve_rise",
+        "claim_id": "n.curve",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+        "source": "US Treasury yield curve via FRED",
+        "comparator": ">",
+        "threshold": null,
+        "threshold_note": "The rise needed to signal a term-premium shock is unknown. User should set it. The 2-year yield comparison needs the same data source.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-27",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-27"
+        },
+        "rule": "Met if the 20-year yield closes above its 2026-10-27 level while the 2-year yield closes below its 2026-10-27 level on the same day. Not met otherwise.",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_conditions": [
+      {
+        "id": "cond.yield_fall",
+        "claim_id": "n.yield_down",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+        "source": "US Treasury yield curve via FRED",
+        "comparator": "<",
+        "threshold": null,
+        "threshold_note": "The size of the required yield decline is not in the material. User should set it, for example relative to the 2026-10-27 close. Data source should confirm the series.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-27",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-27"
+        },
+        "rule": "Met if the 20-year yield closes below its 2026-10-27 level on any trading day through the deadline. Not met if it never does.",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      },
+      {
+        "id": "cond.cut_not",
+        "claim_id": "n.cut",
+        "kind": "event",
+        "predicate": "not_observed_by",
+        "series": null,
+        "source": "FOMC post-meeting statement, federalreserve.gov",
+        "comparator": null,
+        "threshold": null,
+        "threshold_note": "Negative form of cond.cut; no threshold needed.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-10-28",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-10-28"
+        },
+        "rule": "Met if the FOMC statement released 2026-10-28 does not lower the target range by 25 basis points. Not met if the 25bp cut is announced.",
+        "verification_status": "verifiable",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_logic": "ANY",
+    "key_dependency": {
+      "condition_id": "cond.curve_rise",
+      "claim_id": "n.curve",
+      "why": "Whether the cut anchors inflation expectations decides whether the term premium rises (this branch) or long yields fall (the rival branch). Inflation at 3.7% supports this branch, but the material does not show how investors price the term premium, so this is the premise most worth checking first."
+    },
+    "user_judgment": {
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "clarified_statement": "The FOMC lowers the federal funds target range by 25 basis points at its 2026-10-27 to 2026-10-28 meeting, and the trade is tested by long-end Treasury yields and TLT over the following month.",
+      "criteria": "Met if the 2026-10-28 FOMC statement announces a 25bp reduction in the target range.",
+      "deadline": "2026-11-27",
+      "probability": null,
+      "requires_user_confirmation": true,
+      "confirmed": false,
+      "confirmed_claim_ids": [],
+      "note": null
+    },
+    "market_reference": null,
+    "scenario_ref": null,
+    "support_status": "challenged",
+    "graph_version": "g-v1",
+    "meta": {
+      "proposal_version": "g-v1.n.tlt_short",
+      "prompt_version": "p7",
+      "model": "claude-haiku-5-5",
+      "approval_required": true
+    },
+    "critic": {
+      "status": "disabled",
+      "reason": "Not enabled: out of scope for this phase",
+      "items": []
+    },
+    "approval_reset": false,
+    "rival_changed": false
+  }
+]

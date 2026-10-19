@@ -1,0 +1,245 @@
+[
+  {
+    "case_id": "W1",
+    "group": "pipeline",
+    "case_type": "custom",
+    "title": "Online + follow-up research: Fed October cut -> long-duration Treasury ETF",
+    "entry": "inspect",
+    "evals": [
+      "E1",
+      "E2",
+      "Branch quality"
+    ],
+    "expected": {
+      "behavior": "The local packs do not cover this domain, so all evidence must come from the research loop. On today's date the cut has not happened, so it should be role=shock and the related branches hypothetical. Branch only where there is a real dispute (for example, the cut is already priced in; long-end yields need not follow the short end); one branch is fine if there is none. Conditions cite official sources found online (FOMC statement, meeting calendar); meeting dates and thresholds are not invented. Each research round includes at least one query aimed at counter-evidence.",
+      "gate": "WAIT"
+    },
+    "actual": {
+      "no_chain": false,
+      "plans": [
+        {
+          "terminal_id": "t.tlt_long",
+          "gate": "WAIT",
+          "conditions": 3,
+          "status": "draft",
+          "support_status": "unknown"
+        },
+        {
+          "terminal_id": "t.tlt_short",
+          "gate": "WAIT",
+          "conditions": 3,
+          "status": "draft",
+          "support_status": "unknown"
+        }
+      ],
+      "branch_kinds": {
+        "t.tlt_long": "hypothetical",
+        "t.tlt_short": "hypothetical"
+      },
+      "conditions": 6,
+      "cited_excerpts": [
+        "web-005",
+        "web-006",
+        "web-r2-004",
+        "web-r2-006",
+        "web-r2-007",
+        "web-r2-008"
+      ],
+      "model_only_edges": 3
+    },
+    "status": "PENDING_REVIEW",
+    "failure_types": [],
+    "retrieval": null,
+    "checks": [
+      {
+        "name": "proposal_present",
+        "eval": "E2",
+        "passed": true,
+        "detail": "",
+        "failure_type": null
+      },
+      {
+        "name": "gate_per_plan",
+        "eval": "E2",
+        "passed": true,
+        "detail": "",
+        "failure_type": null
+      },
+      {
+        "name": "t.tlt_long:null_threshold_has_note",
+        "eval": "E2",
+        "passed": true,
+        "detail": "",
+        "failure_type": null
+      },
+      {
+        "name": "t.tlt_short:null_threshold_has_note",
+        "eval": "E2",
+        "passed": true,
+        "detail": "",
+        "failure_type": null
+      }
+    ],
+    "notes": [],
+    "layer": "W",
+    "human_review": [
+      "E1: do the cited web excerpts support the mechanism",
+      "E1: did each round include a query aimed at counter-evidence",
+      "Branch quality: are the branches real competitors",
+      "Branch quality: is the not-yet-happened cut marked role=shock",
+      "E2: do conditions cite verifiable official sources and dates"
+    ],
+    "pack_source": "real",
+    "web": {
+      "online": true,
+      "status": "ok",
+      "excerpts": 27,
+      "pack_id": "web:5fd842a424cb",
+      "searches": 5,
+      "fetches": 2,
+      "dropped": 5,
+      "reason": null,
+      "replayed": false,
+      "round": 1,
+      "queries": [
+        {
+          "query": "federalreserve.gov FOMC meeting October 2026"
+        },
+        {
+          "query": "federalreserve.gov FOMC statement federal funds rate target range 2026"
+        },
+        {
+          "query": "Waller speech economic outlook October 2026 federalreserve.gov"
+        },
+        {
+          "query": "bls.gov consumer price index September 2026 news release"
+        },
+        {
+          "query": "treasury.gov daily treasury par yield curve October 2026"
+        },
+        {
+          "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+        },
+        {
+          "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+        }
+      ],
+      "message": "联网：开，拿到 19 段（搜索 5 次、抓取 2 次，资料包 web:5fd842a424cb）；补查：第 2 轮拿到 8 段（触发原因：0 条没有证据的边（model_only）、2 个缺数据的阈值），图和计划已带上全部片段重跑",
+      "pack_ids": [
+        "web:5fd842a424cb",
+        "web:2caae0a33a5d"
+      ],
+      "rounds": [
+        {
+          "online": true,
+          "status": "ok",
+          "excerpts": 19,
+          "pack_id": "web:5fd842a424cb",
+          "searches": 5,
+          "fetches": 2,
+          "dropped": 5,
+          "reason": null,
+          "replayed": false,
+          "round": 1,
+          "queries": [
+            {
+              "query": "federalreserve.gov FOMC meeting October 2026"
+            },
+            {
+              "query": "federalreserve.gov FOMC statement federal funds rate target range 2026"
+            },
+            {
+              "query": "Waller speech economic outlook October 2026 federalreserve.gov"
+            },
+            {
+              "query": "bls.gov consumer price index September 2026 news release"
+            },
+            {
+              "query": "treasury.gov daily treasury par yield curve October 2026"
+            },
+            {
+              "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+            },
+            {
+              "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+            }
+          ],
+          "message": "联网：开，拿到 19 段（搜索 5 次、抓取 2 次，资料包 web:5fd842a424cb）"
+        },
+        {
+          "online": true,
+          "status": "ok",
+          "excerpts": 8,
+          "pack_id": "web:2caae0a33a5d",
+          "searches": 3,
+          "fetches": 2,
+          "dropped": 4,
+          "reason": null,
+          "replayed": false,
+          "round": 2,
+          "queries": [
+            {
+              "query": "federalreserve.gov H.15 selected interest rates Treasury constant maturity 20-year"
+            },
+            {
+              "query": "federalreserve.gov FOMC minutes term premium long-term Treasury yields rose 2026"
+            },
+            {
+              "query": "federalreserve.gov October 2026 FOMC meeting rate cut expectations"
+            },
+            {
+              "url": "https://www.federalreserve.gov/releases/h15/"
+            },
+            {
+              "url": "https://www.federalreserve.gov/releases/h15/current/default.htm"
+            }
+          ],
+          "message": "联网：开，拿到 8 段（搜索 3 次、抓取 2 次，资料包 web:2caae0a33a5d）"
+        }
+      ],
+      "followup": {
+        "triggered": true,
+        "reason": "0 条没有证据的边（model_only）、2 个缺数据的阈值",
+        "gaps": [
+          {
+            "kind": "condition",
+            "id": "cond.curve_rise"
+          },
+          {
+            "kind": "condition",
+            "id": "cond.yield_fall"
+          }
+        ]
+      }
+    },
+    "model": "anthropic:claude-haiku-5-5"
+  },
+  {
+    "case_id": "W1",
+    "group": "baseline",
+    "case_type": "custom",
+    "title": "Online + follow-up research: Fed October cut -> long-duration Treasury ETF",
+    "entry": "inspect",
+    "evals": [
+      "E1",
+      "E2",
+      "Branch quality"
+    ],
+    "expected": {
+      "behavior": "The local packs do not cover this domain, so all evidence must come from the research loop. On today's date the cut has not happened, so it should be role=shock and the related branches hypothetical. Branch only where there is a real dispute (for example, the cut is already priced in; long-end yields need not follow the short end); one branch is fine if there is none. Conditions cite official sources found online (FOMC statement, meeting calendar); meeting dates and thresholds are not invented. Each research round includes at least one query aimed at counter-evidence.",
+      "gate": "WAIT"
+    },
+    "actual": {
+      "summary": "backtests, online-only cases and probes run in the pipeline group only"
+    },
+    "status": "N/A",
+    "failure_types": [],
+    "retrieval": null,
+    "checks": [],
+    "notes": [],
+    "layer": "W",
+    "human_review": [],
+    "pack_source": "real",
+    "model": "anthropic:claude-haiku-5-5"
+  }
+]

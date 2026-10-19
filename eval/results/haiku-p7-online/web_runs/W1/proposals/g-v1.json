@@ -1,0 +1,220 @@
+[
+  {
+    "terminal_id": "t.tlt_long",
+    "status": "draft",
+    "gate": "WAIT",
+    "direction": {
+      "instrument": "TLT",
+      "side": "long",
+      "horizon_days": 7,
+      "note": "Long-end yields fall after the cut and TLT rallies. Conditional on the cut happening at the 2026-10-27/28 meeting."
+    },
+    "entry_conditions": [
+      {
+        "id": "cond.h.fed_cut",
+        "claim_id": "h.fed_cut",
+        "kind": "event",
+        "predicate": "observed_by",
+        "series": null,
+        "source": "FOMC policy statement, 2026-10-28",
+        "comparator": null,
+        "threshold": null,
+        "threshold_note": null,
+        "anchor": "2026-10-18",
+        "deadline": "2026-10-28",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-10-28"
+        },
+        "rule": "met if the 2026-10-28 FOMC statement lowers the target range by 25bp; not_met if the range is held or moved by a different amount",
+        "verification_status": "verifiable",
+        "evaluation_status": "unknown"
+      },
+      {
+        "id": "cond.h.long_yields_fall",
+        "claim_id": "h.long_yields_fall",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": null,
+        "source": null,
+        "comparator": "<",
+        "threshold": null,
+        "threshold_note": "The pack gives no long-end yield series or threshold; the user must confirm the benchmark (for example the 10-year or 20-year Treasury yield) and the minimum move. No series chosen here.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-04",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-04"
+        },
+        "rule": "met if the chosen long-end Treasury yield on 2026-11-04 is below its 2026-10-27 close; not_met otherwise",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_conditions": [
+      {
+        "id": "cond.h.term_premium_up",
+        "claim_id": "h.term_premium_up",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": null,
+        "source": null,
+        "comparator": ">",
+        "threshold": null,
+        "threshold_note": "The pack has no term-premium estimate or threshold; the user or a data source must confirm the measure and the minimum rise. No series chosen here.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-04",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-04"
+        },
+        "rule": "met if the long-end Treasury yield on 2026-11-04 is above its 2026-10-27 close while short yields fall over the same window; not_met otherwise",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_logic": "ANY",
+    "key_dependency": {
+      "condition_id": "cond.h.term_premium_up",
+      "claim_id": "h.term_premium_up",
+      "why": "This is where the branches split. If term premium rises and lifts long yields despite the cut, TLT falls. The pack has no excerpt linking inflation to term premium, so this premise rests on the model's hypothesis and should be checked first."
+    },
+    "user_judgment": {
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "clarified_statement": "Fed lowers the target range by 25bp at the 2026-10-27/28 FOMC meeting; horizon through 2026-11-04",
+      "criteria": "FOMC statement on 2026-10-28 lowers target range by 25bp",
+      "deadline": "2026-11-04",
+      "probability": null,
+      "requires_user_confirmation": true,
+      "confirmed": false,
+      "confirmed_claim_ids": [],
+      "note": null
+    },
+    "market_reference": null,
+    "scenario_ref": null,
+    "support_status": "unknown",
+    "graph_version": "g-v1",
+    "meta": {
+      "proposal_version": "g-v1.t.tlt_long",
+      "prompt_version": "p7",
+      "model": "claude-haiku-5-5",
+      "approval_required": true
+    },
+    "critic": {
+      "status": "disabled",
+      "reason": "Not enabled: out of scope for this phase",
+      "items": []
+    },
+    "approval_reset": false,
+    "rival_changed": false
+  },
+  {
+    "terminal_id": "t.tlt_short",
+    "status": "draft",
+    "gate": "WAIT",
+    "direction": {
+      "instrument": "TLT",
+      "side": "short",
+      "horizon_days": 7,
+      "note": "Term premium rises and lifts long yields, so TLT falls even with a cut. Conditional on the cut happening at the 2026-10-27/28 meeting."
+    },
+    "entry_conditions": [
+      {
+        "id": "cond.h.fed_cut",
+        "claim_id": "h.fed_cut",
+        "kind": "event",
+        "predicate": "observed_by",
+        "series": null,
+        "source": "FOMC policy statement, 2026-10-28",
+        "comparator": null,
+        "threshold": null,
+        "threshold_note": null,
+        "anchor": "2026-10-18",
+        "deadline": "2026-10-28",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-10-28"
+        },
+        "rule": "met if the 2026-10-28 FOMC statement lowers the target range by 25bp; not_met if the range is held or moved by a different amount",
+        "verification_status": "verifiable",
+        "evaluation_status": "unknown"
+      },
+      {
+        "id": "cond.h.term_premium_up",
+        "claim_id": "h.term_premium_up",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": null,
+        "source": null,
+        "comparator": ">",
+        "threshold": null,
+        "threshold_note": "The pack has no term-premium estimate or threshold; the user or a data source must confirm the measure and the minimum rise. No series chosen here.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-04",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-04"
+        },
+        "rule": "met if the long-end Treasury yield on 2026-11-04 is above its 2026-10-27 close while short yields fall over the same window; not_met otherwise",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_conditions": [
+      {
+        "id": "cond.h.long_yields_fall",
+        "claim_id": "h.long_yields_fall",
+        "kind": "numeric",
+        "predicate": "observed_by",
+        "series": null,
+        "source": null,
+        "comparator": "<",
+        "threshold": null,
+        "threshold_note": "The pack gives no long-end yield series or threshold; the user must confirm the benchmark (for example the 10-year or 20-year Treasury yield) and the minimum move. No series chosen here.",
+        "anchor": "2026-10-18",
+        "deadline": "2026-11-04",
+        "observation_window": {
+          "start": "2026-10-18",
+          "end": "2026-11-04"
+        },
+        "rule": "met if the chosen long-end Treasury yield on 2026-11-04 is below its 2026-10-27 close; not_met otherwise",
+        "verification_status": "unverified",
+        "evaluation_status": "unknown"
+      }
+    ],
+    "exit_logic": "ANY",
+    "key_dependency": {
+      "condition_id": "cond.h.term_premium_up",
+      "claim_id": "h.term_premium_up",
+      "why": "This is where the branches split. If term premium rises and lifts long yields despite the cut, TLT falls. The pack has no excerpt linking inflation to term premium, so this premise rests on the model's hypothesis and should be checked first."
+    },
+    "user_judgment": {
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "clarified_statement": "Fed lowers the target range by 25bp at the 2026-10-27/28 FOMC meeting; horizon through 2026-11-04",
+      "criteria": "FOMC statement on 2026-10-28 lowers target range by 25bp",
+      "deadline": "2026-11-04",
+      "probability": null,
+      "requires_user_confirmation": true,
+      "confirmed": false,
+      "confirmed_claim_ids": [],
+      "note": null
+    },
+    "market_reference": null,
+    "scenario_ref": null,
+    "support_status": "unknown",
+    "graph_version": "g-v1",
+    "meta": {
+      "proposal_version": "g-v1.t.tlt_short",
+      "prompt_version": "p7",
+      "model": "claude-haiku-5-5",
+      "approval_required": true
+    },
+    "critic": {
+      "status": "disabled",
+      "reason": "Not enabled: out of scope for this phase",
+      "items": []
+    },
+    "approval_reset": false,
+    "rival_changed": false
+  }
+]

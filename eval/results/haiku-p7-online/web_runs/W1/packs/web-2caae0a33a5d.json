@@ -1,0 +1,321 @@
+{
+  "pack_id": "web:2caae0a33a5d",
+  "synthetic": false,
+  "note": "Web retrieval pack (allow-list w5, retrieved 2026-10-18). Excerpt text comes from the citations returned by the API, not from model paraphrase. Stance was labelled by a model in the retrieval stage and has not been reviewed by a human. date is the search result's page_age (when the page was last updated, not the publication date), or unknown when unavailable. A trusted source does not by itself support a causal link.",
+  "excerpts": [
+    {
+      "source_id": "web:federalreserve.gov:da3bcbb8",
+      "excerpt_id": "web-r2-001",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Federal Reserve Board - Federal Reserve issues FOMC statement",
+      "date": "unknown",
+      "text": "The Federal Open Market Committee approved the following statement for release by a 12 – 0 vote: The Committee decided to raise the target range for t",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:87c89498",
+      "excerpt_id": "web-r2-002",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, September 15-16, 2026",
+      "date": "unknown",
+      "text": "It was agreed that the next meeting of the Committee would be held on Tuesday–Wednesday, October 27–28, 2026.",
+      "stance": "neutral",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:83247838",
+      "excerpt_id": "web-r2-003",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, May 6-7, 2025",
+      "date": "unknown",
+      "text": "The Treasury yield curve steepened materially, as short-term Treasury yields declined about 20 basis points over the intermeeting period while longer-",
+      "stance": "neutral",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20250507.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:83247838",
+      "excerpt_id": "web-r2-004",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, May 6-7, 2025",
+      "date": "unknown",
+      "text": "The increase in longer-term yields appeared to be partly attributable to higher term premiums.",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20250507.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:87c89498",
+      "excerpt_id": "web-r2-005",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, September 15-16, 2026",
+      "date": "unknown",
+      "text": "Market commentary pointed to geopolitical developments, uncertainty related to the U.S. Treasury's announcement and implementation of the buyback prog",
+      "stance": "neutral",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:ac115ce1",
+      "excerpt_id": "web-r2-006",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Vice Chair Jefferson on the U.S. economy and monetary policy - Federal Reserve Board",
+      "date": "unknown",
+      "text": "Most measures of longer-term inflation expectations, however, have remained stable at levels consistent with 2 percent inflation.",
+      "stance": "supports",
+      "url": "https://www.federalreserve.gov/newsevents/speech/jefferson20261001a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:ac115ce1",
+      "excerpt_id": "web-r2-007",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Vice Chair Jefferson on the U.S. economy and monetary policy - Federal Reserve Board",
+      "date": "unknown",
+      "text": "But if actual inflation remains above our target, then households and businesses may eventually stop believing that we will return inflation to 2 perc",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/jefferson20261001a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-r2-008",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "The projections submitted at the September meeting showed that a large majority of FOMC participants believe it will be appropriate to raise rates at",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    }
+  ],
+  "_provenance": {
+    "retrieval_key": "6f304ab2203d8b40",
+    "round": 2,
+    "gaps": [
+      {
+        "kind": "condition",
+        "id": "cond.curve_rise",
+        "claim": "If the cut does not anchor inflation expectations, the long-end term premium rises, so long yields rise while short yields fall.",
+        "rule": "Met if the 20-year yield closes above its 2026-10-27 level while the 2-year yield closes below its 2026-10-27 level on the same day. Not met otherwise.",
+        "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+        "threshold_note": "The rise needed to signal a term-premium shock is unknown. User should set it. The 2-year yield comparison needs the same data source."
+      },
+      {
+        "kind": "condition",
+        "id": "cond.yield_fall",
+        "claim": "A 25bp cut passes through to lower long-dated Treasury yields.",
+        "rule": "Met if the 20-year yield closes below its 2026-10-27 level on any trading day through the deadline. Not met if it never does.",
+        "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+        "threshold_note": "The size of the required yield decline is not in the material. User should set it, for example relative to the 2026-10-27 close. Data source should confirm the series."
+      }
+    ],
+    "whitelist": "w5",
+    "whitelist_digest": "b47b0f07a70d",
+    "web_prompt_version": "w2",
+    "followup_prompt_version": "f2",
+    "model": "claude-haiku-5-5",
+    "event": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+    "target": "TLT",
+    "today": "2026-10-18",
+    "searches": 3,
+    "fetches": 2,
+    "excerpts": [
+      {
+        "excerpt_id": "web-r2-001",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "33 days ago",
+        "retrieved_at": null,
+        "why": "The September 2026 statement reports a rate raise, which cuts against the thesis of a 25 basis point cut at the October meeting."
+      },
+      {
+        "excerpt_id": "web-r2-002",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "12 days ago",
+        "retrieved_at": null,
+        "why": "It confirms the next FOMC meeting date of October 27–28, 2026, which is needed to judge the event timing."
+      },
+      {
+        "excerpt_id": "web-r2-003",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "509 days ago",
+        "retrieved_at": null,
+        "why": "This 2025 minutes excerpt describes historical yield-curve moves and serves only as background on how Treasury yields behaved around policy meetings."
+      },
+      {
+        "excerpt_id": "web-r2-004",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "509 days ago",
+        "retrieved_at": null,
+        "why": "It attributes rising longer-term yields to higher term premiums rather than policy easing, which weakens the link from a rate cut to lower long-bond yields that TLT depends on."
+      },
+      {
+        "excerpt_id": "web-r2-005",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "12 days ago",
+        "retrieved_at": null,
+        "why": "It describes market uncertainty from geopolitics and Treasury buyback implementation, which is background that could move long-duration Treasuries in either direction."
+      },
+      {
+        "excerpt_id": "web-r2-006",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "18 days ago",
+        "retrieved_at": null,
+        "why": "Stable longer-term inflation expectations give the Fed room to ease, which modestly supports a 25 basis point cut."
+      },
+      {
+        "excerpt_id": "web-r2-007",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "18 days ago",
+        "retrieved_at": null,
+        "why": "It warns that persistent inflation above target could unanchor expectations, which argues against the Fed cutting rates."
+      },
+      {
+        "excerpt_id": "web-r2-008",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "The September projections show a large majority of participants expecting rate increases, which directly undercuts the expectation of a cut in October."
+      }
+    ],
+    "queries": [
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "federalreserve.gov H.15 selected interest rates Treasury constant maturity 20-year"
+        }
+      },
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "federalreserve.gov FOMC minutes term premium long-term Treasury yields rose 2026"
+        }
+      },
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "federalreserve.gov October 2026 FOMC meeting rate cut expectations"
+        }
+      },
+      {
+        "tool": "web_fetch",
+        "input": {
+          "url": "https://www.federalreserve.gov/releases/h15/"
+        }
+      },
+      {
+        "tool": "web_fetch",
+        "input": {
+          "url": "https://www.federalreserve.gov/releases/h15/current/default.htm"
+        }
+      }
+    ],
+    "errors": [],
+    "fetched": [
+      {
+        "url": "https://www.federalreserve.gov/releases/h15/",
+        "title": "Federal Reserve Board - H.15 - Selected Interest Rates (Daily) - October 16, 2026",
+        "retrieved_at": "2026-10-19T08:18:46+00:00",
+        "kind": "text"
+      },
+      {
+        "url": "https://www.federalreserve.gov/releases/h15/current/default.htm",
+        "title": "FRB: H.15 Release--Selected Interest Rates--",
+        "retrieved_at": "2026-10-18T22:14:56+00:00",
+        "kind": "text"
+      }
+    ],
+    "dropped": [
+      {
+        "reason": "seen_in_prior_round",
+        "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm",
+        "text": "With regard to the outlook for monetary policy beyond the current meeting, most participants assessed that another increase in the target range for th"
+      },
+      {
+        "reason": "seen_in_prior_round",
+        "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm",
+        "text": "Sixteen of the 18 participants who submitted dots anticipated at least one more hike during the two remaining meetings this year."
+      },
+      {
+        "reason": "label_dropped",
+        "url": "https://www.federalreserve.gov/releases/h15/",
+        "text": "Users can access data and expanded download options through the Federal Reserve Bank of St. Louis's [Federal Reserve Economic Data (FRED)](https://fred.stlouisfed.org/collection/federal-reserve-board-",
+        "why": "This is site navigation and data-download text with no bearing on the rate-cut thesis."
+      },
+      {
+        "reason": "label_dropped",
+        "url": "https://www.federalreserve.gov/releases/h15/",
+        "text": "# Board of Governors of the Federal Reserve System\n## Selected Interest Rates (Daily) - H.15\n### H.15 Selected Interest Rates RSS Data Download FRED X",
+        "why": "This is a page header for the H.15 data release and carries no substantive evidence."
+      }
+    ],
+    "usage": [
+      {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "fallback_credit": null,
+        "inference_geo": "global",
+        "input_tokens": 155403,
+        "iterations": [
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 7139,
+            "model": null,
+            "output_tokens": 611,
+            "type": "message"
+          },
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 41055,
+            "model": null,
+            "output_tokens": 528,
+            "type": "message"
+          },
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 53315,
+            "model": null,
+            "output_tokens": 334,
+            "type": "message"
+          },
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 53894,
+            "model": null,
+            "output_tokens": 2889,
+            "type": "message"
+          }
+        ],
+        "output_tokens": 4362,
+        "output_tokens_details": {
+          "thinking_tokens": 2178
+        },
+        "server_tool_use": {
+          "web_fetch_requests": 2,
+          "web_search_requests": 3
+        },
+        "service_tier": "standard",
+        "speed": "standard"
+      }
+    ]
+  }
+}

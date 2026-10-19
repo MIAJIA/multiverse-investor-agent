@@ -1,0 +1,317 @@
+{
+  "version": "g-v1",
+  "parent_version": null,
+  "op": {
+    "kind": "inspect",
+    "target": "TLT",
+    "value": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+    "impacts": [],
+    "new_nodes": [],
+    "new_edges": []
+  },
+  "nodes": [
+    {
+      "id": "n.cut",
+      "role": "shock",
+      "statement": "The Fed cuts the target range by 25 basis points at the October 27-28, 2026 FOMC meeting.",
+      "label": "Fed cuts 25bp",
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "evidence_status": "contradicted",
+      "time_bucket": "2026-10-27..2026-10-28",
+      "instruments": []
+    },
+    {
+      "id": "n.labour",
+      "role": "assumption",
+      "statement": "Rising unemployment since mid-2025 pushes the Committee toward a 25bp cut.",
+      "label": "Labour weakness",
+      "original_statement": "the unemployment rate has risen since the middle of last year",
+      "evidence_status": "unknown",
+      "time_bucket": null,
+      "instruments": []
+    },
+    {
+      "id": "n.infl",
+      "role": "assumption",
+      "statement": "Re-accelerating inflation (September CPI 3.7% y/y, energy up 20.4%) keeps the Committee focused on inflation and away from cutting.",
+      "label": "Inflation blocks cut",
+      "original_statement": "The all items index rose 3.7 percent for the 12 months ending September",
+      "evidence_status": "unknown",
+      "time_bucket": null,
+      "instruments": []
+    },
+    {
+      "id": "n.yield_down",
+      "role": "intermediate",
+      "statement": "A 25bp cut passes through to lower long-dated Treasury yields.",
+      "label": "Long yields fall",
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "evidence_status": "unknown",
+      "time_bucket": null,
+      "instruments": []
+    },
+    {
+      "id": "n.tlt_long",
+      "role": "terminal",
+      "statement": "TLT price rises as long-dated yields fall after the cut.",
+      "label": "TLT rallies",
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "evidence_status": "unknown",
+      "time_bucket": null,
+      "instruments": [
+        "TLT"
+      ]
+    },
+    {
+      "id": "n.curve",
+      "role": "intermediate",
+      "statement": "If the cut does not anchor inflation expectations, the long-end term premium rises, so long yields rise while short yields fall.",
+      "label": "Term premium rises",
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "evidence_status": "unknown",
+      "time_bucket": null,
+      "instruments": []
+    },
+    {
+      "id": "n.tlt_short",
+      "role": "terminal",
+      "statement": "TLT price falls as the long end cheapens on a higher term premium.",
+      "label": "TLT sells off",
+      "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+      "evidence_status": "unknown",
+      "time_bucket": null,
+      "instruments": [
+        "TLT"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e.labour_cut",
+      "from": "n.labour",
+      "to": "n.cut",
+      "channel": "policy",
+      "sign": "+",
+      "lag_days": null,
+      "mechanism": "Rising unemployment makes a cut at the October meeting more likely.",
+      "evidence": [
+        {
+          "tier": "T1",
+          "source_id": "web:federalreserve.gov:73751f18",
+          "excerpt_id": "web-009",
+          "stance": "supports",
+          "supports": "Unemployment rate has risen since mid-2025, the labour premise for a cut.",
+          "rebuttal": null
+        },
+        {
+          "tier": "T1",
+          "source_id": "web:federalreserve.gov:3917a61d",
+          "excerpt_id": "web-008",
+          "stance": "supports",
+          "supports": "January minutes show several participants had already discussed further downward adjustments; dated background for a cut case.",
+          "rebuttal": null
+        },
+        {
+          "tier": "T1",
+          "source_id": "web:federalreserve.gov:424e5488",
+          "excerpt_id": "web-010",
+          "stance": "contradicts",
+          "supports": "Describes September jobs growth as weaker overall but the labour market as solid and stable.",
+          "rebuttal": "It does not deny that unemployment has risen since mid-2025 (web-009); it only weakens the urgency of a labour-driven cut."
+        }
+      ],
+      "model_only": false
+    },
+    {
+      "id": "e.infl_cut",
+      "from": "n.infl",
+      "to": "n.cut",
+      "channel": "policy",
+      "sign": "-",
+      "lag_days": null,
+      "mechanism": "Re-accelerating inflation and a hawkish policy stance make a cut less likely.",
+      "evidence": [
+        {
+          "tier": "T1",
+          "source_id": "web:federalreserve.gov:424e5488",
+          "excerpt_id": "web-015",
+          "stance": "contradicts",
+          "supports": "Governor says policy will focus on the inflation side of the mandate for at least the near term, against a cut.",
+          "rebuttal": null
+        },
+        {
+          "tier": "T1",
+          "source_id": "web:bls.gov:0212a829",
+          "excerpt_id": "web-012",
+          "stance": "contradicts",
+          "supports": "Headline CPI rose to 3.7% y/y in September, up from 3.4%, against a cut.",
+          "rebuttal": null
+        },
+        {
+          "tier": "T1",
+          "source_id": "web:federalreserve.gov:424e5488",
+          "excerpt_id": "web-016",
+          "stance": "contradicts",
+          "supports": "Hopes for a quick end to the Middle East conflict faded and oil may stay high, sustaining inflation pressure.",
+          "rebuttal": null
+        },
+        {
+          "tier": "T1",
+          "source_id": "web:federalreserve.gov:87c89498",
+          "excerpt_id": "web-004",
+          "stance": "contradicts",
+          "supports": "September minutes: most participants assessed another rate increase as likely, not a cut.",
+          "rebuttal": null
+        },
+        {
+          "tier": "T1",
+          "source_id": "web:federalreserve.gov:424e5488",
+          "excerpt_id": "web-006",
+          "stance": "contradicts",
+          "supports": "Futures prices show about an 85 percent chance of at least one hike by year-end, so markets do not price cuts.",
+          "rebuttal": null
+        }
+      ],
+      "model_only": false
+    },
+    {
+      "id": "e.cut_yield",
+      "from": "n.cut",
+      "to": "n.yield_down",
+      "channel": "policy",
+      "sign": "+",
+      "lag_days": null,
+      "mechanism": "A policy-rate cut lowers the expected policy path and pulls long-dated Treasury yields down.",
+      "evidence": [],
+      "model_only": true
+    },
+    {
+      "id": "e.yield_tlt",
+      "from": "n.yield_down",
+      "to": "n.tlt_long",
+      "channel": "price",
+      "sign": "+",
+      "lag_days": null,
+      "mechanism": "Lower yields raise TLT prices, since long-duration bonds are the most rate-sensitive.",
+      "evidence": [],
+      "model_only": true
+    },
+    {
+      "id": "e.cut_curve",
+      "from": "n.cut",
+      "to": "n.curve",
+      "channel": "price",
+      "sign": "+",
+      "lag_days": null,
+      "mechanism": "A cut that appears to ease policy before inflation is contained can raise long-end term premium.",
+      "evidence": [],
+      "model_only": true
+    },
+    {
+      "id": "e.infl_curve",
+      "from": "n.infl",
+      "to": "n.curve",
+      "channel": "price",
+      "sign": "+",
+      "lag_days": null,
+      "mechanism": "Persistent inflation lifts the long-end term premium that investors require.",
+      "evidence": [],
+      "model_only": true
+    },
+    {
+      "id": "e.curve_tlt_short",
+      "from": "n.curve",
+      "to": "n.tlt_short",
+      "channel": "price",
+      "sign": "-",
+      "lag_days": null,
+      "mechanism": "A higher long-end term premium lowers TLT prices.",
+      "evidence": [],
+      "model_only": true
+    }
+  ],
+  "conditions": [
+    {
+      "id": "cond.cut",
+      "claim_id": "n.cut",
+      "kind": "event",
+      "predicate": "observed_by",
+      "series": null,
+      "source": "FOMC post-meeting statement, federalreserve.gov",
+      "comparator": null,
+      "threshold": null,
+      "threshold_note": "The 25bp size is the user's stated size; no numeric threshold is needed for an event. User to confirm the 2026-10-28 statement counts.",
+      "anchor": "2026-10-18",
+      "deadline": "2026-10-28",
+      "observation_window": {
+        "start": "2026-10-18",
+        "end": "2026-10-28"
+      },
+      "rule": "Met if the FOMC statement released 2026-10-28 lowers the federal funds target range by 25 basis points. Not met if the range is held or moved by another amount.",
+      "verification_status": "verifiable",
+      "evaluation_status": "unknown"
+    },
+    {
+      "id": "cond.cut_not",
+      "claim_id": "n.cut",
+      "kind": "event",
+      "predicate": "not_observed_by",
+      "series": null,
+      "source": "FOMC post-meeting statement, federalreserve.gov",
+      "comparator": null,
+      "threshold": null,
+      "threshold_note": "Negative form of cond.cut; no threshold needed.",
+      "anchor": "2026-10-18",
+      "deadline": "2026-10-28",
+      "observation_window": {
+        "start": "2026-10-18",
+        "end": "2026-10-28"
+      },
+      "rule": "Met if the FOMC statement released 2026-10-28 does not lower the target range by 25 basis points. Not met if the 25bp cut is announced.",
+      "verification_status": "verifiable",
+      "evaluation_status": "unknown"
+    },
+    {
+      "id": "cond.yield_fall",
+      "claim_id": "n.yield_down",
+      "kind": "numeric",
+      "predicate": "observed_by",
+      "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+      "source": "US Treasury yield curve via FRED",
+      "comparator": "<",
+      "threshold": null,
+      "threshold_note": "The size of the required yield decline is not in the material. User should set it, for example relative to the 2026-10-27 close. Data source should confirm the series.",
+      "anchor": "2026-10-18",
+      "deadline": "2026-11-27",
+      "observation_window": {
+        "start": "2026-10-18",
+        "end": "2026-11-27"
+      },
+      "rule": "Met if the 20-year yield closes below its 2026-10-27 level on any trading day through the deadline. Not met if it never does.",
+      "verification_status": "unverified",
+      "evaluation_status": "unknown"
+    },
+    {
+      "id": "cond.curve_rise",
+      "claim_id": "n.curve",
+      "kind": "numeric",
+      "predicate": "observed_by",
+      "series": "20-year US Treasury constant maturity yield (FRED DGS20)",
+      "source": "US Treasury yield curve via FRED",
+      "comparator": ">",
+      "threshold": null,
+      "threshold_note": "The rise needed to signal a term-premium shock is unknown. User should set it. The 2-year yield comparison needs the same data source.",
+      "anchor": "2026-10-18",
+      "deadline": "2026-11-27",
+      "observation_window": {
+        "start": "2026-10-18",
+        "end": "2026-11-27"
+      },
+      "rule": "Met if the 20-year yield closes above its 2026-10-27 level while the 2-year yield closes below its 2026-10-27 level on the same day. Not met otherwise.",
+      "verification_status": "unverified",
+      "evaluation_status": "unknown"
+    }
+  ],
+  "model_output_ref": null,
+  "observations_ref": null
+}

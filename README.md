@@ -2,11 +2,7 @@
 
 A research copilot for retail traders. You type a belief ("the Strait of Hormuz reopens next week"). Catalyst turns it into a causal graph with competing branches and gives each conclusion a pre-filled, conditional trade plan: what to do, what has to be observed before entering, what would get you out, and which premise matters most. You review the plans, adjust the thresholds nobody could source, and approve one of them, or none. Approving a plan is not placing an order.
 
-> **Status (2026-10-18).** `main` contains everything in the "Merged" column below. Plan B (competing branches with one plan per conclusion) and the Inspect research loop are being built on parallel branches and will be merged next; this README already describes them and marks them as such. Numbers in the evaluation section come from real model runs, not estimates.
-
-| Merged on `main` | In progress |
-| --- | --- |
-| Discover / Inspect / Fork pipeline, validators, entry gate, scoped forks, stacked scenarios, sign-off, versioned snapshots, record / replay harness, HTTP API, React front end (B1 graph, B2 sign-off, B3 scenario diff), eval runner and report, two curated evidence packs, online search switch with a domain whitelist | Plan B: competing branches, one plan per conclusion, approve-a-plan, branch kinds derived by code. Research loop: agent-driven web research before graph building, plus one gap-driven follow-up round |
+> **Status (2026-10-19).** Everything described below is built and merged: the pipeline, plan B (competing branches with one plan per conclusion, and approving a plan), the research loop for online runs, the React front end, and the eval. The front end has been walked end to end against the real back end (create a run, approve a plan, change an assumption and see the approval reset). The numbers in the evaluation section come from real model runs that are recorded in `eval/results/`, so you can replay them without an API key.
 
 **Demo video:** _link to be added._ A walkthrough of the system design is in the separate presentation.
 
@@ -21,7 +17,7 @@ The founder's own framing set the constraints we designed around: the trader giv
 ## What it does
 
 1. **Discover.** Input an event, optionally a target. Catalyst proposes at most three directions, each labelled *grounded*, *hypothesis*, or *not recommended*, or it abstains. Zero is a valid answer.
-2. **Inspect.** Pick a direction. Catalyst builds a causal DAG down to tradable instruments. *(Plan B, in progress:)* where the evidence genuinely disagrees, it splits into 2–3 competing branches, and the divergence point is the premise most worth checking. Every branch is marked by code as **evidenced**, **model-only**, or **hypothetical** (resting on an event that has not happened). Each conclusion gets a pre-filled plan with entry conditions (AND), exit conditions (explicit ANY / ALL), and a key dependency. If nothing is met yet, the plan says **WAIT**.
+2. **Inspect.** Pick a direction. Catalyst builds a causal DAG down to tradable instruments. Where the evidence genuinely disagrees, it splits into 2–3 competing branches, and the divergence point is the premise most worth checking. Every branch is marked by code as **evidenced**, **model-only**, or **hypothetical** (resting on an event that has not happened). Each conclusion gets a pre-filled plan with entry conditions (AND), exit conditions (explicit ANY / ALL), and a key dependency. If nothing is met yet, the plan says **WAIT**.
 3. **Approve.** Confirm "we understood your idea as …", fill in any threshold marked *needs your confirmation*, and approve one plan or none. At most one plan per version is approved.
 4. **Change an assumption.** Catalyst recomputes only what depends on it and produces a new version. Out-of-scope nodes stay byte-identical, challenged premises are listed with a reason and a next check, and only the approved plans the change actually touches are invalidated. The original version is kept, so you compare two futures instead of overwriting one.
 
@@ -33,7 +29,7 @@ The founder's own framing set the constraints we designed around: the trader giv
 
 | Step | Mode | Why |
 | --- | --- | --- |
-| Finding evidence (what to search, which source, how many rounds) | Agent loop *(in progress)* | The path is open-ended; one extra round costs only time and money |
+| Finding evidence (what to search, which source, how many rounds) | Agent loop (online runs) | The path is open-ended; one extra round costs only time and money |
 | Building the graph and plans | Structured model calls, retried on validator errors | The reasoning is open, but the output must be machine-checkable |
 | Labelling the stance of retrieved evidence | A separate call that cannot see the conclusion | A model that labels its own evidence bends it toward its conclusion |
 | Gate, write scope, validation, versions, approval | Code | Errors here land on the user's money and must be predictable |
@@ -56,16 +52,27 @@ Deterministic behaviour is covered by tests, and the eval is reserved for model 
 - **Deterministic tests (over 200, all offline):** the entry-gate truth table, condition time semantics, reference validation, stance consistency, fork non-interference (hashes of every out-of-scope node, edge and condition), stacked scenarios, sign-off, the HTTP API, evidence packs, the web-search whitelist and replay.
 - **Eval:** 11 cases. Six are CausalT5k causal-judgment items (YES / NO / AMBIGUOUS, including a skepticism trap and a sycophancy probe), four are built from the assignment's own examples (C1–C4), and one is the founder's Hormuz example (D1). Every case also runs as a single-prompt baseline with the same model and the same evidence. We report per-case results and failure types, never percentages.
 
-Latest run on the real evidence packs (Claude Haiku 5.5):
+The latest run uses Claude Haiku 5.5 at medium effort, prompt version p7, and the real evidence packs. Its report is `eval/results/haiku-p7/report.md`. Two automatic checks fail, and both failures come from the model's behaviour rather than from the pipeline:
 
-| Case | Result |
+- **B3** expects at least two independent exit conditions, because the pack contains several separate risks that could each break the thesis. The model wrote only one.
+- **T2** is a causal claim that the material supports. The model answered AMBIGUOUS, and the single-prompt baseline made the same mistake, so the miss belongs to the model.
+
+We did not tune the prompts to make these two cases pass, because a prompt tuned on its own test cases no longer measures anything.
+
+| Case | What happened |
 | --- | --- |
-| C1 photonic adoption → laser / foundry names | 3 grounded directions with real tickers (LITE, AVGO, TSEM); the key dependency came from counter-evidence: external light sources cut laser count to a quarter, so CPO volume must grow more than 4× before laser demand grows |
-| C2 frontier-model export limits → NVDA | Declined to build a chain offline: the model-weight rule had been rescinded and the remaining material covers chips, not models. With web search on, it retrieved 17 excerpts from whitelisted sites (BIS, SEC, ECB, Al Jazeera) and built a chain that ends in WAIT |
-| C3 fork the C1 graph twice | Both forks pass: challenged claims match the golden set, 0 out-of-scope writes |
-| C4 midterm split → distant ticker | Abstains, as intended |
-| D1 Hormuz reopens next week | Three directions (grounded / hypothesis / not recommended); the plan is WAIT; "transits recover" is marked contradicted by history; the key dependency is the Saudi East-West pipeline |
-| T1–T6 CausalT5k | 4 of 6 match; T2 (YES → AMBIGUOUS) and T5 (AMBIGUOUS → NO) miss in both the pipeline and the baseline, which points at the model rather than the pipeline |
+| C1 photonic adoption | Discover proposed 3 directions. Inspect produced a plan on TSEM that waits for its entry conditions, and all 6 key excerpts were cited. |
+| C2 model export limits → NVDA | Offline, the plan on NVDA waits for its entry conditions, and 3 edges stay model-only. |
+| C3 fork the C1 graph | Both forks marked exactly the expected claims as challenged and wrote nothing outside the write scope. |
+| C4 midterms → distant ticker | The model abstained, which is the expected behaviour. |
+| D1 Hormuz reopens next week | The graph splits into two competing branches, "Brent falls" and "Brent stays high", and each branch has a plan that waits. Only 1 edge is model-only. |
+| B1–B6 key scenarios | B3 fails as described above. The other five run cleanly and wait for human review, for example on whether a supplier list was wrongly used as evidence of demand. |
+| T1–T6 CausalT5k | 5 of 6 labels match the gold answer. T2 is the miss described above. |
+| R2, R3 backtests | Each backtest sees only the excerpts that were public on its decision date and runs offline. Graded against what happened afterwards, both plans did the right thing: they stayed out before the outcome turned against the thesis. |
+| K3 classic backtest | The plan also stayed out, but the model already knew this 2022 outcome, so we list the result as contaminated and do not count it. |
+| W1 online (Fed cut → TLT) | Round 1 retrieved 19 excerpts from whitelisted sites. The code then found 2 thresholds that lacked data and ran a follow-up round, which added 8 more excerpts. The final graph has two competing plans that both wait. |
+
+One design issue is still open. Branch kinds are derived by code, and a branch counts as hypothetical when it rests on an event that has not happened. The user's own belief is usually such an event, so in most runs every branch comes out hypothetical, and the three kinds stop telling the branches apart. We are deciding whether the user's own event should be excluded from that rule.
 
 Human review covers what tests cannot: whether citations really support a mechanism, whether conditions are decidable, and *(plan B)* whether branches are genuine competitors rather than padding.
 
@@ -100,6 +107,7 @@ CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run D1 --live      
 .venv/bin/python -m catalyst run D1 --replay runs/D1/<timestamp>                       # replay, no network
 CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run C2 --live --online   # with web search
 .venv/bin/python -m eval.runner --record eval/out/<name>                               # all cases, both groups
+.venv/bin/python -m eval.runner --replay eval/results/haiku-p7 --today 2026-10-19      # re-score the recorded run, no API key
 .venv/bin/python -m catalyst.api                      # HTTP API on :8000
 cd web && VITE_MOCK=0 npm run dev                     # front end on the real API (default: recorded fixtures)
 ```

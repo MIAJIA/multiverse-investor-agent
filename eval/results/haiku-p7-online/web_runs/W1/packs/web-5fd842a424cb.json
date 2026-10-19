@@ -1,0 +1,519 @@
+{
+  "pack_id": "web:5fd842a424cb",
+  "synthetic": false,
+  "note": "Web retrieval pack (allow-list w5, retrieved 2026-10-18). Excerpt text comes from the citations returned by the API, not from model paraphrase. Stance was labelled by a model in the retrieval stage and has not been reviewed by a human. date is the search result's page_age (when the page was last updated, not the publication date), or unknown when unavailable. A trusted source does not by itself support a causal link.",
+  "excerpts": [
+    {
+      "source_id": "web:federalreserve.gov:4592d392",
+      "excerpt_id": "web-001",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Federal Reserve Board - Calendar: October 2026",
+      "date": "unknown",
+      "text": "Two-day meeting, October 27 - 28.",
+      "stance": "neutral",
+      "url": "https://www.federalreserve.gov/newsevents/2026-october.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:b1ea276e",
+      "excerpt_id": "web-002",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Federal Reserve Board - Federal Reserve issues FOMC statement",
+      "date": "unknown",
+      "text": "The Federal Open Market Committee approved the following statement for release by a 12 – 0 vote: The Committee decided to raise the target range for t",
+      "stance": "contradicts",
+      "url": "https://federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm?amp=&hss_meta=eyJvcmdhbml6YXRpb25faWQiOiA2MDMsICJncm91cF9pZCI6IDEwNDM2MzksICJhc3NldF9pZCI6IDI1Mzg1NzMsICJncm91cF9jb250ZW50X2lkIjogMTY0NDc2Mjk3LCAiZ3JvdXBfbmV0d29ya19jb250ZW50X2lkIjogMjQzNTIwOTk0fQ%3D%3D"
+    },
+    {
+      "source_id": "web:federalreserve.gov:3a654fea",
+      "excerpt_id": "web-003",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, July 28–29, 2026",
+      "date": "unknown",
+      "text": "**Committee Policy Actions** In support of the Committee's dual-mandate goals, nine members agreed to maintain the target range for the federal funds",
+      "stance": "neutral",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260729.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:87c89498",
+      "excerpt_id": "web-004",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, September 15-16, 2026",
+      "date": "unknown",
+      "text": "With regard to the outlook for monetary policy beyond the current meeting, most participants assessed that another increase in the target range for th",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-005",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "Sixteen of the 18 participants who submitted dots anticipated at least one more hike during the two remaining meetings this year.",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-006",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "According to futures market prices for the federal funds rate as of yesterday, traders see an 85 percent chance of at least one hike by the end of the",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:3917a61d",
+      "excerpt_id": "web-007",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, January 27-28, 2026",
+      "date": "unknown",
+      "text": "Against this backdrop, almost all participants supported maintaining the current target range for the federal funds rate at this meeting, while a coup",
+      "stance": "neutral",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260128.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:3917a61d",
+      "excerpt_id": "web-008",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, January 27-28, 2026",
+      "date": "unknown",
+      "text": "In considering the outlook for monetary policy, several participants commented that further downward adjustments to the target range for the federal f",
+      "stance": "supports",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260128.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:73751f18",
+      "excerpt_id": "web-009",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Statement by Governor Christopher J. Waller - Federal Reserve Board",
+      "date": "unknown",
+      "text": "Despite ticking down in its most recent reading, the unemployment rate has risen since the middle of last year.",
+      "stance": "supports",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20260130a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-010",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "While the number of jobs created was down overall, the employment report indicated that the labor market continued to be solid and stable in September",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    },
+    {
+      "source_id": "web:bls.gov:0212a829",
+      "excerpt_id": "web-011",
+      "source": "U.S. BLS (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Consumer Price Index News Release - 2026 M09 Results",
+      "date": "unknown",
+      "text": "[CPI Program Links](https://www.bls.gov/images/icons/icon_small_link.gif)](#modal-box)\n\nConsumer Price Index  ×\n\n- [CPI Homepage](https://www.bls.gov/cpi/)\n- [CPI Overview](https://www.bls.gov/cpi/overview.htm)\n- [CPI FAQs](https://www.bls.gov/cpi/questions-and-answers.htm)\n- [Contact CPI](https://www.bls.gov/cpi/contact.htm)\n\nClose\n\n# Consumer Price Index News Release\n\n```\nTransmission of material in this release is embargoed until  \n8:30 a.m. (ET) Wednesday, October 14, 2026          USDL-26-1574\n\nTechnical information: (202) 691-7000  *  cpi_info@bls.gov  *  www.bls.gov/cpi\nMedia contact:         (202) 691-5902  *  PressOffice@bls.gov\n\nCONSUMER PRICE INDEX - SEPTEMBER 2026\n\nThe Consumer Price Index for All Urban Consumers (CPI-U) increased 0.6 percent on a seasonally adjusted basis in\nSeptember after rising 0.4 percent in August, the U.S. Bureau of Labor Statistics reported today.",
+      "stance": "neutral",
+      "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+    },
+    {
+      "source_id": "web:bls.gov:0212a829",
+      "excerpt_id": "web-012",
+      "source": "U.S. BLS (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Consumer Price Index News Release - 2026 M09 Results",
+      "date": "unknown",
+      "text": "The all items index rose 3.7 percent for the 12 months ending September, a larger increase than the 3.4-percent increase\nreported for the 12 months ending in August.",
+      "stance": "contradicts",
+      "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+    },
+    {
+      "source_id": "web:bls.gov:0212a829",
+      "excerpt_id": "web-013",
+      "source": "U.S. BLS (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Consumer Price Index News Release - 2026 M09 Results",
+      "date": "unknown",
+      "text": "The all items less food and energy index rose 2.6 percent over the year,\nfollowing a 2.4-percent increase over the 12 months ending August.",
+      "stance": "contradicts",
+      "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+    },
+    {
+      "source_id": "web:bls.gov:0212a829",
+      "excerpt_id": "web-014",
+      "source": "U.S. BLS (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Consumer Price Index News Release - 2026 M09 Results",
+      "date": "unknown",
+      "text": "The energy index increased 20.4 percent for the 12\nmonths ending September.",
+      "stance": "contradicts",
+      "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-015",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "For at least the near term, policy will be focused on the inflation side of our mandate.",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-016",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "First, hopes for a quick ending to the Middle East conflict faded, and experts warned that low inventories and damaged infrastructure could keep oil p",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-017",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "Third, continuing trade conflicts threatened new tariffs that could put upward pressure on inflation yet again.",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:424e5488",
+      "excerpt_id": "web-018",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board",
+      "date": "unknown",
+      "text": "With evidence that economic activity is strengthening in the second half of this year, I am not greatly concerned that tighter monetary policy threate",
+      "stance": "contradicts",
+      "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+    },
+    {
+      "source_id": "web:federalreserve.gov:87c89498",
+      "excerpt_id": "web-019",
+      "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · FOMC Minutes, September 15-16, 2026",
+      "date": "unknown",
+      "text": "Several participants stated that they viewed the current policy rate as not restrictive or only mildly restrictive.",
+      "stance": "neutral",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm"
+    }
+  ],
+  "_provenance": {
+    "retrieval_key": "2e955368b6ddf03d",
+    "round": 1,
+    "gaps": [],
+    "whitelist": "w5",
+    "whitelist_digest": "b47b0f07a70d",
+    "web_prompt_version": "w2",
+    "followup_prompt_version": null,
+    "model": "claude-haiku-5-5",
+    "event": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+    "target": "TLT",
+    "today": "2026-10-18",
+    "searches": 5,
+    "fetches": 2,
+    "excerpts": [
+      {
+        "excerpt_id": "web-001",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "6 days ago",
+        "retrieved_at": null,
+        "why": "States the late-October FOMC meeting dates (October 27-28), which fixes the event window for the thesis."
+      },
+      {
+        "excerpt_id": "web-002",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": null,
+        "retrieved_at": null,
+        "why": "The September 2026 statement shows the Committee raised the target range, the opposite of the cut the thesis predicts."
+      },
+      {
+        "excerpt_id": "web-003",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "61 days ago",
+        "retrieved_at": null,
+        "why": "July minutes show the Committee held rates steady, which is historical baseline context for judging a later cut."
+      },
+      {
+        "excerpt_id": "web-004",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "12 days ago",
+        "retrieved_at": null,
+        "why": "Most September participants expected another rate increase, which weakens the case for a cut at the next meeting."
+      },
+      {
+        "excerpt_id": "web-005",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "Sixteen of 18 dot-plot participants anticipated at least one more hike this year, implying a hiking rather than cutting bias."
+      },
+      {
+        "excerpt_id": "web-006",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "Futures pricing shows an 85 percent chance of at least one hike, so market expectations run against a cut."
+      },
+      {
+        "excerpt_id": "web-007",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "243 days ago",
+        "retrieved_at": null,
+        "why": "January minutes record a hold decision, which is historical background on how the Committee has been acting."
+      },
+      {
+        "excerpt_id": "web-008",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "243 days ago",
+        "retrieved_at": null,
+        "why": "Several January participants favored downward adjustments to the target range, a dovish signal that backs the cut link."
+      },
+      {
+        "excerpt_id": "web-009",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "262 days ago",
+        "retrieved_at": null,
+        "why": "A rising unemployment rate since mid-last-year is a labor-market weakness that could justify easing."
+      },
+      {
+        "excerpt_id": "web-010",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "The labor market is described as solid and stable, which lowers the need for a rate cut."
+      },
+      {
+        "excerpt_id": "web-011",
+        "verified": "substring",
+        "truncated": false,
+        "page_age": "4 days ago",
+        "retrieved_at": "2026-10-18T14:04:11+00:00",
+        "why": "The CPI release header provides the September 2026 inflation release context and monthly CPI rise needed to judge the policy outlook."
+      },
+      {
+        "excerpt_id": "web-012",
+        "verified": "substring",
+        "truncated": false,
+        "page_age": "4 days ago",
+        "retrieved_at": "2026-10-18T14:04:11+00:00",
+        "why": "Headline CPI rose to 3.7 percent year over year, a rising inflation reading that argues against cutting."
+      },
+      {
+        "excerpt_id": "web-013",
+        "verified": "substring",
+        "truncated": false,
+        "page_age": "4 days ago",
+        "retrieved_at": "2026-10-18T14:04:11+00:00",
+        "why": "Core CPI rose to 2.6 percent from 2.4 percent, showing underlying inflation accelerating against a cut."
+      },
+      {
+        "excerpt_id": "web-014",
+        "verified": "substring",
+        "truncated": false,
+        "page_age": "4 days ago",
+        "retrieved_at": "2026-10-18T14:04:11+00:00",
+        "why": "Energy prices rose 20.4 percent over the year, adding inflation pressure that weakens the case for a cut."
+      },
+      {
+        "excerpt_id": "web-015",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "Waller says policy will focus on the inflation side of the mandate for the near term, which argues against easing."
+      },
+      {
+        "excerpt_id": "web-016",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "Oil supply disruptions from the Middle East conflict add upward inflation pressure, reducing room for cuts."
+      },
+      {
+        "excerpt_id": "web-017",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "Threatened new tariffs could push inflation up again, which argues against a near-term cut."
+      },
+      {
+        "excerpt_id": "web-018",
+        "verified": "api_citation",
+        "truncated": true,
+        "page_age": "11 days ago",
+        "retrieved_at": null,
+        "why": "Strengthening activity and a stated lack of concern about tighter policy point toward holding or hiking rather than cutting."
+      },
+      {
+        "excerpt_id": "web-019",
+        "verified": "api_citation",
+        "truncated": false,
+        "page_age": "12 days ago",
+        "retrieved_at": null,
+        "why": "Participants viewing the policy rate as not restrictive is ambiguous for a cut: it could mean room to ease or no need to ease."
+      }
+    ],
+    "queries": [
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "federalreserve.gov FOMC meeting October 2026"
+        }
+      },
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "federalreserve.gov FOMC statement federal funds rate target range 2026"
+        }
+      },
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "Waller speech economic outlook October 2026 federalreserve.gov"
+        }
+      },
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "bls.gov consumer price index September 2026 news release"
+        }
+      },
+      {
+        "tool": "web_search",
+        "input": {
+          "query": "treasury.gov daily treasury par yield curve October 2026"
+        }
+      },
+      {
+        "tool": "web_fetch",
+        "input": {
+          "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+        }
+      },
+      {
+        "tool": "web_fetch",
+        "input": {
+          "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+        }
+      }
+    ],
+    "errors": [],
+    "fetched": [
+      {
+        "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm",
+        "title": "Consumer Price Index News Release - 2026 M09 Results",
+        "retrieved_at": "2026-10-18T14:04:11+00:00",
+        "kind": "text"
+      },
+      {
+        "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm",
+        "title": "Speech by Governor Waller on the economic outlook",
+        "retrieved_at": "2026-10-18T10:17:14+00:00",
+        "kind": "text"
+      }
+    ],
+    "dropped": [
+      {
+        "reason": "over_limit",
+        "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_yield_curve",
+        "text": "Date,\"1 Mo\",\"1.5 Month\",\"2 Mo\",\"3 Mo\",\"4 Mo\",\"6 Mo\",\"1 Yr\",\"2 Yr\",\"3 Yr\",\"5 Yr\",\"7 Yr\",\"10 Yr\",\"20 Yr\",\"30 Yr\" 10/07/2026,4.07,4.13,4.14,4.22,4.28,4.2"
+      },
+      {
+        "reason": "over_limit",
+        "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm",
+        "text": "path, Treasury yields, near-term inflation compensation, and equity prices all increased, and the dollar depreciated."
+      },
+      {
+        "reason": "over_limit",
+        "url": "https://www.federalreserve.gov/recentpostings.htm",
+        "text": "Matter(s) considered: Review and determination by the Board of Governors of the advance and discount rates to be charged ...\n\n# Board of Governors of"
+      },
+      {
+        "reason": "over_limit",
+        "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm",
+        "text": "Though the picture was less sharp after official data was interrupted because of the government shutdown that began on October 1, other data supported"
+      },
+      {
+        "reason": "label_dropped",
+        "url": "https://www.federalreserve.gov/monetarypolicy.htm",
+        "text": "### Federal Open Market Committee\n##### Recent Documents\nFOMC Statement: PDF | HTML Released September 16, 2026\n\nFOMC Minutes: PDF | HTML Released Oct",
+        "why": "Mostly navigation text listing document release dates with no substantive information on the policy outlook."
+      }
+    ],
+    "usage": [
+      {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "fallback_credit": null,
+        "inference_geo": "global",
+        "input_tokens": 262454,
+        "iterations": [
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 5672,
+            "model": null,
+            "output_tokens": 318,
+            "type": "message"
+          },
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 30218,
+            "model": null,
+            "output_tokens": 387,
+            "type": "message"
+          },
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 58641,
+            "model": null,
+            "output_tokens": 268,
+            "type": "message"
+          },
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 68436,
+            "model": null,
+            "output_tokens": 510,
+            "type": "message"
+          },
+          {
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 0,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "input_tokens": 99487,
+            "model": null,
+            "output_tokens": 3341,
+            "type": "message"
+          }
+        ],
+        "output_tokens": 4824,
+        "output_tokens_details": {
+          "thinking_tokens": 2205
+        },
+        "server_tool_use": {
+          "web_fetch_requests": 2,
+          "web_search_requests": 5
+        },
+        "service_tier": "standard",
+        "speed": "standard"
+      }
+    ]
+  }
+}
