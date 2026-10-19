@@ -50,6 +50,12 @@
 - **证据只挂在边上**：没有入边的节点不能标 supported（inspect 阶段的检查）。节点级证据留到后续。
 - **fork 的引用校验**：补丁不能改证据引用，所以 fork 只校验 Stage 1 新增的边；基线图已有的引用在生成时已经校验过。Stage 1 的新边必须从新节点连到声明的 impacts。
 - **情景不推进证据**：补丁不能改 `evidence_status`，节点只允许改 statement / time_bucket / instruments。
+- **情景叠加**：在一个情景版本上再分叉时，新情景接着上一层算。
+  - `ops` = 父情景的 ops 加上这次的 op；`base_version` 是直接父版本，`root_version` 是最初的非情景基线（老快照没有这个字段，读到 None 时按 `base_version` 理解）。
+  - assessment 先继承父情景：写范围内的 claim 用模型这次给的值，范围外的保留父情景的值，不重置成 unaffected。
+  - 提案的 `scenario_ref.challenged_claim_ids` 和 `support_status` 按叠加后的 assessment 算。
+  - 上一层的「受挑战」不会因为这一层没涉及就被抹掉。要撤销一层情景，只能回到更早的版本。如果模型在写范围内把上一层的 challenged 改掉了，用模型的值，但给一条非阻断提示。
+  - `fork(scenario=...)` 传入基线版本的情景，不传就从 store 读。签字不改情景：情景版本签字后，新版本带着同一个情景，在签字版本上再分叉照样叠加。
 - **相对时间**：anchor 或 observation_window 写 `scenario:<事件>` 时合法，但在用户确认起点之前，判定结果一律是 unknown。
 - **结构化输出**：用 pydantic schema 转成严格的 JSON Schema（所有 object 都 `additionalProperties: false`、全部字段列入 required）。API 拒绝该 schema 时，退回到在提示词里约束 JSON，由校验器兜底；退回原因（API 错误原文）记进 meta 的 `schema_fallback_reason`，录音和 trace 里都能看到。
 - **Inspect 分两步**：一整份 `InspectOutput` 被 API 拒绝（`The compiled grammar is too large`）。实测语法预算大约只够 70 个平铺的字符串字段，可空字段和对象数组还要额外占用；InspectOutput 有 64 个字段、18 个可空字段，嵌套数组也多，就算去掉全部 union、enum 和 description 仍然超限，所以没法靠删字段解决。现在分两步：`inspect`（`InspectGraphOutput`：no_chain、nodes、edges）→ `inspect.plan`（`InspectPlanOutput`：conditions、proposal），两份 schema 都实测能被接受，每份的 union 数都在 API 上限 16 以内。第 2 步只在图通过校验后才跑，并把定稿的图放进提示词；错误只回给出错的那一步重写。`inspect()` 的返回形状不变，`attempts` 是两步之和。

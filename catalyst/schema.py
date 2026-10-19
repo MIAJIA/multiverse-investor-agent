@@ -161,11 +161,15 @@ class Patch(Strict):
 
 
 class Scenario(Strict):
+    """情景是叠加的：在情景版本上再分叉时，ops 与 assessment 继承父版本的情景。
+    base_version 是直接父版本，root_version 是最初的非情景基线（老快照没有这个字段，为 None 时等于 base_version）。
+    要撤销一层情景只能回到更早的版本，不能在新版本里抹掉。"""
     version: str
     base_version: str
     ops: list[Op]
     assessment: dict[str, AssessmentStatus]
     assessment_reason: dict[str, str] = Field(default_factory=dict)
+    root_version: Optional[str] = None
 
 
 # ---- 提案 ---------------------------------------------------------------
@@ -202,8 +206,9 @@ class MarketReference(Strict):
 
 class ScenarioRef(Strict):
     base_version: str
-    challenged_claim_ids: list[str]
+    challenged_claim_ids: list[str]  # 叠加后的全部受挑战 claim，不只是这一层的
     next_checks: list[str]
+    root_version: Optional[str] = None  # 最初的非情景基线；老提案没有这个字段
 
 
 class ProposalMeta(Strict):
