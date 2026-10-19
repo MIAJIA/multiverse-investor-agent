@@ -205,6 +205,31 @@ def _structured_ok(res: dict, stage: str, out: Any) -> bool:
 
 # ---- pipeline 组 --------------------------------------------------------------
 
+# Online cases (layer W) need the same wiring as the CLI and the API: round-1 web retrieval before the entry points,
+# then the research loop passed to inspect. Each case keeps its frozen web packs under <record dir>/web_runs/<case>,
+# so --replay reads them back without going online. main() sets these.
+WEB_RUNS: dict = {"dir": None, "replay": False}
+
+
+def _online_setup(case: dict, inp: dict, packs: list, config: dict, reasoner: Any, evidence: Any):
+    """Returns (packs, research, web) for an online case, wired exactly like catalyst.__main__.cmd_run."""
+    import shutil
+    from catalyst.__main__ import attach_web, research_for  # noqa: WPS433
+    from catalyst.entrypoints import Config  # noqa: WPS433
+    from catalyst.store import RunStore  # noqa: WPS433
+
+    run_dir = Path(WEB_RUNS["dir"] or "eval/out/web_runs") / case["id"]
+    replay_dir = run_dir if WEB_RUNS["replay"] else None
+    if replay_dir is None and run_dir.exists():
+        shutil.rmtree(run_dir)  # a new recording must not mix with frozen packs from an older run
+    cfg = Config(packs=list(packs), online=True, today=config.get("today") or Config().today,
+                 run_prefix=case["id"].lower())
+    store = RunStore(run_dir)
+    web = attach_web(inp["event"], inp.get("target"), cfg=cfg, ev=evidence, store=store, reasoner=reasoner,
+                     replay_dir=replay_dir)
+    research = research_for(inp["event"], inp.get("target"), cfg=cfg, ev=evidence, web=web, replay_dir=replay_dir)
+    return list(cfg.packs), research, web
+
 def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidence: Any,
                   pack_source: str = "real", online: bool = False, evaluate_condition: Any = None,
                   today: str | None = None) -> None:
@@ -226,7 +251,11 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
     today = case.get("as_of") or inp.get("today") or today
     if today:
         config["today"] = today
+    research = web = None
+    if config["online"]:
+        packs, research, web = _online_setup(case, inp, packs, config, reasoner, evidence)
     kw = {"reasoner": reasoner, "evidence": evidence, "packs": packs, "config": config}
+    ins_kw = {**kw, "research": research} if research is not None else kw
 
     if case["type"] == "causalt5k":
         out = ep.inspect(inp["event"], inp.get("target"), material=inp["material"], judgment_only=True, **kw)
@@ -281,9 +310,12 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
             return
         pick = next((c for c in cands if get(c, "label") == "grounded"), cands[0])
         # 传整个候选，不只传 id：Inspect 要知道用户选中的方向是什么
-        out = ep.inspect(inp["event"], None, candidate_id=get(pick, "id"), candidate=scoring.to_plain(pick), **kw)
+        out = ep.inspect(inp["event"], None, candidate_id=get(pick, "id"), candidate=scoring.to_plain(pick), **ins_kw)
     else:
-        out = ep.inspect(inp["event"], inp.get("target"), **kw)
+        out = ep.inspect(inp["event"], inp.get("target"), **ins_kw)
+    if web is not None:
+        from catalyst.__main__ import web_summary  # noqa: WPS433
+        res["web"] = web_summary(web, research)
     if not _structured_ok(res, "inspect", out):
         return
 
@@ -592,6 +624,7 @@ def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需�
         model = getattr(reasoner, "name", "unknown")
         out_dir = Path(args.record) if args.record else Path("eval/out")
     out_dir.mkdir(parents=True, exist_ok=True)
+    WEB_RUNS.update(dir=out_dir / "web_runs", replay=bool(args.replay))
     if args.record:
         reasoner = reasoner_mod.RecordingReasoner(reasoner, out_dir / "cassette.jsonl")
     entrypoints = load_core_entrypoints()
