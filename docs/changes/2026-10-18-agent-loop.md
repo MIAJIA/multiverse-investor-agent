@@ -1,58 +1,58 @@
-# 改动说明：Inspect 的研究 loop（agent loop）
+# Change note: the research loop (agent loop) for Inspect
 
-2026-10-18 · 第 1 版 · 状态：**Mia 已定**
+2026-10-18 · Version 1 · Status: **decided by Mia**
 
-本文是这次改动的唯一依据，与《一张图多条分支 + 批准计划》（`2026-10-18-branches-and-plans.md`，范围定为 **B-最小**）同时进行。两份文档冲突时，先问主 session，不要自己裁定。
+This note is the only basis for this change. It is being done at the same time as "One graph, several branches + approve a plan" (`2026-10-18-branches-and-plans.md`, scope set to **B-minimal**). If the two documents conflict, ask the main session. Do not rule on it yourself.
 
-## 1. 一句话
+## 1. In one sentence
 
-联网打开时，Inspect 先跑一个研究 loop：模型自己决定上白名单网站查什么，代码把工具返回的原文冻结成本轮资料包，然后照常建图、出计划；建完以后，代码找出缺证据的地方，再针对性补查一轮，图和计划从头重跑。
+When web search is on, Inspect first runs a research loop. The model decides for itself what to look up on the whitelisted sites. The code freezes the source text the tools return into this round's evidence pack. Then the graph and plans are built as usual. After that, the code finds where evidence is missing and runs one targeted follow-up round, and the graph and plans are rerun from scratch.
 
-## 2. 为什么改
+## 2. Why change it
 
-- 查证一个命题是开放式的任务：要查什么、查几次，事先定不下来。现在的联网只在开头查一次，推理时发现缺证据也没法回头补查。
-- 这是「agent 负责找和想，代码负责定和守，用户负责签」这条分工的落地：找证据交给 agent，判断能不能进场、改哪些地方仍然由代码决定。
+- Checking a claim is an open-ended task. What to look up, and how many times, cannot be fixed in advance. Today web search runs once at the start, and if reasoning finds missing evidence there is no way to go back and search again.
+- This puts into practice the split "the agent finds and thinks, the code decides and guards, the user signs". Finding evidence goes to the agent. Whether to enter, and which parts to change, is still decided by the code.
 
-## 3. 决定清单
+## 3. Decisions
 
-| # | 决定 |
+| # | Decision |
 | --- | --- |
-| D-A1 | **研究与建图分开（方案 A）**。研究 loop 结束后冻结资料包，建图和出计划沿用现有的单次结构化调用。在 loop 里放「提交图」工具（方案 B）写进下一期 |
-| D-A2 | **本地知识库保持整包放进上下文**。两个包合计约 1.6 万 token，每次 Inspect 用 Haiku 约 $0.005。不做 kb.search 工具，也不做按大小自动切换。README 写明：以后资料包变大时改成 RAG，属于下一阶段 |
-| D-A3 | **只在联网打开时研究**。联网关闭时，行为与现在完全一致，离线请求一字不变 |
-| D-A4 | **补查最多 1 轮**（研究总共最多 2 轮）。每轮的搜索、抓取上限沿用 `Config`（各 5 次）。由代码判断要不要补查，不由模型决定 |
-| D-A5 | **缺口由代码找**：有通往 terminal 的边是 model_only；或者条件的阈值为 null，且 threshold_note 写的是缺数据。方案 B 合并后，改成用 `branches.py` 的 `kind == "model_only"` 判断，接口留好 |
-| D-A6 | **补查的输入**：事件、上一轮的图摘要（只给缺口所在的 claim、边、条件，不给结论和计划）、已有片段的 id 清单。要求优先找分叉点上那个前提的证据，以及阈值需要的数据 |
-| D-A7 | **每轮都必须找反方**。提示词要求每轮至少有一次查询专门找削弱论点的材料，查询词记进 provenance，人工复核表加一项。代码做不到语义上的检查，不假装能做到 |
-| D-A8 | **立场仍由看不到结论的单独一步标注**（现有的 `web.label`）。下结论的模型不判断联网片段的立场 |
-| D-A9 | **录制回放按轮**。每轮冻结一份资料包（`runs/<id>/packs/web-<hash>.json`），检索键包含轮次和缺口清单。回放时逐轮读取，不上网；任何输入变了就报 `CassetteMiss` |
-| D-A10 | **对外契约不变**：图、计划、版本包的形状都不改。新增内容只出现在 `case.json` 和 API 返回体的 `web` 字段里：每轮拿到几段、补查是否触发、触发原因 |
-| D-A11 | **只用 Haiku 测试**：真实调用一律 `CATALYST_MODEL=claude-haiku-5-5`；最终演示是否改用 Opus，由 Mia 决定 |
-| D-A12 | **暂不做提示缓存**：Haiku 下成本已经可以忽略，缓存要额外维护前缀的稳定性。演示改用 Opus 时再评估 |
+| D-A1 | **Research and graph building are separate (option A).** When the research loop ends, the evidence pack is frozen. Graph building and plans keep the existing single structured call. A "submit graph" tool inside the loop (option B) is left for the next phase |
+| D-A2 | **The local knowledge base stays whole in the context.** The two packs total about 16k tokens, so one Inspect on Haiku costs about $0.005. No kb.search tool, and no automatic switch by size. The README says: when the packs grow, switch to RAG, which belongs to the next phase |
+| D-A3 | **Research only when web search is on.** With web search off, behaviour is exactly as today, and offline requests do not change by a single character |
+| D-A4 | **At most 1 follow-up round** (at most 2 research rounds in total). The search and fetch limits per round stay as in `Config` (5 each). The code decides whether to run a follow-up. The model does not |
+| D-A5 | **The code finds the gaps**: an edge that leads to a terminal is model_only; or a condition's threshold is null and its threshold_note says the data is missing. Once plan B is merged, this changes to `kind == "model_only"` from `branches.py`, and the interface is left ready for it |
+| D-A6 | **Input to the follow-up**: the event, a summary of the previous round's graph (only the claims, edges and conditions where the gaps are, not the conclusions or plans), and a list of the excerpt ids already held. It must look first for evidence on the premise at the divergence point, and for the data the thresholds need |
+| D-A7 | **Every round must look for the other side.** The prompt requires at least one query per round that looks specifically for material that weakens the argument. The query terms are recorded in provenance, and one item is added to the human review sheet. The code cannot check this semantically, and does not pretend to |
+| D-A8 | **Stance is still labelled by a separate step that cannot see the conclusion** (the existing `web.label`). The model that draws the conclusion does not judge the stance of web excerpts |
+| D-A9 | **Record and replay by round.** Each round freezes one evidence pack (`runs/<id>/packs/web-<hash>.json`), and the retrieval key includes the round number and the gap list. Replay reads round by round and does not go online. If any input changes it raises `CassetteMiss` |
+| D-A10 | **The external contract does not change**: the shapes of the graph, the plans and the version bundle do not change. New content appears only in the `web` field of `case.json` and of the API response: how many excerpts each round got, whether a follow-up was triggered, and why |
+| D-A11 | **Test with Haiku only**: every real call uses `CATALYST_MODEL=claude-haiku-5-5`. Whether the final demo switches to Opus is Mia's call |
+| D-A12 | **No prompt caching for now**: on Haiku the cost is already negligible, and caching means keeping the prefix stable, which is extra upkeep. Re-evaluate when the demo moves to Opus |
 
-**明确不做**：Discover 的 agent 化（hold）；分叉时重新研究；本地知识库检索 / RAG；「提交图」工具；检索命中率指标。
+**Explicitly not doing**: making Discover an agent (on hold); researching again at fork time; retrieval over the local knowledge base / RAG; the "submit graph" tool; a retrieval hit-rate metric.
 
-## 4. 改动范围与文件归属（和方案 B 后端并行，必须守住）
+## 4. Scope of change and file ownership (parallel with the plan B back end; must be respected)
 
-| 文件 | 归属 |
+| File | Owner |
 | --- | --- |
-| `catalyst/websearch.py`、新文件 `catalyst/research.py`（如需要）、`tests/websearch/`、`tests/research/` | agent loop |
-| `catalyst/prompts.py` | agent loop 只能在文件**末尾新增**研究和补查用的常量，**不改** `BASE` / `INSPECT` / `DISCOVER` / `FORK` 和 `PROMPT_VERSION`。补查的提示词有自己的版本号，进检索键 |
-| `catalyst/entrypoints.py` | agent loop 只在 inspect 里加**一处挂钩**（补查循环），其余由方案 B 后端负责 |
-| `catalyst/__main__.py`、`catalyst/api.py` | agent loop 只改联网和补查的接线；`sign` / `promote` / 版本包归方案 B 后端 |
-| `catalyst/schema.py`、`validator.py`、`fork.py`、`store.py`、`branches.py` | 方案 B 后端，agent loop 不碰 |
+| `catalyst/websearch.py`, the new file `catalyst/research.py` (if needed), `tests/websearch/`, `tests/research/` | agent loop |
+| `catalyst/prompts.py` | The agent loop may only **add new** research and follow-up constants at the **end** of the file. It does **not** change `BASE` / `INSPECT` / `DISCOVER` / `FORK` or `PROMPT_VERSION`. The follow-up prompt has its own version number, which goes into the retrieval key |
+| `catalyst/entrypoints.py` | The agent loop adds only **one hook** inside inspect (the follow-up loop). The rest belongs to the plan B back end |
+| `catalyst/__main__.py`, `catalyst/api.py` | The agent loop changes only the wiring for web search and the follow-up. `sign` / `promote` / the version bundle belong to the plan B back end |
+| `catalyst/schema.py`, `validator.py`, `fork.py`, `store.py`, `branches.py` | Plan B back end; the agent loop does not touch them |
 
-合并冲突由主 session 处理。预计冲突只在 `entrypoints.inspect` 的挂钩附近。
+The main session handles merge conflicts. Conflicts are expected only near the hook in `entrypoints.inspect`.
 
-## 5. 验收
+## 5. Acceptance
 
-- 全套 `pytest -q` 通过。离线单测用假的检索结果和脚本化的 reasoner。
-- 联网关闭时，eval 10 个案例的请求哈希与改动前完全一致。
-- 用 Haiku 实测 3 个开联网的案例：W1、C2、D1。报告每个案例第 1 轮和第 2 轮的 model_only 边数、阈值为空的条件数、新增片段数和来源，以及花费。
-- 回放与录制逐字节一致，回放时不上网。
+- The full `pytest -q` passes. Offline unit tests use fake search results and a scripted reasoner.
+- With web search off, the request hashes of the 10 eval cases are identical to those before the change.
+- Test 3 web-enabled cases on Haiku: W1, C2, D1. For each case, report the number of model_only edges, the number of conditions with an empty threshold, and the number of new excerpts and their sources, for round 1 and round 2, plus the cost.
+- Replay is byte-for-byte identical to the recording, and replay does not go online.
 
-## 6. README 待写（主 session 汇总）
+## 6. README items still to write (the main session will collect them)
 
-- 知识库目前整包放进上下文，规模变大后改 RAG（下一阶段）。
-- 研究与建图分开的取舍，以及「提交图」工具作为下一步。
-- 联网的局限：AP、Reuters 等通讯社对 Claude 关闭，新闻源有缺口；白名单缺少公司官方来源和股价数据；PR Newswire 会混进律所广告。
+- The knowledge base currently goes into the context whole. When it grows, switch to RAG (next phase).
+- The trade-off of keeping research and graph building separate, and the "submit graph" tool as the next step.
+- Limits of web search: AP, Reuters and other wire services are closed to Claude, so the news sources have gaps; the whitelist lacks official company sources and stock price data; PR Newswire lets law-firm advertising in.

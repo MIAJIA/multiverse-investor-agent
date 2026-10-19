@@ -1,27 +1,27 @@
-# Catalyst（multiverse-investor-agent）
+# Catalyst (multiverse-investor-agent)
 
-面向散户交易者的研究工具：用户输入一个事件，系统给出因果图和一份条件式交易提案（draft，永不执行）；用户可以改一个假设做分叉，看哪些前提受到挑战。面试 take-home，产品与架构以 `docs/prd.md`、`docs/engineering-design.md` 为准（Claude Docs 在线版的导出快照），实现层的决定记在 `docs/core-design.md`。
+A research tool for retail traders. The user enters an event. The system returns a causal graph and a conditional trade proposal (a draft, never executed). The user can change one assumption to fork, and see which premises are challenged. This is an interview take-home. Product and architecture follow `docs/prd.md` and `docs/engineering-design.md` (export snapshots of the online Claude Docs versions). Implementation-level decisions are recorded in `docs/core-design.md`.
 
-## 一条原则
+## One principle
 
-**模型提议，代码裁决。** 模型只经 `catalyst/reasoner.py` 进入，只能提出因果假设、机制、条件和解释。下面这些只由代码写，任何改动都不能把它们交给模型：
-- gate、提案的 status 与 support_status、版本号；
-- 条件判定（evaluation_status）；
-- 分叉的写范围，以及范围外 claim 的 assessment；
-- diff；
-- 用户判断里的 confirmed、confirmed_claim_ids、probability。
+**The model proposes, the code decides.** The model enters only through `catalyst/reasoner.py`, and it can only propose causal hypotheses, mechanisms, conditions and explanations. The items below are written by code only. No change may hand them to the model:
+- the gate, a proposal's status and support_status, and version numbers;
+- condition evaluation (evaluation_status);
+- a fork's write scope, and the assessment of claims outside that scope;
+- the diff;
+- confirmed, confirmed_claim_ids and probability in the user's judgment.
 
-## 数据契约
+## Data contract
 
-**唯一来源是 `catalyst/schema.py`**，UI、eval、harness 都不另起一份。
+**The only source is `catalyst/schema.py`.** The UI, the eval and the harness do not keep their own copy.
 
-- 快照、API、diff 和哈希一律用 `.dump()` 的规范形式：字段齐全，含默认值。
-- 改字段时，下面几处要一起改：
-  - `web/src/types.ts`（TS 镜像，字段名一字不改）；
-  - `eval/INTERFACE.md`；
-  - 需要的话，`eval/fixtures/` 和 `tests/_adapter.py`。
-- 模型输出的形状是 `*Output` 和 `ProposalDraft`。它们故意比持久化对象少字段，凡是由代码裁决的字段都不在里面。
-- 图快照不可变。批准（接口名仍是 sign）和分叉（fork）都产出新版本，不覆盖旧版本。
+- Snapshots, the API, diffs and hashes always use the canonical form from `.dump()`: all fields present, including defaults.
+- When you change a field, change these together:
+  - `web/src/types.ts` (the TS mirror; field names unchanged, character for character);
+  - `eval/INTERFACE.md`;
+  - if needed, `eval/fixtures/` and `tests/_adapter.py`.
+- The shapes of model output are `*Output` and `ProposalDraft`. They deliberately have fewer fields than the persisted objects. No field that code decides is in them.
+- Graph snapshots are immutable. Approval (the interface name is still sign) and fork both produce a new version and never overwrite the old one.
 - **Plan B — competing branches, one plan per terminal** (`docs/changes/2026-10-18-branches-and-plans.md`):
   - The version bundle `VersionBundle` is `{graph, proposals, branches, node_kinds, edge_kinds, scenario, diff, excerpts}`. There is **no** `proposal` field. inspect / fork / sign results also carry a `proposals` list (`[]` when there are none).
   - `proposals` follow the graph's terminal order. Each has a `terminal_id`, and `meta.proposal_version = "{graph_version}.{terminal_id}"`. `parse_proposals` reads a legacy single-dict file as a one-item list.
@@ -38,47 +38,47 @@
     - each instrument belongs to its plan's terminal;
     - every plan carries the same `original_statement` / `clarified_statement`.
 
-## 目录与归属
+## Directories and ownership
 
-| 目录 | 内容 | 归属 |
+| Directory | Contents | Owner |
 | --- | --- | --- |
-| `catalyst/` | 核心：schema、validator、conditions、gate、fork、diff、store、reasoner、harness、entrypoints、prompts、api、CLI | 核心线 |
-| `catalyst/evidence.py` | Evidence Provider 与 BM25 `search()` | 证据线（schema 不归证据线） |
-| `packs/` | 真实资料包（EvidencePack），每段可回溯到来源 | 证据线 |
-| `eval/`、`tests/`（`tests/core/`、`tests/evidence/` 除外） | 案例、golden fixture、runner、报告、eval 测试 | eval 线 |
-| `tests/core/` | 核心回归测试 | 核心线 |
-| `tests/evidence/` | 资料包测试 | 证据线 |
-| `web/`、`docs/frontend/` | 前端（Vite + React + @xyflow/react），单页三个标签共用一份 state | 前端线 |
-| `fixtures/` | 由 `python -m catalyst promote` 从真实录制生成的共享 fixture | 不手写 |
+| `catalyst/` | Core: schema, validator, conditions, gate, fork, diff, store, reasoner, harness, entrypoints, prompts, api, CLI | core line |
+| `catalyst/evidence.py` | Evidence Provider and BM25 `search()` | evidence line (the schema does not belong to the evidence line) |
+| `packs/` | Real evidence packs (EvidencePack); every excerpt traces back to a source | evidence line |
+| `eval/`, `tests/` (except `tests/core/` and `tests/evidence/`) | Cases, golden fixtures, runner, reports, eval tests | eval line |
+| `tests/core/` | Core regression tests | core line |
+| `tests/evidence/` | Evidence pack tests | evidence line |
+| `web/`, `docs/frontend/` | Front end (Vite + React + @xyflow/react); one page, three tabs sharing one state | front-end line |
+| `fixtures/` | Shared fixtures generated from real recordings by `python -m catalyst promote` | never hand-written |
 
-**并行工作的规矩**：每条线在自己的 git worktree 和分支上工作，只改自己的文件，不推送；合并由主 session 统一做，合并后跑全套测试。
+**Rules for parallel work**: each line works in its own git worktree and branch, edits only its own files, and does not push. The main session does the merging, and runs the full test suite after each merge.
 
-## 怎么跑
+## How to run
 
 ```bash
-.venv/bin/python -m pytest -q                       # 核心 + eval + 证据，全部离线
+.venv/bin/python -m pytest -q                       # core + eval + evidence, all offline
 cd web && npm test && npm run typecheck && npm run build
-.venv/bin/python web/scripts/check_fixtures.py      # 前端 fixture 符合 schema
+.venv/bin/python web/scripts/check_fixtures.py      # front-end fixtures match the schema
 ```
 
 ```bash
-set -a && . ./.env && set +a                        # 读入 API key（.env 永不提交）
-.venv/bin/python -m catalyst run D1 --live          # 跑一个案例：录音 + 快照写到 runs/D1/<时间戳>/
-.venv/bin/python -m catalyst run D1 --replay runs/D1/<ts>   # 零成本、确定性回放
-.venv/bin/python -m catalyst run <case.json> --live --online   # 先在白名单网站联网检索（config/web_whitelist.json），冻结成资料包再推理；默认关，回放不上网
-.venv/bin/python -m catalyst promote runs/D1/<ts> d1        # 提升成 fixtures/d1.json
-.venv/bin/python -m eval.runner --record eval/out/<name>    # 全部案例 × pipeline / baseline 两组，出逐例报告
-.venv/bin/python -m catalyst.api                    # 前端用的 HTTP 接口，http://localhost:8000
-cd web && VITE_MOCK=0 npm run dev                   # 前端接真实后端（默认 VITE_MOCK=1 读 fixture）
+set -a && . ./.env && set +a                        # load the API key (.env is never committed)
+.venv/bin/python -m catalyst run D1 --live          # run one case: recording + snapshots go to runs/D1/<timestamp>/
+.venv/bin/python -m catalyst run D1 --replay runs/D1/<ts>   # zero-cost, deterministic replay
+.venv/bin/python -m catalyst run <case.json> --live --online   # first search the whitelisted sites (config/web_whitelist.json), freeze the results into an evidence pack, then reason; off by default, replay never goes online
+.venv/bin/python -m catalyst promote runs/D1/<ts> d1        # promote to fixtures/d1.json
+.venv/bin/python -m eval.runner --record eval/out/<name>    # all cases x pipeline / baseline groups, with a per-case report
+.venv/bin/python -m catalyst.api                    # HTTP API for the front end, http://localhost:8000
+cd web && VITE_MOCK=0 npm run dev                   # front end on the real back end (default VITE_MOCK=1 reads fixtures)
 ```
 
-- 模型：`CATALYST_MODEL`，默认 `claude-opus-5-5`；调试可以用 `claude-haiku-5-5`。effort 用 `CATALYST_EFFORT` 设置。联网检索这一步单独用 `CATALYST_WEB_MODEL`，默认 `claude-haiku-5-5`（立场标注和推理仍用 `CATALYST_MODEL`）。
-- 回放按请求哈希匹配。prompt、资料包、schema 或输入任何一项变了，旧录音都会报 `CassetteMiss`。改了 prompt 要提升 `PROMPT_VERSION`。
+- Model: `CATALYST_MODEL`, default `claude-opus-5-5`; use `claude-haiku-5-5` for debugging. Set effort with `CATALYST_EFFORT`. The web search step has its own `CATALYST_WEB_MODEL`, default `claude-haiku-5-5` (stance labelling and reasoning still use `CATALYST_MODEL`).
+- Replay matches on the request hash. If the prompt, the evidence pack, the schema or the input changes, old recordings raise `CassetteMiss`. When you change a prompt, bump `PROMPT_VERSION`.
 
-## 不要做的事
+## What not to do
 
-- 不要手写图层面的 fixture。期望可以由人写（gate 应是什么、哪些 claim 应受挑战），图要从真实录制里提升出来。
-- 不要为了让某个 eval 案例通过去调 prompt；few-shot 不得包含 eval 案例。
-- 不要让代码静默改写模型的输出。校验不过，就把带对象 id 的错误回给模型重写。
-- 资料包不收回溯不到来源的内容，也不编数字或日期。
-- 不要提交 `.env`、`runs/`、`web/node_modules/`。
+- Do not hand-write graph-level fixtures. A person may write the expectations (what the gate should be, which claims should be challenged). The graph must be promoted from a real recording.
+- Do not tune a prompt to make an eval case pass. Few-shot examples must not contain eval cases.
+- Do not let code silently rewrite the model's output. If validation fails, send the errors, with object ids, back to the model to rewrite.
+- Evidence packs do not take content that cannot be traced to a source, and do not invent numbers or dates.
+- Do not commit `.env`, `runs/` or `web/node_modules/`.

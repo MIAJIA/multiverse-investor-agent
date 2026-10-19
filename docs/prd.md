@@ -2,215 +2,215 @@
 
 2026-10-18 · Mia
 
-> **以仓库版为准。** 本文最初从 Claude Docs 导出；2026-10-18 晚按实现过程中的讨论修订过，Claude Docs 在线版尚未同步。修订内容集中在下一节，正文里与之冲突的句子已经直接改掉。
+> **The repository version is the source of truth.** This document was first exported from Claude Docs. On the evening of 2026-10-18 it was revised according to discussions during implementation, and the online Claude Docs version has not been synced. The revisions are collected in the next section, and sentences in the body that conflicted with them have been changed directly.
 
-## 实现后的修订（2026-10-18）
+## Revisions after implementation (2026-10-18)
 
-| 修订 | 取代了什么 | 依据 |
+| Revision | What it replaces | Basis |
 | --- | --- | --- |
-| **定位**：从「我们提供纪律」改成「**可执行、经人批准的计划**，并讲清楚哪些条件能自动化」 | A4「不声称 edge，它声称纪律」 | 方案 B（`docs/changes/2026-10-18-branches-and-plans.md`） |
-| **一张图多条分支**：在选中的方向内，在真正有争议的地方展开 2–3 条竞争分支，每条通向一个结论；没有真正的争议时 1 条也合法 | 单一路径 | 方案 B，D-B1 |
-| **每个结论一份预填的计划**；用户审阅、按需修改阈值或日期，然后**批准其中一份**，也可以一份都不批准（= 不交易）；同一版本最多一份处于已批准 | 一份提案 + 「签字门」（三个必填自由文本框） | 方案 B，D-B2 到 D-B4 |
-| **分支类别由代码推导**：有资料支持 / 仅模型推断 / 假设，界面上一眼可分 | — | 方案 B，D-B9 |
-| **改假设只让受影响的计划失效**，其余批准保留；情景可以叠加 | 「签字在分叉时保留」 | 方案 B，D-B5；叠加情景的修复 |
-| **证据立场三档**：支持 / 反对 / 中立（背景信息，不能用来证明结论） | 两档 | 实现中加入 |
-| **联网检索开关**：默认关；只搜 18 个白名单网站；片段只收网页原文，冻结成资料包后再推理；可回放 | 「主 demo 关着，留一个案例开着演示」（方向不变，已实现） | `docs/websearch/design.md` |
-| **Inspect 的研究 loop**：联网时由 agent 决定查什么；建图之后由代码找出缺证据的地方，再补查一轮 | 只在开头查一次 | `docs/changes/2026-10-18-agent-loop.md` |
-| **本地知识库整包放进上下文**（两个包约 1.6 万 token），规模变大后改成 RAG，属于下一阶段 | 「模型可以再检索有限次数」 | 同上，D-A2 |
-| **Critic**：流程里留了位置，本期返回「未启用」 | 可选项 | `docs/core-design.md` |
-| **分工原则**：agent 负责「找」和「想」，代码负责「定」和「守」，用户负责「批准」 | — | 实现中的讨论 |
+| **Positioning**: from "we provide discipline" to "**an executable plan, approved by a human**, that says clearly which conditions can be automated" | A4 "we do not claim an edge, we claim discipline" | Plan B (`docs/changes/2026-10-18-branches-and-plans.md`) |
+| **One graph, several branches**: inside the chosen direction, 2–3 competing branches are expanded where there is a real disagreement, each leading to one conclusion; when there is no real disagreement, 1 branch is also valid | A single path | Plan B, D-B1 |
+| **One pre-filled plan per conclusion**; the user reviews it, edits thresholds or dates as needed, then **approves one of them**, or none (= no trade); at most one plan per version is in the approved state | One proposal + a "sign-off gate" (three required free-text boxes) | Plan B, D-B2 to D-B4 |
+| **Branch kind is derived by code**: evidenced / model-only / hypothetical, distinguishable at a glance in the UI | — | Plan B, D-B9 |
+| **Changing an assumption invalidates only the affected plans**; the other approvals are kept; scenarios can be stacked | "Sign-off is kept on fork" | Plan B, D-B5; the fix for stacked scenarios |
+| **Three evidence stances**: supports / contradicts / neutral (background information, which cannot be used to prove a conclusion) | Two stances | Added during implementation |
+| **Web search switch**: off by default; searches only 18 whitelisted sites; excerpts take the original page text only and are frozen into an evidence pack before reasoning; replayable | "The main demo has it off, and one case has it on for demonstration" (direction unchanged, implemented) | `docs/websearch/design.md` |
+| **Inspect research loop**: with web search on, the agent decides what to look up; after the graph is built, the code finds where evidence is missing and runs one more follow-up round | Searching once at the start only | `docs/changes/2026-10-18-agent-loop.md` |
+| **The local knowledge base goes into the context whole** (the two packs are about 16k tokens); when it grows, switch to RAG, which belongs to the next phase | "The model may retrieve again a limited number of times" | Same, D-A2 |
+| **Critic**: a slot is left in the flow; in this phase it returns "disabled" | Optional item | `docs/core-design.md` |
+| **Division of labour**: the agent "finds" and "thinks", the code "decides" and "guards", the user "approves" | — | Discussion during implementation |
 
-## 总体判断
+## Overall judgment
 
-这轮 review 的核心指控成立：前几轮把「找分歧 + 给失效条件」当成了结论，但用户和痛点都没有被论证过，三小时也装不下七步体验。本文回到 scoping，给出三个用户各自的最佳方案，再比较、推荐、收敛成一句话假设。
+The core charge of this round of review holds. The earlier rounds treated "find the disagreement + give invalidation conditions" as the conclusion, but neither the user nor the pain point had been argued for, and three hours cannot hold a seven-step experience. This document goes back to scoping. It gives the best option for each of three users, then compares them, recommends one, and converges to a one-sentence hypothesis.
 
-接受的部分：目标用户必须比较而非假定；痛点 A1–A4 必须分开评估，不默认 A3；三小时只做一个 vertical slice；验证必须有 failure criteria；「能否知道市场对每个环节的预期」是最危险的假设，且「与市场有分歧」不等于「有可交易优势」。
+Accepted: the target user must be compared and not assumed; the pain points A1–A4 must be assessed separately, with A3 not the default; three hours means one vertical slice; validation must have failure criteria; "can we know the market's expectation for each link" is the most dangerous assumption, and "disagreeing with the market" is not the same as "having a tradable edge".
 
-两点保留意见。第一，A2（因果逻辑是否可靠）和 A4（什么会证明我错）在使用时是同一个动作的两半——检验一个观点必然同时问「链条站不站得住」和「哪里会断」；拆开评估可以，拆开实现不值得。第二，这是面试 take-home，不是创业验证：三小时能证明的是「同一输入下，这个干预与普通 ChatGPT 的输出有可观察的差别」，用户行为层面的证据留到真实用户测试之后，本文对此不假装。
+Two reservations. First, A2 (is the causal logic reliable) and A4 (what would prove me wrong) are the two halves of one action in use. Checking a view necessarily asks both "does the chain stand" and "where would it break". Assessing them separately is fine, but splitting them in implementation is not worth it. Second, this is an interview take-home and not a startup validation. What three hours can prove is "for the same input, this intervention produces an observable difference from an ordinary ChatGPT output". Evidence at the level of user behaviour has to wait for real user testing, and this document does not pretend otherwise.
 
-方向讨论到第五轮封板，之后三轮审计只修实现契约（最终审计结论是 Go with 4 targeted fixes，已并入）。本文分两部分：**主文**（下面各节）只包含已决定的内容——用户、痛点、两个入口、核心体验、范围、数据与状态语义、Eval、非目标；**附录**保留 A/B/C 三个候选方案与五维比较，明确标注为已淘汰，不再作为实现依据。
+The direction discussion was closed in the fifth round, and the three audit rounds after that only fixed the implementation contract (the final audit result was Go with 4 targeted fixes, which have been merged). This document has two parts. The **main text** (the sections below) holds only what is decided: the user, the pain points, the two entry points, the core experience, the scope, data and state semantics, the eval, and non-goals. The **appendix** keeps the three candidate proposals A/B/C and the five-dimension comparison, clearly marked as eliminated and no longer a basis for implementation.
 
-## 推荐：B 的框架 + 散户用户 + 批准计划（原「C 的签字门」）
+## Recommendation: B's framework + retail users + approve a plan (formerly "C's sign-off gate")
 
-推荐在与创始人通话后修正：用户从机构分析师改为散户交易者，框架和核心瞬间不变。
+The recommendation was corrected after the call with the founder: the user changed from an institutional analyst to a retail trader. The framework and the core moment are unchanged.
 
-修正依据，全部来自创始人通话：Catalyst 只做 retail、不做机构，用户从 Robinhood 上 20 美元到 Hyperliquid 上几亿；产品是「交易者给一个 belief，系统构造最优交易，人批准后执行」；创始人自己的示例是「I think the Strait of Hormuz is going to open up next week」——没有持仓、没有标的，和题目输入一致；他们同时服务「有明确想法」和「从零开始」的用户；产品哲学是「restrain the models quite a bit」；三个最难的问题是模型输出质量、执行、UX。
+The basis for the correction comes entirely from the founder's call. Catalyst does retail only and not institutions, with users from $20 on Robinhood to hundreds of millions on Hyperliquid. The product is "the trader gives a belief, the system builds the best trade, and a human approves before execution". The founder's own example is "I think the Strait of Hormuz is going to open up next week": no position and no instrument, which matches the assignment's input. They serve both users "with a clear idea" and users "starting from zero". The product philosophy is "restrain the models quite a bit". The three hardest problems are model output quality, execution and UX.
 
-推荐的构成：
+What the recommendation consists of:
 
-1.  B 的框架：输入一个事件 → 落到具体标的的因果图，在真正有争议的地方展开 2–3 条竞争分支（分叉点就是最值得检验的前提），默认按 3 个主要阶段展示（底层是 DAG，深度由问题决定，折叠只是展示方式，不允许模型省略关键前提） → 一次分叉只重算下游、未触及环节一字不变、指出止盈何时变成止损。理由：题目和创始人的输入都是事件而非持仓；分叉 diff 是 ChatGPT 结构上做不到的事，也是 agent 工程能力的证明。
+1.  B's framework: enter an event → a causal graph that lands on concrete instruments, with 2–3 competing branches expanded where there is a real disagreement (the divergence point is the premise most worth checking), shown by default in 3 main stages (underneath it is a DAG whose depth is set by the question, folding is only a way of displaying it, and the model is not allowed to omit a key premise) → one fork recomputes only the downstream, leaves untouched links character for character the same, and points out when a take-profit turns into a stop-loss. Reason: both the assignment and the founder's input are events, not positions; the fork diff is something ChatGPT structurally cannot do, and it is also proof of agent engineering ability.
 
-2.  散户用户：老赵（自管 300 万的前分析师）和 Kevin（南湾工程师）都是 Catalyst 定义里的 retail；入口是事件，持仓可选。
+2.  Retail users: Lao Zhao (a former analyst managing 3 million on his own) and Kevin (a South Bay engineer) are both retail by Catalyst's definition. The entry is an event, and the position is optional.
 
-3.  批准计划（取代原来的「C 的签字门」）：每个结论配一份由系统预先填好的计划（进场条件、离场条件、关键依赖）；用户确认「我们把你的想法理解为……」，按需修改没有依据的阈值，然后批准其中一份，也可以一份都不批准。批准的是一份计划，不是下单。理由：Catalyst 每笔交易都要人批准，但不该要求散户写誓言式的自由文本；用户是 copilot 和 human-in-the-loop，审阅、修改、批准。
+3.  Approve a plan (replacing the earlier "C's sign-off gate"): each conclusion gets a plan pre-filled by the system (entry conditions, exit conditions, key dependency). The user confirms "We understood your idea as …", edits any threshold that has no basis as needed, then approves one of the plans, or none. What is approved is a plan, not an order. Reason: every Catalyst trade needs a human to approve it, but retail users should not be asked to write vow-style free text. The user is a copilot and human-in-the-loop: review, edit, approve.
 
-第五轮补上、两轮审计后修正的第四个构成——**发现先于检验，但允许弃权**：输入 Event A（可选 Target B）。没有 B，先给**最多 3 个候选方向，或明确弃权**（0 个是合法输出）；反直觉方向是加分不是要求。候选按证据情况分三类显示，不能因为有来源链接就自动算「有依据」，每条证据都要写明它支持还是反驳机制的哪一部分，资料包里的反方材料必须被回应（要么标受反驳，要么说明为什么不构成反驳）：有相关证据支持机制 → 有依据的研究候选；机制合理但尚无支持证据 → 待验证的研究假设；发现明显冲突或关键逻辑错误 → 不推荐继续，附解释。排序是研究优先级不是 alpha 排序：因果依据可审查、验证条件具体可判断、相关时间窗口内能得到验证结果；有市场数据就展示并写明它回答什么问题，不进排序。有 B 则直接检验 A → B 有没有合理路径。用户点一个方向，再进入机制、关键依赖、分叉和提案。审计原则：硬性数量在激励编造；p_user − p_model 不是分歧更不是优势。成本约 45 分钟；排序超时退回未排序候选，不删除 Discovery——没有 B 的用户正是创始人最常用的入口。
+The fourth component, added in the fifth round and corrected after two audits, is **discovery before checking, with abstention allowed**. Enter Event A (optionally Target B). With no B, first give **at most 3 candidate directions, or abstain explicitly** (0 is a valid output). A counter-intuitive direction earns extra credit and is not required. Candidates are shown in three classes by evidence. A source link alone does not automatically count as "grounded". Every piece of evidence must state which part of the mechanism it supports or contradicts. Contradicting material in the evidence pack must be answered (either marked contradicted, or explained why it is not a contradiction). Relevant evidence supports the mechanism → a grounded research candidate; the mechanism is plausible but there is no supporting evidence yet → a research hypothesis to be verified; an obvious conflict or a key logic error is found → not recommended to continue, with an explanation. The ranking is research priority and not an alpha ranking: the causal basis can be audited, the verification condition is concrete and decidable, and a verification result can be obtained within the relevant time window. If market data exists, show it and state what question it answers. It does not enter the ranking. With B, check directly whether A → B has a reasonable path. The user clicks a direction, and then enters mechanism, key dependency, fork and proposal. Audit principles: a hard count rewards fabrication; p_user − p_model is not a disagreement, still less an edge. The cost is about 45 minutes. If ranking runs out of time, fall back to unranked candidates. Discovery is not deleted, because users with no B are exactly the founder's most common entry.
 
-输出是**每个结论一份 Conditional Trade Proposal（条件式交易计划）**，状态 draft / needs_review，人读与机读同源。它们是散户批准前看的那张纸，也定义了与 Catalyst 下游的边界——但机读不等于可执行：`portwatch.hormuz.daily_transits >= 20` 即使格式合法，也不证明这个序列真实可访问、阈值 20 有依据、延迟适合交易决策。我们做 belief → 提案；提案要变成监控或订单，每个条件的验证状态都要先在下游推进到可核实。
+The output is **one Conditional Trade Proposal (a conditional trade plan) per conclusion**, with status draft / needs_review, and the human-readable and machine-readable forms come from the same source. They are the sheet a retail user looks at before approving, and they also define the boundary with Catalyst's downstream. But machine-readable does not mean executable: `portwatch.hormuz.daily_transits >= 20`, even if its format is legal, does not prove that the series is really accessible, that the threshold 20 has a basis, or that the latency suits a trading decision. We do belief → proposal. For a proposal to become monitoring or an order, the verification status of each condition must first be advanced to verifiable downstream.
 
-| 字段         | Hormuz 示例（人读；阈值为示意，非真实交易依据）                                                                                                                                      | 机读                                                                                                                                                                                                                                                                                                                              |
+| Field | Hormuz example (human-readable; thresholds are illustrative, not a real basis for trading) | Machine-readable |
 |--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 做什么       | 空 XOP 或 Brent 近月/远月价差，期限 30 天                                                                                                                                            | 标的、方向、期限                                                                                                                                                                                                                                                                                                                  |
-| 什么时候进   | PortWatch 日过境达到某一水平（阈值未知，留空由用户或数据确认）且美国解除港口封锁。两条是「且」：都满足才进入待审；一条满足、另一条还没核实，仍是先别动；任一条被证实未满足，显示受阻 | 进场 Condition 列表：类型（数值 / 文件 / 事件）、谓词（observed_by / not_observed_by / at_deadline）、来源或序列、阈值（未知时留空并写说明）、时间起点（anchor）、截止（deadline）、观测窗口、判断规则、是否可核验、当前判定（已满足 / 未满足 / 无法判断）；进场条件默认全部满足（AND）才通过，空列表不算通过，可核验不等于已满足 |
-| 什么时候出   | 开放后 72 小时内发生新的军事打击（起点 = 用户确认的开放日期，不由模型自填）；T+7 到期过境仍未达标；OPEC+ 宣布减产——退出条件显式声明为「或」，任一即退出                              | 退出 Condition 列表，可多条，只有显式声明 OR 才按任一满足触发；相对时间必须写明起点；「到期未发生」是合法条件，但只有观测窗口结束且来源覆盖该窗口才算未发生；到期但数据源未更新 = 无法判断，不是未发生                                                                                                                            |
-| 关键依赖     | 当前所选路径中最值得优先检验的关键依赖：「真通航」而非「宣布开放」。它失败不等于整个论点失效——支持同一结果的其他路径另行判断                                                         | key_dependency + 为什么选它 + 可观测性；没有足够依据时标未知，不强选                                                                                                                                                                                                                                                              |
-| 你押的是什么 | 用户的原话是「下周开放」；系统澄清为「11 月 30 日前 PortWatch 过境恢复」，在计划顶部用一行「我们把你的想法理解为……✓」请用户确认——时间和事件定义都变了                                                             | user_judgment：原始表述 + 确认后的判断 + 判定条件 + 期限                                                                                                                                                                                                                                                                          |
-| 市场参照     | 预测市场对「11 月 30 日前重开」的价格，并注明它回答的是这个问题                                                                                                                      | market_reference 或 no_market                                                                                                                                                                                                                                                                                                     |
-| 情景下会怎样 | 假设次日伊朗被打 → 「持续安全通航」这一前提受挑战（记在情景评估里，原前提的证据状态不变）→ 下一步查证：72 小时内有无军事回应；基线世界线保留为原版本                                 | scenario：受挑战前提 + 下一步查什么 + 基线版本号                                                                                                                                                                                                                                                                                  |
-| 审计记录     | 三步链，每边机制与证据（证据来自预审资料包、引用具体片段、写明支持还是反驳哪一部分；仅模型推断的边明确标出）                                                                         | 图版本快照                                                                                                                                                                                                                                                                                                                        |
-| 仓位         | 没有这个字段                                                                                                                                                                         | —                                                                                                                                                                                                                                                                                                                                 |
+| What to do | Short XOP, or the Brent front-month / back-month spread, with a 30-day term | Instrument, direction, term |
+| When to enter | PortWatch daily transits reach some level (the threshold is unknown, left blank for the user or the data to confirm) and the US lifts the port blockade. The two are joined by "and": enter ready-for-review only when both are met; if one is met and the other is not yet verified, it is still WAIT; if either is confirmed not met, show BLOCKED | The list of entry Conditions: type (numeric / document / event), predicate (observed_by / not_observed_by / at_deadline), source or series, threshold (left blank with a note when unknown), time anchor (anchor), deadline, observation window, decision rule, whether verifiable, current evaluation (met / not met / cannot tell); entry conditions pass only when all are met (AND) by default, an empty list does not count as passing, and verifiable does not mean met |
+| When to exit | A new military strike within 72 hours after the opening (starting point = the opening date the user confirms, not filled in by the model); transits are still below target when T+7 expires; OPEC+ announces a production cut. Exit conditions are explicitly declared as "or": any one triggers the exit | The list of exit Conditions, can be several; only an explicitly declared OR triggers on any one being met; a relative time must state its starting point; "nothing happened by the deadline" is a legal condition, but it counts as not happened only when the observation window has ended and the source covers that window; deadline passed but the data source not updated = cannot tell, not "did not happen" |
+| Key dependency | The key dependency most worth checking first on the currently selected path: "real passage" and not "announced opening". Its failure does not mean the whole argument fails; other paths supporting the same outcome are judged separately | key_dependency + why it was chosen + observability; when there is not enough basis, mark it unknown and do not force a choice |
+| What you are betting on | The user's own words are "opens next week"; the system clarifies it to "PortWatch transits recover by 30 November". One line at the top of the plan, "We understood your idea as … ✓", asks the user to confirm — both the time and the event definition have changed | user_judgment: the original statement + the confirmed judgment + the deciding conditions + the deadline |
+| Market reference | The prediction-market price for "reopens before 30 November", noting that it answers this question | market_reference or no_market |
+| What happens under a scenario | Suppose Iran is struck the next day → the premise "safe passage continues" is challenged (recorded in the scenario assessment; the evidence status of the original premise does not change) → next thing to check: whether there is a military response within 72 hours; the baseline world line is kept as the original version | scenario: the challenged premises + what to check next + the baseline version number |
+| Audit record | A three-step chain; for each edge the mechanism and evidence (the evidence comes from the pre-reviewed evidence pack, cites specific excerpts, and states which part it supports or contradicts; edges that are model inference only are clearly marked) | The graph version snapshot |
+| Position size | There is no such field | — |
 
-「先别动」是默认状态：进场条件没有全部满足（必要条件之间是「且」：一条满足、另一条还没核实仍是先别动；任一条被证实未满足则显示受阻；全部满足也只是待审，不是可执行）或最关键假设未验证时提案就这么写——这是散户最常被忽略的那条建议，也是「模型约束」在产品里的具体体现：提案必须能回答「还需要什么条件才能继续」，而不是每次都输出买卖方向。情景（假设伊朗被打）、观测（已确认发生）、失效（依据事先规则确实失效）三种状态在界面上分开显示，情景只能让前提「受挑战」，不能直接宣布止盈变止损。
+"WAIT" is the default state. When the entry conditions are not all met, the proposal is written that way (the necessary conditions are joined by "and": one met and another not yet verified is still WAIT; if any one is confirmed not met, show BLOCKED; all met is only ready for review, not executable), and so it is when the most critical assumption is unverified. This is the piece of advice retail traders most often ignore. It is also the concrete form of "constraining the model" in the product: a proposal must be able to answer "what else is needed to continue", instead of outputting a buy or sell direction every time. Scenario (suppose Iran is struck), observation (confirmed to have happened) and invalidation (really invalid according to the rule set in advance) are shown separately in the UI as three states. A scenario can only make a premise "challenged". It cannot directly declare that a take-profit has turned into a stop-loss.
 
-从 A 借一把尺：每条失效条件过三项检查——可测量的量、90 天内的日期、第三方可核实。这是 eval 的 rubric。
+One yardstick borrowed from A: every invalidation condition goes through three checks — a measurable quantity, a date within 90 days, and verifiable by a third party. This is the eval's rubric.
 
-市场参照的用法：Catalyst 已路由到预测市场，「Hormuz 11 月 30 日前重开」的价格是他们现成的数据。有就展示，并写明它回答的是哪个问题；不进排序，不当作交易优势，中间环节不碰。
+How the market reference is used: Catalyst already routes to prediction markets, and the price of "Hormuz reopens before 30 November" is data they already have. If it exists, show it and state which question it answers. It does not enter the ranking, is not treated as a trading edge, and the intermediate links do not touch it.
 
-放弃的：机构分发逻辑（B 的 PM、合规、采购）；持仓作为必填输入（降为可选）；C 的「方向对也亏」路径（需要止损位）；监控提醒（v2，留存与商业模式）。
+Given up: the institutional distribution logic (B's PM, compliance, procurement); position as a required input (reduced to optional); C's "right direction and still lose" path (it needs a stop-loss level); monitoring alerts (v2, retention and business model).
 
-README 按创始人的三个难题组织：模型输出质量——E1 有依据的推理、E2 有意义的失效条件、E4 恰当的弃权，外加 CausalT5k 冒烟测试；UX——B1 因果图 → B2 批准计划 → B3 改假设三个页面，共用同一份版本快照；执行——明确不碰，计划是 draft，批准不等于下单。POC 里不做历史事件回放（分数会被训练数据污染）；回测写进 eval 计划，只用模型训练截止之后才结算的事件，并且必须关闭联网。README 里要有一段「我们主动不做什么」：概率传播、无来源的分歧评分、提前的插件平台。
+The README is organised around the founder's three hard problems. Model output quality: E1 grounded reasoning, E2 meaningful invalidation conditions, E4 appropriate abstention, plus the CausalT5k smoke test. UX: three pages — B1 causal graph → B2 approve a plan → B3 change an assumption — sharing one version snapshot. Execution: explicitly not touched; the plan is a draft, and approval is not placing an order. The POC does not replay historical events (the score would be contaminated by training data). Backtests are written into the eval plan, using only events that settled after the model's training cutoff, and web search must be off. The README needs a paragraph "what we deliberately do not build": probability propagation, unsourced disagreement scores, an early plugin platform.
 
-## 最危险的两个假设
+## The two most dangerous assumptions
 
-**假设一：「我们能知道市场对每个因果环节的预期。」** 三份方案一致判定：不能，也不需要。根和终点常有参照（预测市场、期货曲线、期权隐含概率），中间环节几乎没有流动市场；用模拟数据补上验证不了任何东西，只会制造 false precision。处理方式：POC 不声称「发现分歧」，失效条件只需要可观测量 + 日期；根与终点有参照就给链接，没有就写「无流动市场」。如果这条假设彻底不成立，产品方向仍然成立——死掉的只是上一轮的「分歧定位器」故事，它退到 v2，且只在根和终点生效。「与市场参照有分歧」也不等于「有可交易优势」：我们不声称 edge。修订后的定位是：给出可执行、经人批准的计划，并讲清楚其中哪些条件能自动化、哪些还要人去核实（见「实现后的修订」）。
+**Assumption one: "We can know the market's expectation for each causal link."** All three proposals agreed: we cannot, and we do not need to. The root and the terminal often have references (prediction markets, futures curves, option-implied probabilities), while the middle links almost never have a liquid market. Filling the gap with simulated data verifies nothing and only creates false precision. How it is handled: the POC does not claim to "find disagreement", and an invalidation condition needs only an observable quantity + a date. If the root and the terminal have a reference, give a link; if not, write "no liquid market". If this assumption fails completely, the product direction still stands. What dies is only the previous round's "disagreement locator" story, which moves back to v2 and applies only at the root and the terminal. "Disagreeing with the market reference" is also not the same as "having a tradable edge": we do not claim an edge. The revised positioning is: give an executable plan that a human approves, and say clearly which of its conditions can be automated and which a person still has to verify (see "Revisions after implementation").
 
-**假设二：「LLM 能写出可观测、带日期、不是共识套话的失效条件。」** 这才是三小时 POC 真正在测的东西。如果它写出的是「若局势升级」「如果海峡没开」，产品就是一个 prompt。缓解只有两层：schema 强制观测量 + 阈值 + 日期 + 来源，不合格打回；禁止「如果 X 不发生」句式，宁可输出「未找到可观测失效条件」。更深一层的风险无法在 POC 里解决：真正杀仓位的常是模型不知道的东西——对手盘仓位、流动性——这要在 README 里明说。
+**Assumption two: "An LLM can write invalidation conditions that are observable, dated, and not consensus boilerplate."** This is what the three-hour POC is really testing. If what it writes is "if the situation escalates" or "if the strait does not open", the product is just a prompt. There are only two layers of mitigation: the schema forces an observable quantity + threshold + date + source, and sends back anything that fails; the "if X does not happen" sentence form is forbidden, and it is better to output "no observable invalidation condition found". A deeper risk cannot be solved in the POC: what really kills a position is often something the model does not know — the counterparty's positions, liquidity — and the README must say so plainly.
 
-次级风险，记录不展开：分叉时模型越界改了未触及环节（代码算写范围，越界即拒，E3 自动测试）；该拒绝时成链、该成链时拒绝（CausalT5k 的陷阱案例进 eval，只报逐例结果，两个负对照通过不等于普遍可靠）；为满足 schema 发明数据序列或阈值（Claim 与判定条件分开，允许标「暂未验证」）；先编因果故事再找引用来配（资料包先于推理进入上下文，边引用具体片段，代码校验引用存在，E1 人工核引用是否支持机制）。
+Secondary risks, recorded but not expanded: during a fork the model goes out of bounds and changes links that were not touched (the code computes the write scope, anything out of bounds is rejected, and E3 tests it automatically); building a chain when it should refuse, or refusing when it should build one (CausalT5k's trap cases go into the eval, reporting only per-case results, and passing the two negative controls does not mean general reliability); inventing a data series or threshold to satisfy the schema (the Claim and the deciding condition are kept apart, and "not yet verified" may be marked); writing the causal story first and then finding citations to fit it (the evidence pack enters the context before reasoning, edges cite specific excerpts, the code checks that the citation exists, and in E1 a person checks whether the citation supports the mechanism).
 
-## 收敛
+## Convergence
 
-**One User**：有一定经验、按事件研究交易方向的主动个人投资者——有自己的看法、会去查证据、持仓以周计；Catalyst 的 retail 定义，不含机构，也不是只看标题的新手。
+**One User**: an active individual investor with some experience who researches trade direction by event — has their own view, goes to look at the evidence, and holds positions for weeks. This is Catalyst's definition of retail. It excludes institutions, and it is not a novice who reads only headlines.
 
-**One Core Pain**：不知道什么可观测的事件、在哪一天，会证明这个 belief 的哪一环错了；它断了之后，这笔交易还剩什么。
+**One Core Pain**: not knowing which observable event, on which day, will prove which link of this belief wrong; and after it breaks, what is left of the trade.
 
-**One Key Insight**：失效条件不是一句解释，而是一个带判断规则和证据状态的对象——它同时是审计的单位、情景分叉时判断哪些前提受挑战的依据、以及人在批准交易前要看的那行字。它不需要概率传播，画布只是它的一个视图；承认模型不知道什么，让它知道的东西更可检验。
+**One Key Insight**: an invalidation condition is not a sentence of explanation. It is an object with a decision rule and an evidence status. It is at once the unit of audit, the basis for deciding which premises are challenged when a scenario forks, and the line a human needs to see before approving a trade. It does not need probability propagation, and the canvas is just one view of it. It admits what the model does not know, and makes what it does know easier to check.
 
-**One Essential Experience**：三步。发现——输入一个事件（可选目标），先看到最多三个有证据支撑的方向，或一句明确的弃权。检验——点一个方向，得到一张因果图：在真正有争议的地方展开 2–3 条竞争分支，每条落到具体标的，并且一眼能看出它是有资料支持、仅模型推断，还是建立在尚未发生的假设上；每个结论配一份预填的计划：做什么、什么时候进、什么时候出、最关键假设是哪条、还需要什么条件才能继续，进场条件未满足时写「先别动」。批准——确认系统对原话的理解，按需修改没有依据的阈值，批准其中一份或一份都不批准。之后改一个假设或加一个冲击，Catalyst 只重算下游、生成新版本：什么事实没有变、哪些前提受到挑战、哪些已批准的计划因此失效需要重新批准、用户下一步该查证什么；原版本保留，可以回退。
+**One Essential Experience**: three steps. Discover — enter an event (optionally a target), and first see at most three directions with evidence behind them, or one clear abstention. Check — click a direction and get a causal graph: 2–3 competing branches are expanded where there is a real disagreement, each lands on a concrete instrument, and at a glance you can see whether it is evidenced, model-only, or built on an assumption that has not happened yet; each conclusion comes with a pre-filled plan: what to do, when to enter, when to exit, which assumption is the most critical, and what else is needed to continue, and when the entry conditions are not met it says "WAIT". Approve — confirm the system's understanding of your words, edit any threshold with no basis as needed, and approve one of the plans or none. After that, change one assumption or add one shock, and Catalyst recomputes only the downstream and produces a new version: which facts have not changed, which premises are challenged, which approved plans are therefore invalid and need to be approved again, and what the user should check next; the original version is kept and can be rolled back to.
 
-**One Testable Hypothesis**：对 10 个案例（6 个 CausalT5k 金融域案例 + 4 个覆盖完整流程的自建案例 C1–C4），受约束的流程在四件事上表现可被逐例核对——E1 因果连接与提供的资料一致、未知处标未知；E2 失效条件具体可判断且与论点有真实逻辑联系（按每一份计划检查）；E3 改一个假设或加一个冲击后，写范围外的节点与边逐字不变，提案的变化能追溯到某个被修改或新增的假设（自动测试），且预设案例里应受挑战的路径确实被标为受挑战（golden case，防止「什么都不改也全过」）；E4 证据不足时弃权、有依据的候选不被错误拒绝。CausalT5k 的标签针对给定材料下的特定因果断言：YES 要说出材料为什么支持它，NO 要说出它为什么不成立，AMBIGUOUS 要说出证据为什么不足——NO 不机械等于 no_chain，CausalT5k 也不证明证据来源可靠，那是另一项评估；跑它时只输出因果判断，不强制生成交易提案。报告每个案例的期望、实际、失败类型，不报百分比；与同一模型、同一资料的单次 prompt 做对照，结果来自实际测试。失败判据：E3 出现越界写入，或 E4 在 YES 案例上系统性拒绝、在 NO 案例上系统性跟随——任一出现，当前流程不可信。
+**One Testable Hypothesis**: over 10 cases (6 CausalT5k finance-domain cases + 4 self-built cases covering the full flow, C1–C4), the constrained flow can be checked case by case on four things. E1: causal links are consistent with the material provided, and unknowns are marked unknown. E2: invalidation conditions are concrete and decidable and have a real logical connection with the argument (checked for every plan). E3: after changing one assumption or adding one shock, the nodes and edges outside the write scope are character for character unchanged, and changes in the proposal can be traced to some modified or added assumption (an automatic test), and in the preset cases the paths that should be challenged really are marked challenged (a golden case, to prevent "changing nothing also passes everything"). E4: when evidence is insufficient it abstains, and a grounded candidate is not wrongly rejected. CausalT5k's labels target a specific causal assertion given the material. YES must say why the material supports it, NO must say why it does not hold, AMBIGUOUS must say why the evidence is insufficient. NO does not mechanically equal no_chain, and CausalT5k does not prove that the evidence sources are reliable, which is a separate evaluation. When running it, output only the causal judgment, and do not force a trade proposal. Report per case the expectation, the actual result and the failure type, with no percentages; compare with a single prompt using the same model and the same material, with results coming from actual testing. Failure criteria: out-of-bounds writes in E3, or in E4 systematically refusing on YES cases and systematically agreeing on NO cases — if either appears, the current flow cannot be trusted.
 
-## 三小时能证明什么，什么留到之后
+## What three hours can prove, and what is left for later
 
-三小时能证明的全是结构性质，全部可自评、可自动化，不依赖找人。
+Everything three hours can prove is a structural property, all self-assessable and automatable, with no need to find people.
 
-| 案例               | 输入与重点                                                                                             | 覆盖                                                                                             |
+| Case | Input and focus | Covers |
 |--------------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| T1–T6 CausalT5k D3 | YES / NO / AMBIGUOUS 各 2，含 L3；走 Inspect 入口，scenario 作为提供的资料；只输出因果判断，不生成提案 | E1 因果判断、E4 弃权与不过度怀疑（含 Skepticism 与谄媚陷阱各一）                                 |
-| C1                 | 只输入 Event A「光子芯片采用快于预期」，发现候选，选一个形成提案（Semiconductor Pack）                 | Discovery + E1 + 数值型 E2                                                                       |
-| C2                 | 输入 Event A「高于 Fable 的模型被出口限制」+ 用户给的 Target B，检验路径并形成提案                     | Inspect + 事件型 E2                                                                              |
-| C3                 | 对 C1 的图分别执行 ChangeAssumption 和 AddShock                                                        | E3 两部分：范围外节点与边不变（自动）+ 应受挑战的路径确实受挑战（golden case）+ 提案 diff 可追溯 |
-| C4                 | 输入「中期选举分裂」到一个缺少合理证据的远距离标的                                                     | E4 + Discovery 弃权                                                                              |
-| D1                 | 创始人原例「霍尔木兹海峡下周重开」，用 Hormuz 小包跑通全流程                                           | 跨领域不编数；评审最可能拿它试                                                                   |
-| 对照               | 同一模型、同一资料的单次 prompt 跑同样案例                                                             | 报实际差异，不预设                                                                               |
+| T1–T6 CausalT5k D3 | 2 each of YES / NO / AMBIGUOUS, including L3; through the Inspect entry, the scenario as the material provided; output only the causal judgment, no proposal | E1 causal judgment, E4 abstention and not over-doubting (including one Skepticism trap and one sycophancy trap) |
+| C1 | Only Event A "photonic chip adoption is faster than expected" is entered; find candidates, pick one to form a proposal (Semiconductor Pack) | Discovery + E1 + numeric E2 |
+| C2 | Event A "models above Fable are export-restricted" + a Target B given by the user; check the path and form a proposal | Inspect + event-type E2 |
+| C3 | Run ChangeAssumption and AddShock on C1's graph separately | The two parts of E3: nodes and edges outside the scope unchanged (automatic) + the paths that should be challenged really are challenged (golden case) + the proposal diff is traceable |
+| C4 | Enter "the midterm elections split" against a distant instrument that lacks reasonable evidence | E4 + Discovery abstention |
+| D1 | The founder's own example, "I think the Strait of Hormuz is going to open up next week", run through the whole flow with the Hormuz pack | Cross-domain, no invented numbers; the one reviewers are most likely to try |
+| Baseline | A single prompt with the same model and the same material, run on the same cases | Report the actual difference, with none preset |
 
-十个案例是 POC 的定向测试，不是金融推理能力的统计证明。四个自建案例的输入全部取自题目的四个示例，两个硬件 / AI 的深做，创始人举的 Hormuz 跑通，政治的演示弃权。证据来自知识库：三小时只有 Semiconductor Pack（TrendForce 免费文章人工整理成几十段，带来源、日期、片段编号、正反立场）和 Hormuz 小包；知识库是统一接口，TrendForce 只负责半导体，以后各行业用各自更权威的来源加 pack，不要求一个数据源覆盖所有行业。资料先于推理进入模型上下文（本地知识库整包放入，规模变大后改 RAG，属于下一阶段），边引用具体片段；白名单内的联网检索是同一接口下的开关，默认关闭。打开时由研究 loop 决定查什么，建图之后由代码找缺口再补查一轮；每轮结果冻结成资料包，可以回放，不把成败交给实时搜索。
+The ten cases are directed tests of the POC and not a statistical proof of financial reasoning ability. The inputs of the four self-built cases all come from the assignment's four examples: two hardware / AI cases are done in depth, the founder's Hormuz example is run through, and the political one demonstrates abstention. The evidence comes from the knowledge base. In three hours there is only the Semiconductor Pack (TrendForce free articles manually organised into a few dozen excerpts, with source, date, excerpt id, and supporting and opposing stance) and the Hormuz pack. The knowledge base is a unified interface: TrendForce covers only semiconductors, and later each industry adds a pack from its own more authoritative source, without requiring one data source to cover all industries. Material enters the model's context before reasoning (the local knowledge base goes in whole, and when it grows we switch to RAG, which belongs to the next phase), and edges cite specific excerpts. Web search within the whitelist is a switch under the same interface, off by default. When it is on, the research loop decides what to look up, and after the graph is built the code finds the gaps and runs one more follow-up round. The result of each round is frozen into an evidence pack and can be replayed, so that success or failure is not left to live search.
 
-必须留到真实数据与用户测试之后的，README 里逐条写明不声称：
+What must wait for real data and user testing, with the README stating item by item that we do not claim it:
 
-- 失效条件是否正确——要拿已结算事件回测（4 月 18 日「宣布开放」对 PortWatch 过境数据是现成的一例），且要标注模型可能记得结局。
+- Whether the invalidation conditions are correct — this needs a backtest on settled events (the "announced opening" of 18 April against PortWatch transit data is a ready example), with a note that the model may remember the ending.
 
-- 用户是否真的照它退出或不动——要 3–5 位有真实仓位的人，跟一到两周。
+- Whether users really exit or hold as it says — this needs 3–5 people with real positions, followed for one to two weeks.
 
-- 市场参照是否准确——要数据源，且只在根与终点。
+- Whether the market reference is accurate — this needs a data source, and only at the root and the terminal.
 
-- 回访与留存——要监控提醒和账本持久化，都是 v2。
+- Return visits and retention — this needs monitoring alerts and persistent ledgers, both v2.
 
-一句话给评审者：这个 POC 证明的是「一个受约束的流程能把事件变成少量有依据的交易论点，明确每个论点依赖什么，并在一个假设改变后只更新真正受影响的判断」，不证明「这些论点能让人赚钱」。我们主动不做概率传播和无来源的分歧评分；换来的是因果可追溯、失效条件可观测、反事实更新确定。
+One sentence for reviewers: what this POC proves is "a constrained flow can turn an event into a small number of grounded trade arguments, make clear what each argument depends on, and after one assumption changes update only the judgments that are really affected". It does not prove "these arguments can make people money". We deliberately do not build probability propagation or unsourced disagreement scores; in exchange we get traceable causality, observable invalidation conditions, and deterministic counterfactual updates.
 
-## 附录：已淘汰的候选方案与比较（仅记录判断过程，不作为实现依据）
+## Appendix: eliminated candidate proposals and comparison (a record of the judgment process only, not a basis for implementation)
 
-以下三个方案和比较表写于 2026-10-18 第四轮，其中「强制生成三个方向」「情景直接触发失效」「止盈自动变止损」「最弱一环」「四元组」等表述已被后两轮审计否决；现行规格以主文为准。
+The three proposals below and the comparison table were written in the fourth round on 2026-10-18. Statements in them such as "force three directions", "a scenario directly triggers invalidation", "take-profit automatically becomes stop-loss", "the weakest link" and "the four-tuple" were rejected by the two later audit rounds. The current specification follows the main text.
 
-## Proposal A — 活跃个人投资者：新闻打到仓位时的「失效卡」
+## Proposal A — Active individual investor: an "invalidation card" for when news hits a position
 
-也选痛点 A4，但入口是「持仓 + 新闻」而不是「我要下单」：散户的损失厌恶远大于错失感，最痛的 20 分钟是仓位被新闻打到之后。
+Also picks pain point A4, but the entry is "position + news" and not "I want to place an order". Retail loss aversion is far stronger than fear of missing out, and the most painful 20 minutes are after a position has been hit by news.
 
-**Target user**：Kevin，34 岁，南湾软件工程师，Robinhood + IBKR 约 30 万美元，每周交易 2–4 次，持单票科技股和 XLE/TLT 这类板块 ETF。信息源是 fintwit、r/options、两份 Substack。今天的流程：刷到标题 → 问 ChatGPT「这对能源股意味着什么」→ 得到两面都说的 400 字 → 开券商时价格已经动了。「新闻触及持仓」每周 2–5 次。一份 2026 年中的散户调查显示 40.9% 的受访者每周至少用 AI 做研究（[Finimize](https://finimize.com/business/press/modern-investor-pulse-2026-q3-40-per-cent-of-retail-investors-use-ai-for-research-weekly)）——AI 已是习惯，但只用来解释，不用来决策。
+**Target user**: Kevin, 34, a software engineer in the South Bay, with about $300k across Robinhood + IBKR, trading 2–4 times a week, holding single tech stocks and sector ETFs such as XLE/TLT. His information sources are fintwit, r/options and two Substacks. Today's flow: scroll past a headline → ask ChatGPT "what does this mean for energy stocks" → get 400 words that say both sides → by the time he opens the broker the price has already moved. "News touches a position" happens 2–5 times a week. A mid-2026 retail survey shows that 40.9% of respondents use AI for research at least weekly ([Finimize](https://finimize.com/business/press/modern-investor-pulse-2026-q3-40-per-cent-of-retail-investors-use-ai-for-research-weekly)) — AI is already a habit, but it is used only to explain and not to decide.
 
-**Core pain / JTBD**：A4。券商只有价格止损，gap 市场里是摆设；ChatGPT 两面都说；没有工具把「我错了会看到什么、哪天知道」写成一行。A4 还绕开了 reviewer 最大的风险：A3 需要市场对每个环节的预期，散户拿不到，三小时也造不出；A4 只需要可观测量 + 日期。A2 是 A4 的副产品。
+**Core pain / JTBD**: A4. The broker offers only price stops, which are decoration in a gap market; ChatGPT says both sides; no tool writes "what I will see if I'm wrong, and on which day I'll know" as one line. A4 also avoids the reviewer's biggest risk: A3 needs the market's expectation for each link, which retail users cannot get and three hours cannot build; A4 needs only an observable quantity + a date. A2 is a by-product of A4.
 
-**UVP**：新闻打到你的仓位时，30 秒内告诉你它打断了哪一环、哪个可观测信号在哪一天会证明你错、真发生了你该怎么办。
+**UVP**: When news hits your position, within 30 seconds it tells you which link it broke, which observable signal on which day will prove you wrong, and what you should do if it really happens.
 
-**核心瞬间**：输入「我持有 XLE；霍尔木兹下周开放」。三环链出现（开放 → 过境恢复 → Brent 近月下跌 → XLE 承压），视觉重心在标黄的最弱一环和旁边的失效卡：「盯 PortWatch 日均过境 ≥20 艘 · 截止 T+7 · 未达成则开放只是 headline，XLE 不必动」。点「如果次日伊朗被打击」，只有第 2 环变红，失效卡换成「72 小时内无军事回应」，结论从「持有并盯过境数」翻成「退出条件已触发」。
+**Core moment**: enter "I hold XLE; I think the Strait of Hormuz is going to open up next week". A three-link chain appears (opening → transits recover → Brent front month falls → XLE under pressure), with the visual weight on the weakest link marked yellow and the invalidation card beside it: "Watch PortWatch daily average transits ≥20 · deadline T+7 · if not reached, the opening is only a headline, and XLE does not need to move". Click "if Iran is struck the next day", and only link 2 turns red; the invalidation card changes to "no military response within 72 hours", and the conclusion flips from "hold and watch the transit count" to "the exit condition has triggered".
 
-| 项               | 判断                        | 理由                                                                 |
+| Item | Judgment | Reason |
 |------------------|-----------------------------|----------------------------------------------------------------------|
-| 因果图           | Must 作为结构，不必作为画布 | ≤3 跳列表，每环三项：机制、失效可观测量 + 日期、已定价与否（标估计） |
-| 展示每条因果关系 | Must，但只三字段            | 「audit why」就是它                                                  |
-| 真实市场概率     | Out                         | 用定性的「已定价？」替代并标估计                                     |
-| Multiverse       | Must，一个 modify + diff    | 题目的「开放但次日被打」逐字对应                                     |
-| 完整交易策略     | Out                         | 不知道他的账本                                                       |
-| 账户与长期记录   | Out                         | 不是本假设要验证的                                                   |
-| 4 行 thesis 卡   | Must                        | 我信什么 / 标的与方向 / 我错了会看到什么（带日期）/ 期限             |
+| Causal graph | Must as a structure, not necessarily as a canvas | A list of ≤3 hops, three items per link: mechanism, invalidation observable + date, priced in or not (marked as an estimate) |
+| Show every causal relation | Must, but only three fields | "Audit why" is exactly this |
+| Real market probabilities | Out | Replaced with a qualitative "priced in?" and marked as an estimate |
+| Multiverse | Must, one modify + diff | The assignment's "opens but is hit the next day" maps to it word for word |
+| Full trading strategy | Out | We do not know his book |
+| Account and long-term record | Out | Not what this hypothesis is meant to verify |
+| 4-line thesis card | Must | What I believe / instrument and direction / what I will see if I am wrong (with a date) / term |
 
-**最大风险**：失效条件退化成叙事——「若局势升级」这种不可观测、无日期的信号，产品就坍缩回 ChatGPT 套壳。其次是模型讨好倾向让拒绝路径形同虚设。schema 能约束，不保证解决。
+**Biggest risk**: the invalidation conditions degrade into narrative — a signal like "if the situation escalates", which is unobservable and undated, and the product collapses back into a ChatGPT wrapper. Next is the model's tendency to please, which makes the refusal path decorative. A schema can constrain this, but does not guarantee a fix.
 
-**验证**：Hypothesis——受约束的 agent 能对「持仓 + 事件」产出具体、可观测、带日期的失效条件，散户看到会改变行动，ChatGPT 不会。Intervention——题目 4 例 + 自拟 4 例各配一个典型持仓，同一输入跑 ChatGPT，加 2 个负对照。Observable——每条失效条件过三项检查：点名可测量的量、90 天内有日期、第三方可核实；记通过率、负对照是否说「不」、modify 后失效卡是否真变。Comparison——预期工具通过率 \>70%，ChatGPT \40/天）→ 近月与 backwardation 塌 → crack 收窄 → 做空 VLO，每级右侧写「失效观测：7 天内 PortWatch 未回 20+ / 来源」。用户输入「次日伊朗被打」。第一级标红「失效已触发」；二、三级变灰「不再可达」，但文字和数字一个字没变；旁边长出新分支「空头挤压 → 超调 \$115+」，并有一行「原 take-profit 已变成 stop」。瞬间 = 「工具保留了我没碰的一切，并精确说出我丢了什么」。
+**Validation**: Hypothesis — a constrained agent can produce concrete, observable, dated invalidation conditions for "position + event", and a retail user who sees them would change what they do, whereas ChatGPT would not. Intervention — the assignment's 4 examples + 4 of our own, each paired with a typical position, run through ChatGPT with the same input, plus 2 negative controls. Observable — each invalidation condition goes through three checks: names a measurable quantity, has a date within 90 days, verifiable by a third party; record the pass rate, whether the negative controls say "no", and whether the invalidation card really changes after modify. Comparison — expected tool pass rate \>70%, ChatGPT \40/day) → front month and backwardation collapse → crack spread narrows → short VLO, with each level's right side reading "invalidation observation: PortWatch not back to 20+ within 7 days / source". The user enters "Iran is struck the next day". The first level turns red "invalidation triggered"; levels two and three turn grey "no longer reachable", but their text and numbers have not changed by a single character; beside them a new branch grows, "short squeeze → overshoot to \$115+", with a line "the original take-profit has become a stop". The moment = "the tool kept everything I did not touch, and said precisely what I lost".
 
-| 项                 | 判断                              | 理由                                                                             |
+| Item | Judgment | Reason |
 |--------------------|-----------------------------------|----------------------------------------------------------------------------------|
-| 因果图             | Must 作为结构，画布不必须         | ≤3 跳纵向阶梯，落到具体标的                                                      |
-| 展示每条因果关系   | Must，每环节三样                  | 机制一句话、失效观测（观测量 + 日期 + 来源）、状态；审计是他的工作，藏一环都不行 |
-| 真实市场概率       | 根与终点 Supporting，中间环节 Out | 给链接或标「无流动市场」，不生成数字；中间环节的概率不存在，伪造即红线           |
-| Multiverse         | Must，一次一个分叉                | 只重算子树，未触及环节逐字冻结，断边标红                                         |
-| 完整交易策略与仓位 | Out                               | 不知道他的 book                                                                  |
-| 账户与长期记录     | Out（POC 后第一件事）             | 他最终要的正是账本能存、能复盘                                                   |
-| 四行 thesis 卡     | Must                              | 标的方向 / 期限 / 盯什么 / 什么杀死它                                            |
+| Causal graph | Must as a structure, canvas not required | A vertical ladder of ≤3 hops, landing on a concrete instrument |
+| Show every causal relation | Must, three things per link | One-line mechanism, invalidation observation (observable + date + source), status; auditing is his job, and hiding even one link will not do |
+| Real market probabilities | Supporting at the root and the terminal, Out for middle links | Give a link or mark "no liquid market", and generate no number; probabilities for middle links do not exist, and faking them is a red line |
+| Multiverse | Must, one fork at a time | Recompute only the subtree, freeze untouched links character for character, mark broken edges red |
+| Full trading strategy and position size | Out | We do not know his book |
+| Account and long-term record | Out (the first thing after the POC) | What he ultimately wants is exactly a ledger that can be stored and reviewed |
+| Four-line thesis card | Must | Instrument and direction / term / what to watch / what kills it |
 
-**最大风险**：技术——modify 时 LLM 悄悄改了未触及环节，专业用户第二次 modify 就会发现，信任归零；缓解是图作为 JSON 状态、只把被改节点的后代送去重推、校验器拒绝子树外改动。产品——失效观测不可观测或没日期；缓解是 schema 强制「观测量 + 日期 + 来源」，宁可标「未找到可观测失效条件」。
+**Biggest risk**: technical — during modify the LLM quietly changes links that were not touched, and a professional user will notice by the second modify, and trust goes to zero; the mitigation is to keep the graph as JSON state, send only the descendants of the modified node back for re-reasoning, and have the validator reject changes outside the subtree. Product — the invalidation observation is unobservable or undated; the mitigation is that the schema forces "observable + date + source", and it is better to mark "no observable invalidation condition found".
 
-**验证**：Hypothesis——面对一次分叉，「只重算子树 + diff」比 ChatGPT 重生成更快更准地说出哪些环节幸存、新止损是什么，且用户愿做第二次分叉。Intervention——题目 3 个输入各配一次分叉，两臂：POC vs 同一 system prompt 的无状态 ChatGPT。Observable——60 秒内能否说出断了哪环、新止损是什么；是否未经提示做第二次 modify；指着环节说「这个观测不到」的次数；负对照是否触发拒绝。Comparison——ChatGPT 同提示，并请他带自己的 Excel 情景树对照。Failure——3 位中 ≥2 位说「我十分钟自己能重写」；或 3 次分叉 \>1 次未触及环节漂移；或 \>30% 失效观测被判不可观测。三小时能证明：结构在分叉下稳定（未触及环节 diff = 0）、schema 能逼出带日期的观测量、负对照触发拒绝。必须留到之后：失效条件是否正确（拿已结算事件回测，如 4 月 18 日宣布开放 vs 过境数据）；市场参照准确性；他是否真改了交易。
+**Validation**: Hypothesis — facing one fork, "recompute only the subtree + diff" says faster and more accurately than ChatGPT regenerating which links survived and what the new stop is, and the user is willing to do a second fork. Intervention — each of the assignment's 3 inputs paired with one fork, two arms: the POC vs a stateless ChatGPT with the same system prompt. Observable — whether within 60 seconds he can say which link broke and what the new stop is; whether he does a second modify without being prompted; the number of times he points at a link and says "this can't be observed"; whether the negative controls trigger refusal. Comparison — ChatGPT with the same prompt, and ask him to bring his own Excel scenario tree for comparison. Failure — ≥2 of the 3 say "I could rewrite this myself in ten minutes"; or more than 1 of 3 forks shows drift in untouched links; or \>30% of invalidation observations are judged unobservable. What three hours can prove: the structure is stable under a fork (diff of untouched links = 0), the schema can force a dated observable, and the negative controls trigger refusal. What must wait: whether the invalidation conditions are correct (backtest on settled events, such as the 18 April announced opening vs transit data); the accuracy of the market reference; whether he really changed his trade.
 
-**为什么适合 3 小时**：一次带 JSON schema 的生成调用、一次限定子树的重推调用、约 50 行校验器、纵向列表 + diff 着色 + 输入框。不需要画布库、账户、数据接入。
+**Why it fits 3 hours**: one generation call with a JSON schema, one re-reasoning call limited to a subtree, about 50 lines of validator, a vertical list + diff colouring + an input box. It needs no canvas library, account or data integration.
 
-**与 Assignment 的关系**：阶梯就是「exactly why and how to audit」；单次分叉 + diff 直接对应「重开但次日被打」；失效账本就是「黑天鹅 / 止损触发」；use case 1 由拒绝机制与最弱环节回答，use case 2 由 ≤3 跳的多条终点回答。只把 multiverse 收缩成「一次一个分叉」。
+**Relation to the Assignment**: the ladder is "exactly why and how to audit"; a single fork + diff corresponds directly to "reopens but is hit the next day"; the invalidation ledger is the "black swan / stop-loss triggered"; use case 1 is answered by the refusal mechanism and the weakest link, and use case 2 by the multiple terminals within ≤3 hops. Only the multiverse is narrowed to "one fork at a time".
 
-**为什么 B 可能不是对的 MVP 用户**：他已拥有最难的部分——数据、市场参照、领域判断——缺的只是时间，而 POC 恰恰在数据保真度上输给他的 Excel。他的容忍度是 30 秒一票否决，第一次演示失败就没有第二次。分发要过基金采购、合规和数据许可，自助增长为零。更根本的是，他愿付费的是「数据 + 监控」而非「推理」——推理是他的工作和自尊；选他会把产品推向数据业务。
+**Why B may not be the right MVP user**: he already owns the hardest part — data, market references, domain judgment — and lacks only time, while the POC loses to his Excel precisely on data fidelity. His tolerance is a 30-second veto, and if the first demo fails there is no second one. Distribution has to pass fund procurement, compliance and data licensing, so self-serve growth is zero. More fundamentally, what he would pay for is "data + monitoring" and not "reasoning" — reasoning is his job and his pride; choosing him pushes the product toward a data business.
 
-## Proposal C — 持有观点的交易者：入场前签下「失效契约」
+## Proposal C — A trader who holds a view: sign an "invalidation contract" before entering
 
-选痛点 A4（什么会证明我错），不选 A3：它是唯一不依赖市场预期数据的痛点，也是目前解决得最差的一个。
+Picks pain point A4 (what would prove me wrong) and not A3: it is the only pain that does not depend on market expectation data, and it is also the one worst solved today.
 
-**Target user**：老赵，前卖方能源分析师，自管约 300 万美元，做 Brent/WTI 期货和 XOP 期权，持仓 2–8 周，同时持有 3–6 个 thesis，每周新形成 1–2 个。今天用 Notion 写 thesis、和前同事在 Signal 互相拆台、交易日志只记 PnL 不记理由。最痛的时刻在持仓后：凌晨两点新闻砸进来、价格逆行 3%，没有预先写下的判定标准，只能靠情绪决定是噪音还是 thesis 已死。新闻密集期每周两三次。ChatGPT 不够是因为它顺着他写、不逼他写数字和日期、把每一环当同等可靠。
+**Target user**: Lao Zhao, a former sell-side energy analyst managing about $3 million of his own money, trading Brent/WTI futures and XOP options, holding positions for 2–8 weeks, with 3–6 theses at a time and 1–2 new ones forming each week. Today he writes theses in Notion, tears them apart with former colleagues on Signal, and his trading journal records only PnL and not the reasons. The most painful moment comes after he has a position: at two in the morning news slams in and the price moves 3% against him; with no judgment standard written down beforehand, he can only decide by emotion whether it is noise or the thesis is dead. In heavy-news periods it happens two or three times a week. ChatGPT is not enough because it goes along with what he wrote, does not force him to write numbers and dates, and treats every link as equally reliable.
 
-**Core pain / JTBD**：「我要下单了，帮我找到最可能错的那一环，在入场前签下什么观测、什么日期会证明我错。」A1 对他不成立；A2 是他自以为的痛——他的逻辑通常没错，杀他的是哪一环先断；A3 的参照数据拿不到。
+**Core pain / JTBD**: "I'm about to place the order. Help me find the link most likely to be wrong, and sign, before I enter, what observation on what date will prove me wrong." A1 does not hold for him; A2 is the pain he thinks he has — his logic is usually not wrong, and what kills him is which link breaks first; the reference data for A3 cannot be obtained.
 
-**UVP**：下单前告诉你这笔交易会死在哪一环、看哪个数、到哪一天，然后让你亲手签字。
+**UVP**: Before you place the order, it tells you which link this trade will die at, which number to watch and by which day, and then has you sign it with your own hand.
 
-**核心瞬间**：输入「霍尔木兹下周开放，我空 Brent 12 月」。三行链出现，一行放大标红：开放 → 近月跌 \>8%｜最弱环，旁注「4 月 18 日伊朗宣布开放，Brent 跌 11% 后回去了，船没过——你押的是宣布还是过境？」下面一个必填框：「判定：PortWatch 日过境 ≥ \_\_\_ 艘，截止 \_\_\_。」不填数字页面不往下走。填完弹出一行他没想过的话：「次日伊朗被打 → 此边失效，且价格先 gap 穿你的止损——这是你唯一一条方向对也会亏的路径。」
+**Core moment**: enter "I think the Strait of Hormuz is going to open up next week, and I'm short Brent December". A three-row chain appears, with one row enlarged and marked red: opening → front month falls \>8% | the weakest link, with a side note "On 18 April Iran announced the opening, Brent fell 11% and then went back, the ships did not pass — are you betting on the announcement or on the transit?" Below it, one required box: "Decision: PortWatch daily transits ≥ \_\_\_ ships, by \_\_\_." Without a number the page does not go on. Once filled, a line he had not thought of pops up: "Iran struck the next day → this edge is invalid, and the price first gaps through your stop — this is the only path where you lose even though the direction is right."
 
-| 项                 | 判断                               | 理由                                                                 |
+| Item | Judgment | Reason |
 |--------------------|------------------------------------|----------------------------------------------------------------------|
-| 因果图             | Must，但是 ≤3 环竖排列表，不是画布 | 它是「哪一环会错」的坐标系                                           |
-| 展示每条因果关系   | 否，展示 3 环、高亮 1 环           | 概率相乘，第四环是小说                                               |
-| 真实市场概率       | Supporting                         | 有流动合约才显示，否则写「无流动市场」                               |
-| Multiverse         | Must，缩成一个动词                 | 只对最弱环问「如果不一样」+ 一个黑天鹅预设，输出 diff 和止损是否翻转 |
-| 完整交易策略       | Out                                | 仓位、入场价不知道他的账本                                           |
-| 账户与长期记录     | Out（v2 Nice）                     | 先导出 markdown 贴进日志；监控提醒是 v2 的商业模式                   |
-| 探索「给我 B/C/D」 | Out                                | 属于 A/B 用户                                                        |
+| Causal graph | Must, but as a vertical list of ≤3 links and not a canvas | It is the coordinate system for "which link will be wrong" |
+| Show every causal relation | No, show 3 links and highlight 1 | Probabilities multiply, and the fourth link is fiction |
+| Real market probabilities | Supporting | Shown only if there is a liquid contract, otherwise write "no liquid market" |
+| Multiverse | Must, shrunk to one verb | Ask "what if it were different" only about the weakest link + one black-swan preset, and output the diff and whether the stop flips |
+| Full trading strategy | Out | Position size and entry price: we do not know his book |
+| Account and long-term record | Out (v2 Nice) | First export markdown and paste it into the log; monitoring alerts are v2's business model |
+| Exploring "give me B/C/D" | Out | Belongs to A/B users |
 
-**最大风险**：LLM 写出的失效条件是套话或共识（「如果海峡没开」），而真正杀仓位的常是它不知道的东西（对手盘仓位、流动性）。对策：禁止「如果 X 不发生」句式，每条失效条件必须指向数据系列 + 阈值 + 日期，按脆弱度排序。
+**Biggest risk**: the invalidation conditions the LLM writes are boilerplate or consensus ("if the strait does not open"), while what really kills a position is often what it does not know (counterparty positions, liquidity). Countermeasure: forbid the "if X does not happen" sentence form, and require every invalidation condition to point to a data series + threshold + date, sorted by fragility.
 
-**验证**：Hypothesis——有观点的交易者用后会改变自认的最弱环，或写下比之前更具体（数字 + 日期 + 数据源）的失效条件。Intervention——5 位真交易的人各带一个在手 thesis，先用 3 分钟在纸上写「最弱环 + 失效条件」作基线，再用工具。Observable——改最弱环的人数；失效条件三要素齐全的人数；黑天鹅 diff 是否翻出一条没想过的「方向对也亏」路径。Comparison——同一 thesis 问 ChatGPT「什么会证明我错」，比具体度与新颖度。Failure——≥3 人说「这些我都知道」，或 ChatGPT 的失效条件一样具体，或没人改最弱环。三小时能证明：4 个题目示例 + 负对照稳定产出 ≤3 环、每环失效条件可观测；强制填数跑得通；黑天鹅 diff 跑 5 次断边一致 ≥4 次。必须留到之后：失效条件是否真的对；用户是否真照此退出；回访率。
+**Validation**: Hypothesis — a trader who holds a view will, after using it, change the weakest link they believed in, or write an invalidation condition more concrete (number + date + data source) than before. Intervention — 5 people who really trade each bring a thesis they hold, first spend 3 minutes writing "weakest link + invalidation condition" on paper as the baseline, then use the tool. Observable — the number of people who change their weakest link; the number whose invalidation condition has all three elements; whether the black-swan diff turns up a "right direction and still lose" path they had not thought of. Comparison — ask ChatGPT "what would prove me wrong" for the same thesis, and compare concreteness and novelty. Failure — ≥3 people say "I knew all this", or ChatGPT's invalidation conditions are just as concrete, or nobody changes the weakest link. What three hours can prove: the assignment's 4 examples + the negative controls steadily produce ≤3 links with an observable invalidation condition on each; the forced number entry runs; the black-swan diff gives consistent broken edges at least 4 times in 5 runs. What must wait: whether the invalidation conditions are really right; whether users really exit accordingly; the return rate.
 
-**为什么适合 3 小时**：一个表单、一个三行列表、一个 diff，没有画布。两次 LLM 调用（建链、反事实只重写最弱环的后代），一套严格 JSON schema。难点在 prompt 和 schema，不在 UI。
+**Why it fits 3 hours**: one form, one three-row list, one diff, no canvas. Two LLM calls (build the chain; the counterfactual rewrites only the descendants of the weakest link), one strict JSON schema. The hard part is the prompt and the schema, not the UI.
 
-**与 Assignment 的关系**：≤3 环带机制与可观测量就是「audit why」；对最弱环 fork + 黑天鹅预设就是 multiverse；失效表本身就是「什么事件触发止损」；论点用户自带，工具给它签上契约。砍掉的只是 use case 2 和画布。
+**Relation to the Assignment**: ≤3 links with mechanism and observable is "audit why"; a fork on the weakest link + a black-swan preset is the multiverse; the invalidation table itself is "what event triggers the stop-loss"; the user brings the thesis, and the tool gets it signed as a contract. All that is cut is use case 2 and the canvas.
 
-**为什么 C 可能不是对的 MVP 用户**：TAM 最小，「我早知道」反射最强；题目明写了 use case 2 和 engaging，C 只答 use case 1，在并排评审里会显得交付不足；A4 的价值在后来的凌晨两点才兑现，POC 只能演示设置、演示不了回报；对 C 错的代价更高——一条自信但错误的失效条件会把他赶出赚钱的仓位。
+**Why C may not be the right MVP user**: the smallest TAM and the strongest "I already knew that" reflex; the assignment explicitly writes use case 2 and engaging, and C answers only use case 1, which will look under-delivered in a side-by-side review; A4's value is realised only later, at two in the morning, and the POC can demonstrate the setup but not the payoff; the cost of being wrong is higher for C — one confident but wrong invalidation condition can drive him out of a profitable position.
 
-## 五维比较
+## Five-dimension comparison
 
-三份独立写的方案都选了 A4、都拒绝了 A3，理由相同：中间环节的市场预期拿不到，失效条件不需要它。真正的分歧只剩入口——A 从「持仓被新闻打到」进，B 从「情景论点遇到分叉」进，C 从「下单前签字」进。评分 1–5，5 最好。
+The three independently written proposals all chose A4 and all rejected A3, for the same reason: the market's expectation for the middle links cannot be obtained, and invalidation conditions do not need it. The only real difference is the entry — A enters from "a position hit by news", B from "a scenario thesis meeting a fork", C from "signing before placing the order". Scores are 1–5, with 5 best.
 
-| 维度                 | A 活跃散户                                                | B 事件驱动分析师                                                     | C 持有观点的交易者                                          |
+| Dimension | A Active retail investor | B Event-driven analyst | C Trader who holds a view |
 |----------------------|-----------------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------------------------|
-| 用户痛点强度         | 3 · 损失厌恶真实，但最常见的诚实输出是「已定价，不必动」  | 4 · PM 在市场移动的 20 分钟里追问止损，回撤限额背后有钱              | 5 · 凌晨两点持仓逆行 3%，没有预先写下的判定标准，每周两三次 |
-| 产品差异化           | 3 · 失效卡 + diff，但 ChatGPT 能给出七成近似              | 5 · 未触及环节一字不变 + 「止盈变止损」，ChatGPT 结构上做不到        | 4 · 强制填数 + 「方向对也亏」路径，ChatGPT 不会逼人写数字   |
-| 三小时可行性         | 5 · 输入框 + 列表 + 一个按钮                              | 4 · 同样的件数，但校验器与冻结逻辑必须做对                           | 4 · 表单 + 三行 + diff，难点在 schema                       |
-| 验证结果可信度       | 4 · 三项检查的通过率可自评，不依赖找人                    | 3 · 结构性质可自评，但用户层面要 3 位专业人士且 30 秒否决            | 4 · 纸上基线对照设计最严，但要 5 位真交易者                 |
-| 与 Assignment 契合度 | 3 · 输入需要持仓，题目的四个示例都没有；use case 2 被收窄 | 5 · 题目四个输入原样可用；use case 1 和 2 都答；「次日被打」逐字对应 | 2 · 输入需要用户自带论点，只答 use case 1，不「engaging」   |
-| 合计                 | 18                                                        | 21                                                                   | 19                                                          |
+| Strength of user pain | 3 · loss aversion is real, but the most common honest output is "already priced in, no need to move" | 4 · a PM presses for the stop in the 20 minutes when the market moves, and there is money behind the drawdown limit | 5 · at two in the morning the position moves 3% against him, with no judgment standard written down beforehand, two or three times a week |
+| Product differentiation | 3 · invalidation card + diff, but ChatGPT can give a 70% approximation | 5 · untouched links character for character the same + "take-profit becomes stop-loss", which ChatGPT structurally cannot do | 4 · forced number entry + the "right direction and still lose" path, since ChatGPT will not force people to write numbers |
+| Three-hour feasibility | 5 · input box + list + one button | 4 · the same number of pieces, but the validator and the freezing logic must be done right | 4 · form + three rows + diff, with the hard part in the schema |
+| Credibility of validation results | 4 · the pass rate of the three checks is self-assessable and does not depend on finding people | 3 · structural properties are self-assessable, but at the user level it needs 3 professionals and a 30-second veto | 4 · the on-paper baseline comparison is the strictest design, but it needs 5 real traders |
+| Fit with the Assignment | 3 · the input needs a position, and none of the assignment's four examples has one; use case 2 is narrowed | 5 · the assignment's four inputs can be used as they are; both use case 1 and 2 are answered; "hit the next day" maps word for word | 2 · the input needs the user to bring their own thesis, answers only use case 1, not "engaging" |
+| Total | 18 | 21 | 19 |
 
-分数相近不是巧合：三份方案的 Must Have 几乎相同（≤3 跳阶梯、每环节带可观测失效条件和日期、一个 modify + diff、拒绝路径、四行 thesis 卡）。差别在于谁坐在屏幕前、第一句话输入什么。
+The scores being close is no coincidence: the Must Haves of the three proposals are almost the same (a ≤3-hop ladder, each link with an observable invalidation condition and a date, one modify + diff, a refusal path, a four-line thesis card). The difference is who sits in front of the screen and what they type first.
