@@ -124,25 +124,41 @@ Human review covers what tests cannot: whether citations really support a mechan
 
 ## Run it
 
+You need Python 3.12 and Node 20.19+ or 22.12+ (Vite 8). If `python3.12` is not on your PATH, `uv venv --python 3.12 .venv` creates the same environment.
+
+### Offline: no API key, no cost
+
 ```bash
 python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
 .venv/bin/python -m pytest -q                         # all offline
-cd web && npm ci && npm test && npm run build && cd ..
+.venv/bin/python -m eval.runner --replay eval/results/haiku-p7 --today 2026-10-19 --out eval/out/replay-p7/results.json   # re-score the recorded eval
+cd web && npm ci && npm test && npm run build && npm run dev   # front end on recorded fixtures (MOCK) at http://localhost:5173
 ```
 
+The replay re-scores the recorded model calls in `eval/results/haiku-p7/cassette.jsonl` and writes its results to `eval/out/replay-p7/`. Pass `--out` as above: without it, the replay overwrites the committed results and scorecard in `eval/results/haiku-p7/`. The p7 recording predates p8, which sends every grounded and hypothesis Discover candidate to Inspect. Under the current code, the discover-entry cases C1 and D1 and their probes P3 and P4 therefore stop with `CassetteMiss` until they are re-recorded, so the replayed score differs from the scorecard table above. All other cases replay.
+
+In MOCK mode the front end reads the recorded fixtures in `web/fixtures/` and does not need the back end. Pick a fixture in the header and click Analyze.
+
+### Against the real model
+
+The back end reads your Anthropic API key from the `ANTHROPIC_API_KEY` environment variable. Either export it in your shell, or put it in a `.env` file at the repository root (`.env` is git-ignored) and load it:
+
 ```bash
-set -a && . ./.env && set +a                          # ANTHROPIC_API_KEY; never committed
+echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env            # your key; never committed
+set -a && . ./.env && set +a                          # export it into the current shell
+```
+
+Then, in the same shell (these commands call the API and cost money):
+
+```bash
 CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run D1 --live            # record a run
 .venv/bin/python -m catalyst run D1 --replay runs/D1/<timestamp>                       # replay, no network
 CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run C2 --live --online   # with web search
 .venv/bin/python -m eval.runner --record eval/out/<name>                               # all cases, both groups
-.venv/bin/python -m eval.runner --replay eval/results/haiku-p7 --today 2026-10-19      # re-score the recorded run, no API key
-# Note: the p7 recording predates p8, which sends every grounded and hypothesis Discover candidate to Inspect. Under the
-# current code the discover-entry cases C1, D1 and their probes P3, P4 stop with CassetteMiss until they are re-recorded.
 CATALYST_JUDGE_MODEL=claude-sonnet-5-5 .venv/bin/python -m eval.judge eval/results/haiku-p7/results.json --record eval/results/haiku-p7/judge   # LLM judge (or --replay)
 .venv/bin/python -m eval.scorecard --readme README.md eval/results/haiku-p6m/scorecard.json eval/results/haiku-p7/scorecard-offline.json eval/results/haiku-p7/scorecard.json   # refresh the scorecard table
-.venv/bin/python -m catalyst.api                      # HTTP API on :8000
-cd web && VITE_MOCK=0 npm run dev                     # front end on the real API (default: recorded fixtures)
+.venv/bin/python -m catalyst.api                      # HTTP API on :8000 (set CATALYST_PORT to change)
+cd web && VITE_MOCK=0 npm run dev                     # front end on the real API (set CATALYST_API if the API is not on :8000)
 ```
 
 The default reasoning model is `claude-opus-5-5`; we develop and test on `claude-haiku-5-5` (set `CATALYST_MODEL`). Web retrieval defaults to Haiku and can be overridden with `CATALYST_WEB_MODEL`.
