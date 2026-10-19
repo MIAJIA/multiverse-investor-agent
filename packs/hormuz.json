@@ -31,7 +31,10 @@
       "hz-022": "补充调研",
       "hz-023": "补充调研"
     },
-    "portwatch_query": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname='Strait of Hormuz'&outFields=date,n_total,n_tanker&orderByFields=date&f=json"
+    "portwatch_query": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname='Strait of Hormuz'&outFields=date,n_total,n_tanker&orderByFields=date&f=json",
+    "stance_decisions": {
+      "hz-003": "2026-10-18 由 supports 改为 contradicts（Mia 交主 session 定）：海峡关闭时仍有约 260 万桶/日可经管道绕开，供给缺口没那么大，重开后油价的下跌空间也相应变小，削弱「重开 → 通航恢复 → Brent 回落」这条链。"
+    }
   },
   "excerpts": [
     {
@@ -57,7 +60,7 @@
       "excerpt_id": "hz-003",
       "source": "EIA Today in Energy（T1 官方数据）· 绕行管道段落",
       "date": "2025-06-16",
-      "stance": "supports",
+      "stance": "contradicts",
       "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504",
       "text": "EIA 估计沙特与阿联酋管道约有 260 万桶/日（2.6 million b/d）的容量可用于绕开霍尔木兹海峡。"
     },
