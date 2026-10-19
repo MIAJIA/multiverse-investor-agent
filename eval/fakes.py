@@ -50,7 +50,7 @@ class ScriptedReasoner:
             return _Completion(json.dumps({"judgment": {"label": label, "rationale": "scripted"}}))
         if stage == "discover":
             return _Completion(json.dumps({"candidates": [], "abstained": True,
-                                           "abstain_reason": "scripted：资料包里没有从事件到标的的因果依据"}))
+                                           "abstain_reason": "scripted: the pack has no causal basis linking the event to the target"}))
         if stage == "fork":
             kind = "change_assumption" if '"change_assumption"' in user else "add_shock"
             fx = load_fixture(f"c3_{kind}.json")
@@ -117,7 +117,7 @@ def c1_fake_plans(gates: dict[str, str] | None = None) -> list[dict]:
     shared = conds["cond.c1.cpo_shipments"]
     own = {"c1.term.laser_vendor": "cond.c1.els_design_wins", "c1.term.foundry": "cond.c1.foundry_utilization",
            "c1.term.dsp_vendor": "cond.c1.dsp_guidance"}
-    uj = {"original_statement": "光子芯片采用快于预期", "clarified_statement": "fake", "requires_user_confirmation": True}
+    uj = {"original_statement": "Photonic chips are being adopted faster than expected", "clarified_statement": "fake", "requires_user_confirmation": True}
     gates = gates or {}
     return [_fake_plan(n["id"], n["instruments"][0], [shared, conds[own[n["id"]]]], dict(uj), gates.get(n["id"], "WAIT"))
             for n in g["nodes"] if n["role"] == "terminal"]
@@ -156,8 +156,8 @@ class FakeEntrypoints:
     def discover(self, event: str, target: str | None = None, **kw) -> dict:
         self.calls.append(("discover", event))
         self._maybe_raise(event)
-        if "选举" in event:
-            return self._shape({"candidates": [], "abstained": True, "abstain_reason": "fake: 缺少因果依据",
+        if "midterm" in event:
+            return self._shape({"candidates": [], "abstained": True, "abstain_reason": "fake: no causal basis",
                                 "proposals": [], "observations": []})
         return self._shape({"candidates": [{"id": "cand-1", "direction": "fake", "label": "grounded", "rationale": "fake"},
                                            {"id": "cand-2", "direction": "fake", "label": "hypothesis", "rationale": "fake"}],
@@ -172,7 +172,7 @@ class FakeEntrypoints:
             label = self.labels.get(case_id, load_case(case_id)["expected"]["label"])
             return self._shape({"graph": None, "no_chain": False, "proposals": [], "branches": [],
                                 "judgment": {"label": label, "rationale": "fake rationale"}, "observations": []})
-        if "霍尔木兹" in event:
+        if "Hormuz" in event:
             uj = {"original_statement": event, "clarified_statement": "fake", "requires_user_confirmation": True}
             plans = [_fake_plan("d1.term.brent", "BZ", load_fixture("d1_hormuz.json")["entry_conditions"], uj)]
         elif target:
@@ -200,13 +200,13 @@ class FakeEntrypoints:
 def sample_baseline_reasoner() -> FakeReasoner:
     """生成 sample_results.json 用的 baseline：故意制造几种失败，检验报告能把它们写出来。"""
     return FakeReasoner(responses={
-        "中期选举": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "hypothesis"}]}),
-        "霍尔木兹": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
+        "midterm": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "hypothesis"}]}),
+        "Hormuz": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
                               "conditions": [{"kind": "numeric", "series": "portwatch.hormuz.daily_transits",
                                               "threshold": 20, "threshold_note": None}]}),
-        "光子芯片": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
+        "Photonic chips": json.dumps({"abstained": False, "candidates": [{"direction": "fake", "label": "grounded"}],
                               "conditions": [{"kind": "numeric", "series": "fake", "threshold": None, "threshold_note": "fake"}]}),
-        "出口限制": "抱歉，我无法给出 JSON",
+        "export restrictions": "Sorry, I cannot return JSON",
     })
 
 

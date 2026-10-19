@@ -2,10 +2,10 @@
   "id": "W1",
   "type": "custom",
   "layer": "W",
-  "title": "联网 + 补查：美联储 10 月降息 → 长债 ETF",
+  "title": "Online + follow-up research: Fed October cut -> long-duration Treasury ETF",
   "entry": "inspect",
   "input": {
-    "event": "美联储在 10 月底的 FOMC 会议上降息 25 个基点",
+    "event": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
     "target": "TLT",
     "today": "2026-10-18",
     "evidence_packs": []
@@ -14,7 +14,7 @@
     "online"
   ],
   "expected": {
-    "behavior": "本地资料包没有覆盖这个领域，证据只能来自研究 loop。降息在 today 时尚未发生，应标 role=shock，相关分支是假设分支；在真正有争议处给出竞争分支（例如降息已被市场定价、长端利率不一定跟随短端），没有争议时 1 条也合法；条件引用联网找到的官方来源（FOMC 声明、会议日程），会议日期和阈值不能自己编；每轮研究至少一次专门找反方。",
+    "behavior": "The local packs do not cover this domain, so all evidence must come from the research loop. On today's date the cut has not happened, so it should be role=shock and the related branches hypothetical. Branch only where there is a real dispute (for example, the cut is already priced in; long-end yields need not follow the short end); one branch is fine if there is none. Conditions cite official sources found online (FOMC statement, meeting calendar); meeting dates and thresholds are not invented. Each research round includes at least one query aimed at counter-evidence.",
     "gate": "WAIT",
     "approval_required": true,
     "online_metrics": [
@@ -37,19 +37,19 @@
     "online_metrics"
   ],
   "human_review": [
-    "E1: 引用的联网片段是否支持机制",
-    "E1: 每轮有没有专门找反方的查询",
-    "分支质量: 分支是否真正竞争",
-    "分支质量: 尚未发生的降息是否标成 role=shock",
-    "E2: 条件是否引用了可核实的官方来源与日期"
+    "E1: do the cited web excerpts support the mechanism",
+    "E1: did each round include a query aimed at counter-evidence",
+    "Branch quality: are the branches real competitors",
+    "Branch quality: is the not-yet-happened cut marked role=shock",
+    "E2: do conditions cite verifiable official sources and dates"
   ],
   "recording": {
     "path": "~/Downloads/multiverse-investor-agent-websearch/runs/W1/20261018-223507",
-    "status": "过期：录在 agent loop（补查轮）和方案 B（PROMPT_VERSION 提升）之前，只有一轮研究；两项合并后用 Haiku 重录一次，之后用回放",
-    "summary": "联网开，16 段，搜索 5 次、抓取 2 次，丢弃 2 段"
+    "status": "Stale: recorded before the agent loop (follow-up round) and plan B (PROMPT_VERSION bump), with a single research round and a Chinese input. Re-record once with Haiku after both are merged, then replay.",
+    "summary": "online on, 16 excerpts, 5 searches, 2 fetches, 2 dropped"
   },
   "source": {
-    "origin": "websearch session 的 runs/_cases/W1.json，原标题「新问题（不在 eval 案例里）」，2026-10-18 正式收进 eval/cases"
+    "origin": "websearch session's runs/_cases/W1.json (originally titled as a new question outside the eval cases); moved into eval/cases on 2026-10-18"
   },
-  "notes": "联网案例的回放是确定的；重新录制才会变。稳定性按重录次数看，次数由 Mia 定。"
+  "notes": "Replaying an online recording is deterministic; only re-recording changes results. Stability is judged by re-recording (3 times, only when needed)."
 }

@@ -1,19 +1,18 @@
 {
   "id": "D1",
   "type": "custom",
-  "title": "霍尔木兹海峡下周重开：跨领域不编数",
+  "title": "Strait of Hormuz reopens next week: no invented numbers across domains",
   "entry": "discover",
   "then": "inspect",
   "input": {
-    "event": "霍尔木兹海峡下周重开",
+    "event": "I think the Strait of Hormuz is going to open up next week",
     "target": null,
     "evidence_packs": [
       "hormuz"
-    ],
-    "online_search": false
+    ]
   },
   "expected": {
-    "behavior": "跑通全流程；过境量条件的阈值仍为 null + threshold_note，但真实包已有关闭前基线（hz-009），threshold_note 应引用它并说明「恢复到多少算恢复」要用户确认，不能再写「资料包没有基准」；「下周开放」被澄清成带绝对日期的判断并要求用户确认；反方片段（开放后过境只有一半、再次关闭）被回应；进场 WAIT",
+    "behavior": "Run the full flow. The transit condition's threshold stays null with a threshold_note, but the real pack now has a pre-closure baseline (hz-009): the note should cite it and say the user must confirm what level counts as recovery, not claim there is no baseline. 'Next week' is clarified into a dated judgment the user must confirm. Reopening has not happened yet, so it should be role=shock and the related branch hypothetical. Address the counter-evidence (after the June reopening transits stayed under half; the strait closed again). Every plan's gate is WAIT.",
     "gate": "WAIT",
     "proposal_status": "draft",
     "approval_required": true,
@@ -28,7 +27,7 @@
       "hz-011",
       "hz-012"
     ],
-    "key_excerpts_note": "真实 Hormuz Pack（packs/hormuz.json）：宣布开放 hz-008（JMIC 2026-06-20）；关闭前基线 hz-009（2025 日均约 85.5 艘、2026-02 约 92 艘）；反方 hz-011（开放后日均约 24 艘）、hz-012（7/12 再次关闭）。hz-010、hz-016 也是反方，但不是必需。"
+    "key_excerpts_note": "Real Hormuz Pack (packs/hormuz.json): reopening announced hz-008 (JMIC 2026-06-20); pre-closure baseline hz-009 (about 85.5 ships/day in 2025, about 92 in Feb 2026); counter-evidence hz-011 (about 24 ships/day after reopening), hz-012 (closed again on 7/12). hz-010 and hz-016 are also counter-evidence but not required."
   },
   "evals": [
     "E1",
@@ -42,11 +41,12 @@
     "retrieval_hit"
   ],
   "human_review": [
-    "E1: 反方片段是否被回应",
-    "E2: 进出场条件是否具体可判断",
-    "E2: threshold_note 是否引用了关闭前基线 hz-009，而不是编一个数字或说「没有基准」"
+    "E1: is the counter-evidence addressed",
+    "E2: are entry / exit conditions specific and decidable",
+    "E2: does threshold_note cite the pre-closure baseline hz-009 instead of inventing a number or saying there is no baseline",
+    "Branch quality: is the not-yet-happened reopening marked role=shock"
   ],
-  "notes": "情景是创始人原话「下周重开」，现实时间线是 6/20 宣布开放、7/12 再次关闭、10 月日均约 3.5 艘（证据线交接说明）。案例输入没改成真实日期；如果要改，期望要重新想（待 Mia 决定）。golden fixture d1_hormuz.json 配的是占位片段，只给单元测试用。 联网版属于 W 层（--online），录制一次后用回放。",
+  "notes": "Input is the founder's own sentence from the call. The real timeline is: reopening announced 6/20, closed again 7/12, about 3.5 ships/day in October (evidence handoff). The input was not converted to real dates; if it is, the expectations need rethinking (Mia to decide). The golden fixture d1_hormuz.json uses placeholder excerpts and is for unit tests only. The online run belongs to layer W (--online), recorded once and then replayed.",
   "run_variants": [
     "offline",
     "online"

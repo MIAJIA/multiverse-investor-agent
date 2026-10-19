@@ -1,16 +1,15 @@
 {
   "id": "C1",
   "type": "custom",
-  "title": "光子芯片采用快于预期：Discovery → 提案",
+  "title": "Photonic chips adopted faster than expected: Discover -> plans",
   "entry": "discover",
   "then": "inspect",
   "input": {
-    "event": "光子芯片采用快于预期",
+    "event": "Photonic chips are being adopted faster than expected",
     "target": null,
     "evidence_packs": [
       "semiconductor"
-    ],
-    "online_search": false
+    ]
   },
   "expected": {
     "candidates_min": 1,
@@ -21,7 +20,7 @@
       "not_recommended"
     ],
     "abstain": false,
-    "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（sc-036 放量时间、sc-025 激光器数量、sc-043 集成激光路线）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
+    "behavior": "Return 1-3 candidates, each with one of the three evidence labels; Inspect the first grounded candidate. Within that direction, branch only where there is a real dispute (one branch is fine if there is none); one plan per terminal. At least one numeric condition, with a threshold grounded in the pack or null plus threshold_note. Address the counter-evidence in the pack (sc-036 ramp timing, sc-025 laser count, sc-043 integrated-laser route): either mark the claim contradicted or explain why it is not a rebuttal.",
     "gate": "WAIT",
     "proposal_status": "draft",
     "approval_required": true,
@@ -36,7 +35,7 @@
       "sc-025",
       "sc-043"
     ],
-    "key_excerpts_note": "真实 Semiconductor Pack（packs/semiconductor.json）的 id，按证据线对照表核过原文：CPO 导入提前 sc-033、sc-035；时间上的反方 sc-036（放量在 2027–2028）；光源需求 sc-039（Lumentum 首笔 ELS 订单）；反方 sc-025（ELS 让激光器总数降到 1/4）、sc-043（集成激光路线，目前面向可插拔 / LPO，不是 CPO）。真实包里没有「集成激光替代 CPO 外置光源」的直接证据，也没有官方硅光代工利用率；这两处期望模型标 unverified / model_only，不能编。"
+    "key_excerpts_note": "Ids from the real Semiconductor Pack (packs/semiconductor.json), checked against the text: CPO ramp pulled forward sc-033, sc-035; timing counter-evidence sc-036 (volume ramp in 2027-2028); light-source demand sc-039 (Lumentum's first ELS order); counter-evidence sc-025 (ELS cuts total lasers to 1/4) and sc-043 (integrated-laser route, currently pluggable / LPO, not CPO). The pack has no direct evidence that integrated lasers replace CPO external light sources and no official silicon-photonics foundry utilization; the model should mark those unverified / model_only, not invent them."
   },
   "evals": [
     "Discovery",
@@ -53,9 +52,10 @@
     "retrieval_hit"
   ],
   "human_review": [
-    "E1: 每条边的引用原文是否支持机制",
-    "E1: 反方片段是否被回应",
-    "E2: 数值条件换掉之后论点还成立吗"
+    "E1: does the cited text support each edge's mechanism",
+    "E1: is the counter-evidence addressed",
+    "E2: if this numeric condition were removed, would the thesis still stand",
+    "Branch quality: are the branches real competitors, not padding"
   ],
-  "notes": "跑真实 pack。C1 golden 图（eval/fixtures/c1_graph_v1.json）只配 c1_evidence_pack 给 C3 和单元测试用，C1 本身的期望不依赖 golden 图或占位片段 id。"
+  "notes": "Runs on the real pack. The C1 golden graph (eval/fixtures/c1_graph_v1.json) is only paired with c1_evidence_pack for C3 and unit tests; C1's own expectations do not depend on the golden graph or placeholder excerpt ids. Wording: the repo has no copy of the original assignment text, so this English phrasing is ours, not the assignment's verbatim wording. Replace it with the assignment's exact sentence when available."
 }

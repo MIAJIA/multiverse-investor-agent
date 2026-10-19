@@ -55,7 +55,7 @@ def test_baseline_prompt_carries_the_same_material():
 
 
 def test_entrypoint_exception_is_isolated():
-    ep = FakeEntrypoints(raise_on={"光子芯片"})
+    ep = FakeEntrypoints(raise_on={"Photonic chips"})
     results = run_all(CASES, ("pipeline",), reasoner=FakeReasoner(), evidence=FakeEvidence(), entrypoints=ep)
     assert _by(results, "C1", "pipeline")["status"] == "ERROR"
     assert _by(results, "D1", "pipeline")["status"] != "ERROR"

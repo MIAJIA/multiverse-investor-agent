@@ -352,12 +352,15 @@ def _run_fork(case: dict, res: dict, ep: Entrypoints, kw: dict) -> None:
 
 # ---- baseline 组 --------------------------------------------------------------
 
-BASELINE_INSTRUCTIONS = {
-    "causalt5k": "根据下面的材料判断这条因果断言是否成立。只返回 JSON：{\"label\": \"YES\"|\"NO\"|\"AMBIGUOUS\", \"rationale\": \"...\"}",
-    "discover": "根据下面的资料，给出最多 3 个值得研究的交易方向，或明确弃权；如果给方向，为第一个方向写进场条件。只返回 JSON："
+BASELINE_INSTRUCTIONS = {  # 送进模型的文字一律英文（Mia 定）
+    "causalt5k": "Using only the material below, decide whether this causal claim holds. Return JSON only: "
+                 "{\"label\": \"YES\"|\"NO\"|\"AMBIGUOUS\", \"rationale\": \"...\"}",
+    "discover": "Using only the evidence below, propose at most 3 trade directions worth researching, or abstain explicitly; "
+                "if you propose directions, write entry conditions for the first one. Return JSON only: "
                 "{\"abstained\": bool, \"candidates\": [{\"direction\": \"...\", \"label\": \"grounded\"|\"hypothesis\"|\"not_recommended\"}], "
                 "\"conditions\": [{\"kind\": \"numeric\"|\"document\"|\"event\", \"series\": \"...\", \"threshold\": number|null, \"threshold_note\": \"...\"}]}",
-    "inspect": "根据下面的资料，检验从事件到目标标的有没有合理的因果路径，并写出进场条件。只返回 JSON："
+    "inspect": "Using only the evidence below, check whether there is a plausible causal path from the event to the target instrument, "
+               "and write entry conditions. Return JSON only: "
                "{\"no_chain\": bool, \"chain\": [\"...\"], \"conditions\": [{\"kind\": \"numeric\"|\"document\"|\"event\", \"series\": \"...\", \"threshold\": number|null, \"threshold_note\": \"...\"}]}",
 }
 
@@ -365,17 +368,17 @@ BASELINE_INSTRUCTIONS = {
 def build_baseline_prompt(case: dict, evidence: Evidence | None, packs: list[str] | None = None) -> str:
     inp = case["input"]
     kind = "causalt5k" if case["type"] == "causalt5k" else case["entry"]
-    lines = [BASELINE_INSTRUCTIONS[kind], "", f"事件 / 断言：{inp['event']}"]
+    lines = [BASELINE_INSTRUCTIONS[kind], "", f"Event / claim: {inp['event']}"]
     if inp.get("target"):
-        lines.append(f"目标标的：{inp['target']}")
+        lines.append(f"Target instrument: {inp['target']}")
     if inp.get("material"):
-        lines += ["", "材料：", inp["material"]]
+        lines += ["", "Material:", inp["material"]]
     for pack in (packs if packs is not None else inp.get("evidence_packs", [])):
         if pack == "web" or evidence is None:
             continue
-        lines += ["", f"资料包 {pack}："]
+        lines += ["", f"Evidence pack {pack}:"]
         for ex in evidence.load_pack(pack):
-            lines.append(f"[{ex['excerpt_id']}] {ex.get('date', '')} {ex.get('source', '')}（{ex.get('stance', '')}）：{ex['text']}")
+            lines.append(f"[{ex['excerpt_id']}] {ex.get('date', '')} {ex.get('source', '')} ({ex.get('stance', '')}): {ex['text']}")
     return "\n".join(lines)
 
 

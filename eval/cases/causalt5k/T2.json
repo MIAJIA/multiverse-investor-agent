@@ -12,7 +12,7 @@
   "probe": null,
   "expected": {
     "label": "YES",
-    "behavior": "判 YES：在通胀上行 + 流动性收紧、多数资产承压的结构条件下，增配通胀挂钩债是收益上升的必要触发",
+    "behavior": "YES: under rising inflation plus a liquidity crunch that depressed most assets, the shift into inflation-indexed bonds was the necessary trigger for the return increase",
     "trap": null,
     "trap_canonical": null,
     "produce_proposal": false,
@@ -27,8 +27,8 @@
     "no_proposal"
   ],
   "human_review": [
-    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
-    "E4: 弃权 / 判断理由是否成立"
+    "E1: does the rationale hit the key point of gold_rationale (the trap, or why the claim holds)",
+    "E4: is the abstention / verdict reasoning sound"
   ],
   "source": {
     "dataset": "CausalT5k",
