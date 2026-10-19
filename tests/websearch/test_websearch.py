@@ -275,7 +275,7 @@ def test_cli_record_then_replay_offline(tmp_path, monkeypatch, capsys):
 def test_offline_prompt_unchanged_and_web_prefix(wl):
     """Offline pack text is unchanged (old recordings keep their hashes); the data note appears only with web excerpts."""
     pack = EvidenceProvider("/nonexistent").register(PACK)
-    expected = "（注意：这是合成的占位资料包，只用于跑通流程。）\n" + "\n".join(
+    expected = "(Note: this is a synthetic placeholder pack, only for exercising the pipeline.)\n" + "\n".join(
         json.dumps(x.dump(), ensure_ascii=False) for x in pack.excerpts)
     assert ep._pack_text(pack) == expected
     res = ws.retrieve_live("e", None, cfg=CFG, searcher=FakeSearcher(), reasoner=Scripted([LABELS]), store=None, wl=wl)

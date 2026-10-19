@@ -43,7 +43,7 @@ def ev():
 
 def test_neutral_inbound_alone_cannot_make_a_claim_supported():
     errs = _msgs(validate_references(_graph([_ref(NEUTRAL)]), PACK_N))
-    assert any("[h.transits] 标 supported，但没有任何非 model_only 的入边带 supports 证据" in e for e in errs)
+    assert any("[h.transits] marked supported, but no non-model_only incoming edge carries supports evidence" in e for e in errs)
     assert not validate_references(_graph([_ref(NEUTRAL)], status="unknown"), PACK_N)
 
 
@@ -62,7 +62,7 @@ def test_neutral_cannot_be_flipped_either_way(pack_stance, cited_as):
     x = {**NEUTRAL, "stance": pack_stance}
     pack = {**PACK, "excerpts": [x]}
     errs = _msgs(validate_references(_graph([_ref(x, stance=cited_as)], status="unknown"), pack))
-    assert any(f"把 {pack_stance} 片段 hz-2 引用成了 {cited_as}：立场不能翻转" in e for e in errs)
+    assert any(f"cites the {pack_stance} excerpt hz-2 as {cited_as}: a stance cannot be flipped" in e for e in errs)
 
 
 def test_inspect_accepts_a_neutral_citation(ev):
@@ -73,9 +73,9 @@ def test_inspect_accepts_a_neutral_citation(ev):
 
 
 def test_prompt_explains_neutral():
-    assert prompts.PROMPT_VERSION == "p5"
-    assert "neutral（背景信息" in prompts.BASE and "neutral 片段不是反方，不需要 rebuttal" in prompts.BASE
-    assert "neutral 证据不算支持" in prompts.BASE
+    assert prompts.PROMPT_VERSION == "p6"
+    assert "neutral (background" in prompts.BASE and "A neutral excerpt is not counter-evidence and needs no rebuttal" in prompts.BASE
+    assert "neutral evidence does not count as support" in prompts.BASE
 
 
 # ---- B. Critic 占位 ----------------------------------------------------

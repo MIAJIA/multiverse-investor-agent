@@ -59,23 +59,23 @@ def compute_write_scope(graph: Graph | dict, op: Op | dict) -> Scope:
     node_ids = {n.id for n in g.nodes}
     if o.kind == "change_assumption":
         if o.target not in node_ids:
-            raise ScopeViolation(f"[{o.target}] change_assumption 的目标不在图里")
+            raise ScopeViolation(f"[{o.target}] the change_assumption target is not in the graph")
         nodes = _descendants(g, {o.target})
         new_nodes, new_edges = set(), set()
     elif o.kind == "add_shock":
         missing = [i for i in o.impacts if i not in node_ids]
         if missing:
-            raise ScopeViolation(f"[{missing[0]}] add_shock 的 impacts 不在图里")
+            raise ScopeViolation(f"[{missing[0]}] an add_shock impact is not in the graph")
         new_nodes = {n.id for n in o.new_nodes}
         new_edges = {e.id for e in o.new_edges}
         if clash := (new_nodes & node_ids) | (new_edges & {e.id for e in g.edges}):
-            raise ScopeViolation(f"[{sorted(clash)[0]}] add_shock 新增的 id 与已有对象冲突")
+            raise ScopeViolation(f"[{sorted(clash)[0]}] an id added by add_shock clashes with an existing object")
         for e in o.new_edges:  # Stage 1 结构检查：冲击只能从新节点连到声明的 impacts
             if e.from_ not in new_nodes or e.to not in set(o.impacts) | new_nodes:
-                raise ScopeViolation(f"[{e.id}] Stage 1 新边必须从新节点连到 impacts：{e.from_} → {e.to}")
+                raise ScopeViolation(f"[{e.id}] a Stage 1 edge must go from a new node to the impacts: {e.from_} → {e.to}")
         nodes = _descendants(g, set(o.impacts)) | new_nodes
     else:
-        raise ScopeViolation(f"[{o.kind}] 不是分叉操作")
+        raise ScopeViolation(f"[{o.kind}] is not a fork operation")
     edges = {e.id for e in g.edges if e.from_ in nodes} | new_edges
     conditions = {c.id for c in g.conditions if c.claim_id in nodes}
     return Scope(frozenset(nodes), frozenset(edges), frozenset(conditions), frozenset(new_nodes), frozenset(new_edges),
@@ -102,14 +102,14 @@ def assessment_issues(graph: Graph, scope: Scope, claim_ids) -> list[str]:
         if cid in scope.nodes:
             continue
         if cid in edges:
-            what = f"{cid} 是边，不是 claim"
+            what = f"{cid} is an edge, not a claim"
         elif cid in conds:
-            what = f"{cid} 是条件，不是 claim"
+            what = f"{cid} is a condition, not a claim"
         elif cid in nodes:
-            what = f"{cid} 是写范围外的 claim（范围外一律由代码写 unaffected）"
+            what = f"{cid} is a claim outside the write scope (code writes unaffected for everything outside it)"
         else:
-            what = f"{cid} 不是图里的 claim"
-        out.append(f"[{cid}] {what}；assessment 只写这些 claim：{allowed}")
+            what = f"{cid} is not a claim in the graph"
+        out.append(f"[{cid}] {what}; assessment takes only these claims: {allowed}")
     return out
 
 
@@ -128,32 +128,32 @@ def apply_patch(graph: Graph | dict, patch: Patch | dict, scope, *, op: Op | dic
     data = base.dump()  # 深拷贝：基线对象不动
 
     if p.base_version != base.version:
-        raise ScopeViolation(f"[{p.base_version}] 补丁基于的版本不是当前图 {base.version}")
+        raise ScopeViolation(f"[{p.base_version}] the patch is based on a different version than the current graph {base.version}")
 
     def update(items: list[dict], updates, allowed_ids, allowed_fields, kind):
         by_id = {x["id"]: x for x in items}
         for u in updates:
             if u.id not in allowed_ids:
-                raise ScopeViolation(f"[{u.id}] {kind} 不在写范围内")
+                raise ScopeViolation(f"[{u.id}] {kind} is outside the write scope")
             if u.id not in by_id:
-                raise ScopeViolation(f"[{u.id}] {kind} 不存在")
+                raise ScopeViolation(f"[{u.id}] {kind} does not exist")
             if bad := set(u.fields) - allowed_fields:
-                raise ScopeViolation(f"[{u.id}] 不允许改 {kind} 的字段 {sorted(bad)}")
+                raise ScopeViolation(f"[{u.id}] these {kind} fields cannot be changed: {sorted(bad)}")
             by_id[u.id].update(u.fields)
 
     for n in p.node_adds:
         if n.id not in s.new_nodes:
-            raise ScopeViolation(f"[{n.id}] 新节点未经 Stage 1 声明")
+            raise ScopeViolation(f"[{n.id}] new node was not declared in Stage 1")
         data["nodes"].append(n.dump())
     for e in p.edge_adds:
         if e.id not in s.new_edges:
-            raise ScopeViolation(f"[{e.id}] 新边未经 Stage 1 声明")
+            raise ScopeViolation(f"[{e.id}] new edge was not declared in Stage 1")
         if s.impacts and (e.from_ not in s.new_nodes or e.to not in s.impacts | s.new_nodes):
-            raise ScopeViolation(f"[{e.id}] 新边必须从新节点连到 impacts：{e.from_} → {e.to}")
+            raise ScopeViolation(f"[{e.id}] a new edge must go from a new node to the impacts: {e.from_} → {e.to}")
         data["edges"].append(e.dump())
-    update(data["nodes"], p.node_updates, s.nodes, NODE_FIELDS, "节点")
-    update(data["edges"], p.edge_updates, s.edges, EDGE_FIELDS, "边")
-    update(data["conditions"], p.condition_updates, s.conditions, CONDITION_FIELDS, "条件")
+    update(data["nodes"], p.node_updates, s.nodes, NODE_FIELDS, "node")
+    update(data["edges"], p.edge_updates, s.edges, EDGE_FIELDS, "edge")
+    update(data["conditions"], p.condition_updates, s.conditions, CONDITION_FIELDS, "condition")
     if errs := assessment_issues(base, s, list(p.assessment) + list(p.assessment_reason)):
         raise ScopeViolation("; ".join(errs))
 

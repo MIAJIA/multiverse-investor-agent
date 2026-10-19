@@ -66,7 +66,7 @@ def test_p0_stance_cannot_be_flipped(ev):
     out["edges"][0]["evidence"][0]["stance"] = "supports"  # hz-3 在资料包里是 contradicts
     out["nodes"][1]["evidence_status"] = "supported"
     res = ep.inspect("x", reasoner=Scripted([out] * 3), evidence=ev, config=CFG)
-    assert not res["ok"] and any("立场不能翻转" in e for e in res["errors"])
+    assert not res["ok"] and any("a stance cannot be flipped" in e for e in res["errors"])
 
 
 def test_p0_fork_without_pack_still_works(ev):

@@ -36,32 +36,32 @@ def validate_condition(condition: Condition | dict) -> list[Issue]:
     out: list[Issue] = []
     if c.kind == "numeric":
         if c.threshold is None and not (c.threshold_note or "").strip():
-            out.append(Issue(c.id, "数值条件的 threshold 为 null 时必须写 threshold_note（为什么不知道、由谁确认）"))
+            out.append(Issue(c.id, "a numeric condition with threshold=null must have a threshold_note (why it is unknown and who confirms it)"))
         if c.threshold is not None and c.comparator is None:
-            out.append(Issue(c.id, "数值条件有 threshold 时必须给 comparator"))
+            out.append(Issue(c.id, "a numeric condition with a threshold must have a comparator"))
         if not c.series and c.verification_status == "verifiable":
-            out.append(Issue(c.id, "标 verifiable 的数值条件必须指向一个 series；不知道序列就标 unverified 并在 threshold_note 说明"))
+            out.append(Issue(c.id, "a verifiable numeric condition must name a series; if you do not know one, mark it unverified and explain in threshold_note"))
         if not c.series and not (c.threshold_note or "").strip():
-            out.append(Issue(c.id, "数值条件没有 series 时必须在 threshold_note 写明缺什么数据"))
+            out.append(Issue(c.id, "a numeric condition without a series must say in threshold_note what data is missing"))
     elif not (c.source or c.series):
-        out.append(Issue(c.id, f"{c.kind} 条件必须写明判定来源 source"))
+        out.append(Issue(c.id, f"a {c.kind} condition must name the source that decides it"))
     if not _is_date(c.deadline):
-        out.append(Issue(c.id, f"deadline 必须是绝对日期 YYYY-MM-DD：{c.deadline!r}"))
+        out.append(Issue(c.id, f"deadline must be an absolute date YYYY-MM-DD: {c.deadline!r}"))
     if c.anchor.startswith("scenario:"):
         pass  # 情景起点由用户确认，不做日期比较
     elif not _is_date(c.anchor):
-        out.append(Issue(c.id, f"anchor 必须是绝对日期或 scenario:<事件>：{c.anchor!r}"))
+        out.append(Issue(c.id, f"anchor must be an absolute date or scenario:<event>: {c.anchor!r}"))
     elif _is_date(c.deadline) and c.deadline < c.anchor:
-        out.append(Issue(c.id, f"deadline {c.deadline} 早于 anchor {c.anchor}"))
+        out.append(Issue(c.id, f"deadline {c.deadline} is before anchor {c.anchor}"))
     w = c.observation_window
     if w.start.startswith("scenario:") or w.end.startswith("scenario:"):
         pass
     elif w.end < w.start:
-        out.append(Issue(c.id, f"observation_window 结束 {w.end} 早于开始 {w.start}"))
+        out.append(Issue(c.id, f"observation_window ends {w.end}, before it starts {w.start}"))
     if _is_date(c.deadline) and _is_date(w.end) and w.end > c.deadline:
-        out.append(Issue(c.id, f"observation_window 结束 {w.end} 晚于 deadline {c.deadline}"))
+        out.append(Issue(c.id, f"observation_window ends {w.end}, after the deadline {c.deadline}"))
     if not c.rule.strip():
-        out.append(Issue(c.id, "rule 不能为空：必须写明怎么判定 met / not_met"))
+        out.append(Issue(c.id, "rule cannot be empty: it must say how met / not_met is decided"))
     return out
 
 
@@ -98,37 +98,37 @@ def validate_graph(graph: Graph | dict) -> list[Issue]:
     ids = [n.id for n in g.nodes]
     node_ids = set(ids)
     for dup in {i for i in ids if ids.count(i) > 1}:
-        out.append(Issue(dup, "节点 id 重复"))
+        out.append(Issue(dup, "duplicate node id"))
     edge_ids = [e.id for e in g.edges]
     for dup in {i for i in edge_ids if edge_ids.count(i) > 1}:
-        out.append(Issue(dup, "边 id 重复"))
+        out.append(Issue(dup, "duplicate edge id"))
     cond_ids = [c.id for c in g.conditions]
     for dup in {i for i in cond_ids if cond_ids.count(i) > 1}:
-        out.append(Issue(dup, "条件 id 重复"))
+        out.append(Issue(dup, "duplicate condition id"))
 
     for e in g.edges:
         for end in (e.from_, e.to):
             if end not in node_ids:
-                out.append(Issue(e.id, f"边指向不存在的节点 {end}"))
+                out.append(Issue(e.id, f"edge points to a node that does not exist: {end}"))
         if not e.evidence and not e.model_only:
-            out.append(Issue(e.id, "每条边要么引用证据，要么显式标 model_only"))
+            out.append(Issue(e.id, "every edge must either cite evidence or be marked model_only"))
     if out:
         return out  # 引用都不完整时，后面的图论检查没有意义
 
     if cyc := _cycle(g):
-        out.append(Issue(cyc[0], "图里有环：" + " → ".join(cyc)))
+        out.append(Issue(cyc[0], "the graph has a cycle: " + " → ".join(cyc)))
         return out
 
     terminals = {n.id for n in g.nodes if n.role == "terminal"}
     if not terminals:
-        out.append(Issue("graph", "至少要有一个 terminal 节点（落到具体标的）"))
+        out.append(Issue("graph", "there must be at least one terminal node (landing on an instrument)"))
     for n in g.nodes:
         if n.role == "terminal" and not n.instruments:
-            out.append(Issue(n.id, "terminal 节点必须写 instruments"))
+            out.append(Issue(n.id, "a terminal node must list instruments"))
         if n.role != "terminal" and n.instruments:
-            out.append(Issue(n.id, "只有 terminal 节点写 instruments"))
+            out.append(Issue(n.id, "only terminal nodes list instruments"))
         if not n.original_statement.strip():
-            out.append(Issue(n.id, "original_statement 必须保留原话"))
+            out.append(Issue(n.id, "original_statement must keep the original wording"))
 
     # 每个节点都在通往某个 terminal 的路径上
     rev: dict[str, set[str]] = {n: set() for n in node_ids}
@@ -141,11 +141,11 @@ def validate_graph(graph: Graph | dict) -> list[Issue]:
                 reach.add(p)
                 todo.append(p)
     for n in sorted(node_ids - reach):
-        out.append(Issue(n, "节点不在任何通往 terminal 的路径上"))
+        out.append(Issue(n, "node is not on any path to a terminal"))
 
     for c in g.conditions:
         if c.claim_id not in node_ids:
-            out.append(Issue(c.id, f"条件挂在不存在的 claim {c.claim_id} 上"))
+            out.append(Issue(c.id, f"condition is attached to a claim that does not exist: {c.claim_id}"))
         out += validate_condition(c)
     return out
 
@@ -168,22 +168,22 @@ def validate_references(graph: Graph | dict, evidence_pack: EvidencePack | dict 
         inbound[e.to] = inbound.get(e.to, 0) + 1
         for ev in e.evidence:
             if ev.excerpt_id not in known:
-                where = f"资料包 {pack.pack_id}" if pack else "当前资料包（为空）"
-                out.append(Issue(ev.excerpt_id, f"边 {e.id} 引用的片段 {ev.excerpt_id} 不在{where}里"))
+                where = f"evidence pack {pack.pack_id}" if pack else "the current evidence pack (empty)"
+                out.append(Issue(ev.excerpt_id, f"edge {e.id} cites excerpt {ev.excerpt_id}, which is not in {where}"))
             elif known[ev.excerpt_id].source_id != ev.source_id:
-                out.append(Issue(ev.excerpt_id, f"边 {e.id} 的 source_id {ev.source_id} 与片段来源 {known[ev.excerpt_id].source_id} 不一致"))
+                out.append(Issue(ev.excerpt_id, f"edge {e.id}: source_id {ev.source_id} does not match the excerpt's source {known[ev.excerpt_id].source_id}"))
             elif known[ev.excerpt_id].stance != ev.stance:
-                out.append(Issue(ev.excerpt_id, f"边 {e.id} 把 {known[ev.excerpt_id].stance} 片段 {ev.excerpt_id} 引用成了 {ev.stance}：立场不能翻转"))
+                out.append(Issue(ev.excerpt_id, f"edge {e.id} cites the {known[ev.excerpt_id].stance} excerpt {ev.excerpt_id} as {ev.stance}: a stance cannot be flipped"))
             if ev.stance == "contradicts" and not ev.rebuttal and status.get(e.to) == "supported":
-                out.append(Issue(e.to, f"边 {e.id} 带未驳回的反方片段 {ev.excerpt_id}：要么写 rebuttal，要么把 {e.to} 标 contradicted"))
+                out.append(Issue(e.to, f"edge {e.id} carries the unrebutted contradicting excerpt {ev.excerpt_id}: write a rebuttal or mark {e.to} contradicted"))
         if e.model_only and any(ev.stance == "supports" for ev in e.evidence):
-            out.append(Issue(e.id, "model_only 的边不能带 supports 证据"))
+            out.append(Issue(e.id, "a model_only edge cannot carry supports evidence"))
         if not e.model_only and any(ev.stance == "supports" for ev in e.evidence):
             supported_in[e.to] = True
 
     for n in g.nodes:
         if n.evidence_status == "supported" and inbound.get(n.id) and not supported_in[n.id]:
-            out.append(Issue(n.id, "标 supported，但没有任何非 model_only 的入边带 supports 证据"))
+            out.append(Issue(n.id, "marked supported, but no non-model_only incoming edge carries supports evidence"))
     return out
 
 
@@ -193,7 +193,7 @@ def unanswered_contradictions(graph: Graph | dict, evidence_pack: EvidencePack |
         return []
     g, pack = parse_graph(graph), parse_pack(evidence_pack)
     cited = {ev.excerpt_id for e in g.edges for ev in e.evidence}
-    return [Issue(x.excerpt_id, "资料包里的反方片段没有被回应", blocking=False)
+    return [Issue(x.excerpt_id, "a contradicting excerpt in the evidence pack was not answered", blocking=False)
             for x in pack.excerpts if x.stance == "contradicts" and x.excerpt_id not in cited]
 
 

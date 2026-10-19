@@ -61,8 +61,8 @@ def _cfg(config, packs: list[str] | None = None) -> Config:
 
 def _pack_text(pack: EvidencePack | None) -> str:
     if pack is None or not pack.excerpts:
-        return "（本轮没有资料包：所有边都只能是 model_only，所有 claim 的 evidence_status 只能是 unknown。）"
-    note = "（注意：这是合成的占位资料包，只用于跑通流程。）\n" if pack.synthetic else ""
+        return "(No evidence pack this round: every edge must be model_only and every claim's evidence_status must be unknown.)"
+    note = "(Note: this is a synthetic placeholder pack, only for exercising the pipeline.)\n" if pack.synthetic else ""
     if any(x.excerpt_id.startswith(WEB_PREFIX) for x in pack.excerpts):  # only with web excerpts, so offline requests stay byte-identical
         note += WEB_DATA_NOTE + "\n"
     return note + "\n".join(json.dumps(x.dump(), ensure_ascii=False) for x in pack.excerpts)
@@ -172,7 +172,7 @@ def _graph_from(nodes: list[Claim], edges: list[Mechanism], conditions, version:
 def _root_issues(g: Graph) -> list[str]:
     """证据只挂在边上：没有入边的节点没有可审查的证据，不能标 supported。"""
     has_in = {e.to for e in g.edges}
-    return [f"[{n.id}] 没有入边的节点没有可引用的证据，evidence_status 只能是 unknown 或 contradicted"
+    return [f"[{n.id}] a node without incoming edges has no citable evidence; its evidence_status can only be unknown or contradicted"
             for n in g.nodes if n.id not in has_in and n.evidence_status == "supported"]
 
 
@@ -186,20 +186,20 @@ def _label_issues(nodes: list[Claim]) -> tuple[list[str], list[str]]:
     for n in nodes:
         label = (n.label or "").strip()
         if not label:
-            errs.append(f"[{n.id}] 每个节点都要写 label：10 个汉字或 4 个英文词以内概括 statement")
+            errs.append(f"[{n.id}] every node needs a label: a summary of the statement in at most 10 Chinese characters or 4 English words")
             continue
         cjk = len(re.findall(r"[一-鿿]", label))
         words = len(re.findall(r"[A-Za-z0-9][\w.+/-]*", re.sub(r"[一-鿿]", " ", label)))
         if (cjk + words > LABEL_MAX_CJK) if cjk else (words > LABEL_MAX_WORDS):
-            warns.append(f"[{n.id}] label「{label}」超过 10 个汉字或 4 个英文词，前端会显示不全")
+            warns.append(f"[{n.id}] label \"{label}\" is longer than 10 Chinese characters or 4 English words and will be truncated in the UI")
     return errs, warns
 
 
 def _anchor_warnings(g: Graph) -> list[str]:
     """全部条件都挂在 scenario: 起点上 → 用户确认起点前一条都判不了，提案只会停在 WAIT。"""
     if g.conditions and all(c.anchor.startswith("scenario:") for c in g.conditions):
-        return ["[conditions] 所有条件的 anchor 都是 scenario:…，用户确认起点之前一条都判不了，提案会一直停在 WAIT；"
-                "绝对时间窗口的 anchor 应写今天或资料里事件发生的日期"]
+        return ["[conditions] every condition is anchored on scenario:…, so none can be decided before the user confirms a start "
+                "date and the plan stays at WAIT; absolute windows should be anchored on today or the date the event happened"]
     return []
 
 
@@ -214,7 +214,7 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
         return research(lambda **kw: inspect(event, target, candidate_id=candidate_id, candidate=candidate,
                                               material=material, evidence=evidence, **kw), cfg, store, reasoner)
     if judgment_only:
-        user = f"材料：\n{material}\n\n因果断言：{event}" + (f" → {target}" if target else "")
+        user = f"Material:\n{material}\n\nCausal claim: {event}" + (f" → {target}" if target else "")
         r = run_stage("judge", system=prompts.JUDGE, user=user, output_model=JudgmentOutput, reasoner=reasoner,
                       max_retries=cfg.max_retries, store=store)
         j = r.value.judgment.dump() if r.ok else None
@@ -226,12 +226,12 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     op = Op(kind="inspect", target=target, value=event)
     focus, warnings = "", []
     if candidate:
-        focus = f"\n用户选中的方向（来自 Discover，id={candidate_id or candidate.get('id')}）：{json.dumps(candidate, ensure_ascii=False)}"
+        focus = f"\nDirection chosen by the user (from Discover, id={candidate_id or candidate.get('id')}): {json.dumps(candidate, ensure_ascii=False)}"
     elif candidate_id:
         warnings.append(f"只收到 candidate_id={candidate_id}，没有候选内容：请传 candidate=<Discover 返回的候选>")
-        focus = f"\n用户选中的方向 id：{candidate_id}（内容未提供）"
-    user = (f"今天：{cfg.today}\n事件（用户原话）：{event}\n目标标的：{target or '（未给出，从选中方向或资料里确定）'}{focus}\n\n"
-            f"资料包：\n{_pack_text(pack)}")
+        focus = f"\nId of the direction chosen by the user: {candidate_id} (content not provided)"
+    user = (f"Today: {cfg.today}\nEvent (the user's words): {event}\nTarget instrument: {target or '(not given; decide from the chosen direction or the material)'}{focus}\n\n"
+            f"Evidence pack:\n{_pack_text(pack)}")
     result = {"graph": None, "no_chain": None, "no_chain_reason": None, "proposals": [], "branches": [], "node_kinds": {}, "edge_kinds": {},
               "judgment": None,
               "observations": _excerpt_ids(pack), "ok": False, "errors": [], "warnings": warnings, "attempts": 0}
@@ -240,7 +240,7 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     def check_graph(out: InspectGraphOutput):
         if out.no_chain:
             ok = not out.nodes and not out.edges and bool(out.no_chain_reason)
-            return ([] if ok else ["[no_chain] no_chain=true 时 nodes/edges 留空，并写 no_chain_reason"]), []
+            return ([] if ok else ["[no_chain] when no_chain=true, leave nodes/edges empty and write no_chain_reason"]), []
         g = _graph_from(out.nodes, out.edges, [], version, op, cfg)
         errs, warns = _issues(validate_graph(g) + validate_references(g, pack) + unanswered_contradictions(g, pack))
         label_errs, label_warns = _label_issues(out.nodes)
@@ -260,7 +260,7 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     # Step 2: conditions and plan drafts (the graph is final; one plan per terminal)
     graph_json = json.dumps({"nodes": [n.dump() for n in graph_out.nodes], "edges": [e.dump() for e in graph_out.edges]},
                             ensure_ascii=False)
-    plan_user = f"{user}\n\n已通过校验的因果图（不能再改）：\n{graph_json}\n\n{prompts.INSPECT_PLAN_STEP}"
+    plan_user = f"{user}\n\nValidated causal graph (final, cannot change):\n{graph_json}\n\n{prompts.INSPECT_PLAN_STEP}"
 
     def check_plan(out: InspectPlanOutput):
         g = _graph_from(graph_out.nodes, graph_out.edges, out.conditions, version, op, cfg)
@@ -298,20 +298,20 @@ def discover(event: str, target: str | None = None, *, reasoner, evidence: Evide
     cfg = _cfg(config, packs)
     pack = evidence.combined(cfg.packs) if evidence else None
     known = set(_excerpt_ids(pack))
-    user = f"今天：{cfg.today}\n事件（用户原话）：{event}\n\n资料包：\n{_pack_text(pack)}"
+    user = f"Today: {cfg.today}\nEvent (the user's words): {event}\n\nEvidence pack:\n{_pack_text(pack)}"
 
     def check(out: DiscoverOutput):
         errs = []
         if len(out.candidates) > cfg.max_candidates:
-            errs.append(f"[candidates] 最多 {cfg.max_candidates} 个候选，现在 {len(out.candidates)} 个")
+            errs.append(f"[candidates] at most {cfg.max_candidates} candidates, got {len(out.candidates)}")
         if out.abstained != (len(out.candidates) == 0):
-            errs.append("[abstained] abstained=true 当且仅当 candidates 为空")
+            errs.append("[abstained] abstained=true if and only if candidates is empty")
         if out.abstained and not out.abstain_reason:
-            errs.append("[abstain_reason] 弃权必须写明原因")
+            errs.append("[abstain_reason] an abstention must give its reason")
         for c in out.candidates:
-            errs += [f"[{x}] 候选 {c.id} 引用了不在资料包里的片段" for x in c.excerpt_ids if x not in known]
+            errs += [f"[{x}] candidate {c.id} cites an excerpt that is not in the evidence pack" for x in c.excerpt_ids if x not in known]
             if c.label == "grounded" and not c.excerpt_ids:
-                errs.append(f"[{c.id}] grounded 候选必须列出支持它的片段")
+                errs.append(f"[{c.id}] a grounded candidate must list the excerpts that support it")
         return errs, []
 
     r = run_stage("discover", system=prompts.DISCOVER, user=user, output_model=DiscoverOutput, reasoner=reasoner,
@@ -348,9 +348,9 @@ def _new_edge_reference_issues(edges: list[Mechanism], pack: EvidencePack | None
         for ev in e.evidence:
             x = known.get(ev.excerpt_id)
             if x is None or x.source_id != ev.source_id or x.stance != ev.stance:
-                out.append(f"[{ev.excerpt_id}] Stage 1 新边 {e.id} 的引用不在当前资料包里或与片段不一致")
+                out.append(f"[{ev.excerpt_id}] Stage 1 edge {e.id} cites something that is not in the current pack or does not match the excerpt")
         if e.model_only and any(ev.stance == "supports" for ev in e.evidence):
-            out.append(f"[{e.id}] model_only 的边不能带 supports 证据")
+            out.append(f"[{e.id}] a model_only edge cannot carry supports evidence")
     return out
 
 
@@ -392,7 +392,7 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
               "warnings": [], "attempts": 0}
     parent = _parent_scenario(base, scenario, store)
     if parent and parent.version != base.version:
-        result["errors"] = [f"[{parent.version}] 传入的情景属于版本 {parent.version}，不是这次分叉的基线 {base.version}"]
+        result["errors"] = [f"[{parent.version}] the scenario passed in belongs to version {parent.version}, not to this fork's base {base.version}"]
         return _finish(store, result, name="fork")
     try:
         scope = compute_write_scope(base, o)
@@ -412,19 +412,19 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
         version = next_version(version)
     new = {"new_nodes": [n.dump() for n in o.new_nodes], "new_edges": [e.dump() for e in o.new_edges]} \
         if o.kind == "add_shock" else {}
-    user = (f"今天：{cfg.today}\n操作：{json.dumps(o.dump(), ensure_ascii=False)}\n"
-            f"写范围（只能改这些）：{json.dumps(scope.to_dict(), ensure_ascii=False)}\n"
-            f"需要给出 assessment 的 claim id（只写这些节点 id，一个不少；边和条件不写 assessment）：{json.dumps(sorted(scope.nodes), ensure_ascii=False)}\n"
+    user = (f"Today: {cfg.today}\nOperation: {json.dumps(o.dump(), ensure_ascii=False)}\n"
+            f"Write scope (you may change only these): {json.dumps(scope.to_dict(), ensure_ascii=False)}\n"
+            f"Claim ids that need an assessment (node ids only, every one of them; edges and conditions get no assessment): {json.dumps(sorted(scope.nodes), ensure_ascii=False)}\n"
             f"{json.dumps(new, ensure_ascii=False) if new else ''}\n"
-            + (f"基线版本本身是一个情景，这次分叉叠加在它之上。已叠加的操作：{json.dumps([x.dump() for x in parent.ops], ensure_ascii=False)}\n"
-               f"叠加后当前的 assessment（范围外的 claim 由系统原样保留，不会被这次分叉重置）：{json.dumps(parent.assessment, ensure_ascii=False)}\n"
+            + (f"The base version is itself a scenario; this fork stacks on top of it. Operations already stacked: {json.dumps([x.dump() for x in parent.ops], ensure_ascii=False)}\n"
+               f"Current stacked assessment (claims outside the scope are kept as they are by the system and are not reset by this fork): {json.dumps(parent.assessment, ensure_ascii=False)}\n"
                if parent else "")
-            + f"基线图：\n{json.dumps(base.dump(), ensure_ascii=False)}\n\n资料包：\n{_pack_text(pk)}")
+            + f"Base graph:\n{json.dumps(base.dump(), ensure_ascii=False)}\n\nEvidence pack:\n{_pack_text(pk)}")
     holder: dict = {}
 
     def check(out: ForkOutput):
         claimed = [a.claim_id for a in out.assessment]
-        missing = [f"[{m}] 写范围内的 claim 都要给出 assessment" for m in sorted(set(scope.nodes) - set(claimed))]
+        missing = [f"[{m}] every claim in the write scope needs an assessment" for m in sorted(set(scope.nodes) - set(claimed))]
         if bad := assessment_issues(base, scope, claimed):
             return bad + missing, []
         try:
@@ -447,8 +447,8 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
     downgraded = sorted(k for k, v in (parent.assessment if parent else {}).items()
                         if v == "challenged" and scenario.assessment.get(k) != "challenged")
     result["warnings"] = r.warnings + [
-        f"[{k}] 上一层情景标了 challenged，这一层的 assessment 改成了 {scenario.assessment.get(k)}；"
-        "要撤销上一层情景，应回到更早的版本" for k in downgraded]
+        f"[{k}] the previous scenario layer marked it challenged, and this layer changed it to {scenario.assessment.get(k)}; "
+        "to undo a scenario layer, go back to an earlier version" for k in downgraded]
     result.update(graph=new_g.dump(), diff=graph_diff(base, new_g), scenario=scenario.dump(),
                   **_views(new_g, scenario, pk))
     if proposals:
@@ -522,22 +522,22 @@ def sign(graph, proposals: list[dict], *, terminal_id: str | None, clarified_sta
         errors.append(f"[{terminal_id}] this version has no plan on {terminal_id}; plans exist for "
                       f"{[p.terminal_id for p in olds]}")
     node_ids = {n.id for n in base.nodes}
-    errors += [f"[{c}] 确认的 claim 不在图里" for c in confirmed_claim_ids if c not in node_ids]
+    errors += [f"[{c}] confirmed claim is not in the graph" for c in confirmed_claim_ids if c not in node_ids]
     data = base.dump()
     by_id = {c["id"]: c for c in data["conditions"]}
     for cid, fields in (condition_overrides or {}).items():
         if cid not in by_id:
-            errors.append(f"[{cid}] 要修改的条件不在图里")
+            errors.append(f"[{cid}] the condition to change is not in the graph")
             continue
         if bad := set(fields) - SIGN_CONDITION_FIELDS:
-            errors.append(f"[{cid}] 批准时只能改 {sorted(SIGN_CONDITION_FIELDS)}，不能改 {sorted(bad)}")
+            errors.append(f"[{cid}] approval can change only {sorted(SIGN_CONDITION_FIELDS)}, not {sorted(bad)}")
             continue
         c = by_id[cid]
         c.update(fields)
         if "deadline" in fields and c["observation_window"]["end"] > fields["deadline"]:
             c["observation_window"]["end"] = fields["deadline"]
         if fields.get("threshold") is not None and c["comparator"] is None:
-            errors.append(f"[{cid}] 填了阈值就要给 comparator")
+            errors.append(f"[{cid}] a threshold needs a comparator")
     version = next_version(base.version)
     while store and (store.root / "snapshots" / f"{version}.json").exists():
         version = next_version(version)

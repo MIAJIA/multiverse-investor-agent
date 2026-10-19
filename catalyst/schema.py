@@ -64,7 +64,7 @@ class Claim(Strict):
     id: str
     role: Role
     statement: str
-    label: Optional[str] = Field(default=None, description="节点短标题：10 个汉字或 4 个英文词以内，概括 statement")
+    label: Optional[str] = Field(default=None, description="Short title for the node: at most 10 Chinese characters or 4 English words, summarising the statement")
     original_statement: str
     evidence_status: EvidenceStatus
     time_bucket: Optional[str] = None
@@ -76,8 +76,8 @@ class EvidenceRef(Strict):
     source_id: str
     excerpt_id: str
     stance: Stance
-    supports: str = Field(description="这条证据支持、反驳或交代背景的是 claim 的哪一部分")
-    rebuttal: Optional[str] = Field(default=None, description="只用于 stance=contradicts：为什么不构成反驳；为空表示接受反驳。neutral 不需要")
+    supports: str = Field(description="Which part of the claim this evidence supports, contradicts, or gives background on")
+    rebuttal: Optional[str] = Field(default=None, description="Only for stance=contradicts: why it does not refute the claim; empty means the refutation is accepted. Not needed for neutral")
 
 
 class Mechanism(Strict):
@@ -112,7 +112,7 @@ class Condition(Strict):
     comparator: Optional[Comparator] = None
     threshold: Optional[float] = None
     threshold_note: Optional[str] = None
-    anchor: str = Field(description="绝对日期 YYYY-MM-DD，或 scenario:<事件> 表示由用户确认的情景起点")
+    anchor: str = Field(description="Absolute date YYYY-MM-DD, or scenario:<event> for a scenario start date the user must confirm")
     deadline: str
     observation_window: Window
     rule: str
@@ -223,7 +223,7 @@ class ProposalMeta(Strict):
 
 class CriticItem(Strict):
     claim_id: str
-    challenge: str = Field(description="对这个 claim 提了什么质疑")
+    challenge: str = Field(description="The challenge raised against this claim")
 
 
 CRITIC_DISABLED_REASON = "未启用：不在本期范围"

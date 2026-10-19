@@ -36,7 +36,7 @@ def _extract_json(text: str) -> dict:
         text = m.group(1)
     start, end = text.find("{"), text.rfind("}")
     if start < 0 or end < 0:
-        raise ValueError("输出里没有 JSON 对象")
+        raise ValueError("no JSON object in the output")
     return json.loads(text[start:end + 1])
 
 
@@ -78,7 +78,7 @@ def run_stage(
         if not errors:
             return StageResult(stage, True, value, attempt, [], warnings, out.meta)
         last_errors = errors
-        prompt = (f"{user}\n\n---\n你上一次的输出没有通过校验。上一次输出：\n{out.text}\n\n"
-                  "校验错误（每条前面的方括号是出错对象的 id）：\n" + "\n".join(f"- {e}" for e in errors)
-                  + "\n\n只修正这些问题，其余内容保持不变，重新输出完整 JSON。")
+        prompt = (f"{user}\n\n---\nYour previous output failed validation. Previous output:\n{out.text}\n\n"
+                  "Validation errors (the bracket before each one is the id of the object at fault):\n" + "\n".join(f"- {e}" for e in errors)
+                  + "\n\nFix only these problems, keep everything else unchanged, and output the complete JSON again.")
     return StageResult(stage, False, None, max_retries + 1, last_errors)

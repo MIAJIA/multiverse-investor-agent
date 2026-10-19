@@ -113,7 +113,7 @@ class AnthropicReasoner:
             reason = _error_message(e)
             if not any(k in reason.lower() for k in SCHEMA_ERROR_MARKERS):
                 raise
-            msg = self._stream(system, user + "\n\n只输出一个 JSON 对象，符合下面的 JSON Schema：\n"
+            msg = self._stream(system, user + "\n\nOutput a single JSON object that matches this JSON Schema:\n"
                                + json.dumps(schema, ensure_ascii=False), None)
             mode, schema_fallback_reason = "prompt_json", reason
         if msg.stop_reason == "refusal":
@@ -172,7 +172,7 @@ class ReplayReasoner:
         h = request_hash(stage, system, user, schema)
         queue = self._by_hash.get(h)
         if not queue:
-            raise CassetteMiss(f"{stage}: 录音里没有这个请求（{h}）——prompt、资料包或 schema 变了，需要重新录制")
+            raise CassetteMiss(f"{stage}: request {h} is not in the recording; the prompt, evidence pack or schema changed, so re-record")
         e = queue.pop(0)
         return Completion(e["text"], {**e.get("meta", {}), "replayed": True})
 

@@ -107,8 +107,8 @@ def test_no_chain_stops_after_graph_stage(ev):
 
 def test_rule5_anchors_absolute_windows_on_dates():
     assert prompts.PROMPT_VERSION != "p2"
-    assert "anchor 和 observation_window.start 写今天的日期" in prompts.BASE
-    assert "它不是起点：不要把它写成 scenario anchor" in prompts.BASE
+    assert "anchor and observation_window.start are today's date" in prompts.BASE
+    assert "it is not a starting point: do not turn it into a scenario anchor" in prompts.BASE
 
 
 def test_all_scenario_anchors_warn_but_do_not_block(ev):
@@ -116,10 +116,10 @@ def test_all_scenario_anchors_warn_but_do_not_block(ev):
     c = out["conditions"][0]
     c.update(anchor="scenario:开放", observation_window={"start": "scenario:开放", "end": "2026-11-30"})
     res = ep.inspect("x", reasoner=Scripted([out]), evidence=ev, config=CFG)
-    assert res["ok"] and any("anchor 都是 scenario" in w for w in res["warnings"])
+    assert res["ok"] and any("every condition is anchored on scenario" in w for w in res["warnings"])
 
     res = ep.inspect("x", reasoner=Scripted([_good()]), evidence=ev, config=CFG)
-    assert not any("anchor 都是 scenario" in w for w in res["warnings"])
+    assert not any("every condition is anchored on scenario" in w for w in res["warnings"])
 
 
 # ---- 3. 分叉的 assessment 只写 claim ----------------------------------------
@@ -140,21 +140,21 @@ def test_fork_prompt_lists_claims_and_errors_name_edges_and_conditions(ev):
     r = Scripted([bad, good])
     res = ep.fork(base["graph"], OP, reasoner=r, evidence=ev, config=CFG)
     assert res["ok"] and res["attempts"] == 2
-    assert '需要给出 assessment 的 claim id' in r.prompts[0] and '["h.brent", "h.transits"]' in r.prompts[0]
+    assert 'Claim ids that need an assessment' in r.prompts[0] and '["h.brent", "h.transits"]' in r.prompts[0]
     retry = r.prompts[1]  # 两条错误一次给全，并说清楚该写哪些
-    assert "h.e2 是边，不是 claim；assessment 只写这些 claim：['h.brent', 'h.transits']" in retry
-    assert "cond.transits 是条件，不是 claim" in retry
+    assert "h.e2 is an edge, not a claim; assessment takes only these claims: ['h.brent', 'h.transits']" in retry
+    assert "cond.transits is a condition, not a claim" in retry
 
 
 def test_illegal_assessment_entries_are_rejected_not_dropped(ev):
     base = ep.inspect("x", reasoner=Scripted([_good()]), evidence=ev, config=CFG)
     bad = _fork_out([("h.transits", "unresolved"), ("h.brent", "challenged"), ("h.e2", "challenged")])
     res = ep.fork(base["graph"], OP, reasoner=Scripted([bad] * 3), evidence=ev, config=CFG)
-    assert not res["ok"] and res["graph"] is None and any("h.e2 是边" in e for e in res["errors"])
+    assert not res["ok"] and res["graph"] is None and any("h.e2 is an edge" in e for e in res["errors"])
 
     out_of_scope = _fork_out([("h.transits", "unresolved"), ("h.brent", "challenged"), ("h.open", "unaffected")])
     res = ep.fork(base["graph"], OP, reasoner=Scripted([out_of_scope] * 3), evidence=ev, config=CFG)
-    assert not res["ok"] and any("h.open 是写范围外的 claim" in e for e in res["errors"])
+    assert not res["ok"] and any("h.open is a claim outside the write scope" in e for e in res["errors"])
 
 
 def test_apply_patch_reports_every_bad_assessment_entry(ev):
@@ -163,20 +163,20 @@ def test_apply_patch_reports_every_bad_assessment_entry(ev):
     patch = Patch(base_version=g.version, assessment={"h.brent": "challenged", "h.e2": "challenged", "nope": "unresolved"})
     with pytest.raises(ScopeViolation) as e:
         apply_patch(g, patch, scope)
-    assert "h.e2 是边" in str(e.value) and "nope 不是图里的 claim" in str(e.value)
+    assert "h.e2 is an edge" in str(e.value) and "nope is not a claim in the graph" in str(e.value)
 
 
 def test_fork_prompt_says_inputs_are_not_challenged():
-    assert "assessment 只写 claim（节点）id" in prompts.FORK
-    assert "情景输入，不是被情景挑战的对象" in prompts.FORK
+    assert "assessment takes claim (node) ids only" in prompts.FORK
+    assert "inputs of the scenario, not things the scenario challenges" in prompts.FORK
 
 
 # ---- 4. Discover 的弃权边界 -------------------------------------------------
 
 def test_discover_prompt_separates_hypothesis_from_abstain():
     d = prompts.DISCOVER
-    assert "只有找不到任何一条合理机制" in d
-    for not_a_reason in ("资料包里没有支持片段：标 hypothesis", "不是 Discover 弃权的理由", "需要用户确认"):
+    assert "only when no plausible mechanism connects the event" in d
+    for not_a_reason in ("The pack has no supporting excerpt: label it hypothesis", "not a reason to abstain in Discover", "needs the user's confirmation"):
         assert not_a_reason in d
 
 
@@ -206,7 +206,7 @@ def test_inspect_requires_label_and_warns_when_too_long(ev):
     missing["nodes"][0]["label"] = None
     r = Scripted([missing, _good()])
     res = ep.inspect("x", reasoner=r, evidence=ev, config=CFG)
-    assert res["ok"] and r.stages[:2] == ["inspect", "inspect"] and "[h.open] 每个节点都要写 label" in r.prompts[1]
+    assert res["ok"] and r.stages[:2] == ["inspect", "inspect"] and "[h.open] every node needs a label" in r.prompts[1]
     assert res["graph"]["nodes"][0]["label"] == "宣布重新开放"
 
     long = _good()

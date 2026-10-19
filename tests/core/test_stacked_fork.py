@@ -91,7 +91,7 @@ def test_stacked_prompt_shows_the_inherited_assessment(ev):
     v2 = ep.fork(v1["graph"], LAYER1, reasoner=Scripted([P1]), evidence=ev, config=CFG)
     r = Scripted([P2])
     ep.fork(v2["graph"], LAYER2, reasoner=r, evidence=ev, config=CFG, scenario=v2["scenario"])
-    assert "叠加" in r.prompts[0] and '"h.transits": "challenged"' in r.prompts[0]
+    assert "stacks on top of it" in r.prompts[0] and '"h.transits": "challenged"' in r.prompts[0]
 
 
 def test_in_scope_downgrade_uses_the_model_value_but_warns(ev):
@@ -100,7 +100,7 @@ def test_in_scope_downgrade_uses_the_model_value_but_warns(ev):
     again = _patch(("h.transits", "unaffected"), ("h.brent", "unresolved"))  # 同一个范围，模型明确改了 h.transits
     v3 = ep.fork(v2["graph"], LAYER1, reasoner=Scripted([again]), evidence=ev, config=CFG, scenario=v2["scenario"])
     assert v3["ok"] and v3["scenario"]["assessment"]["h.transits"] == "unaffected"
-    assert any("[h.transits]" in w and "回到更早的版本" in w for w in v3["warnings"])
+    assert any("[h.transits]" in w and "go back to an earlier version" in w for w in v3["warnings"])
 
 
 def test_scenario_of_another_version_is_rejected(ev):
