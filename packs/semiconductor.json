@@ -137,7 +137,7 @@
       "sc-039": "Q4 FY2026 net revenue $1,006.3 million (same release).",
       "sc-040": "The same release identifies NVIDIA (NASDAQ: NVDA).",
       "sc-043": "OpenLight received its first volume production orders; the target is pluggable / LPO, not CPO.",
-      "sc-044": "Compliance date May 15, 2025 (same DATES section).",
+      "sc-044": "Compliance date May 15, 2025 (same DATES section). The govinfo text renders the exponent as 10\\26\\ and quotes as `...'; written here as 10^26 and '...'.",
       "sc-046": "'Those steps' = publishing a regulation to formalize the rescission and issuing a replacement rule.",
       "sc-047": "The reprint's dateline reads (March 14); the pack keeps the 2026-03-13 date recorded earlier.",
       "sc-052": "A demonstration, not an order."

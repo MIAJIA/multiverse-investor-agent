@@ -9,7 +9,7 @@ import pytest
 from catalyst.evidence import DEFAULT_PACKS_DIR, EvidenceProvider, _tokens
 from catalyst.schema import parse_pack
 
-PREFIX = {"semiconductor": "sc", "hormuz": "hz"}
+PREFIX = {"semiconductor": "sc", "hormuz": "hz", "opec2022": "op"}
 TIERS = ("T1", "T2", "T3")
 
 
@@ -128,3 +128,17 @@ def test_search_on_registered_pack(tmp_path):
         {"source_id": "a", "excerpt_id": "t-2", "source": "x", "date": "2026-01-01", "stance": "supports", "text": "代工产能利用率"},
     ]})
     assert [x["excerpt_id"] for x in p.search("激光", ["t"])] == ["t-1"]
+
+
+def test_opec2022_decision_time_split():
+    """K3 回测：决策时点（2022-10-05）前至少 4 段且含反方；之后至少 1 段事后产量数据。"""
+    ex = parse_pack(_raw("opec2022")).excerpts
+    before = [x for x in ex if x.date <= "2022-10-05"]
+    after = [x for x in ex if x.date > "2022-10-05"]
+    assert len(before) >= 4 and any(x.stance == "contradicts" for x in before)
+    assert any(x.excerpt_id == "op-010" for x in after)
+
+
+def test_search_opec2022(provider):
+    top = [x["excerpt_id"] for x in provider.search("effective cut headline paper physical", ["opec2022"], k=3)]
+    assert "op-007" in top
