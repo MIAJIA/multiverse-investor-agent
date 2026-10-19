@@ -165,33 +165,8 @@ export const T = {
   // ---- 方案 B：B2 批准计划 ----
   approve: {
     noPlans: '这个版本没有计划。',
-    understoodLead: '我们把你的想法理解为',
-    quoted: (s: string) => `「${s}」`,
-    yes: '✓ 对',
-    edit: '改一下',
-    original: (s: string) => `原话：${s}`,
-    listAria: '结论',
-    side: (side: 'long' | 'short') => (side === 'long' ? '看多' : '看空'),
-    youNeedToBelieve: (items: string[], total: number) =>
-      `你需要相信：${total === 0 ? '与其他结论共用全部前提' : items.join('、') + (total > items.length ? ` 等 ${total} 个` : '')}`,
-    approved: '✓ 已批准',
     approvalReset: '前提已改动，请重新批准',
     rivalChanged: '另一份计划受了影响，值得再看一眼',
-    noneIsADecision: '一份都不批准也是一个决定。',
-    premisesHint: '你需要相信的前提（可选勾选，不勾也能批准）',
-    notePlaceholder: '备注（可选）',
-    approvedThis: '✓ 已批准这份计划',
-    revoke: '撤销批准',
-    approveThis: '批准这份计划',
-    confirmUnderstoodFirst: '先确认上面那句理解',
-    missingThresholds: (n: number) => `还有 ${n} 个阈值需要你确认（不确认也能批准，进场判定会保持「先别动」）`,
-    approvedInVersion: (s: string) => `本版本已批准：${s}`,
-    sep: ' · ',
-    noneApproved: '本版本没有批准任何计划（= 不交易）',
-    notAnOrder: '批准的是一份计划，不是下单。',
-    replaceQuestion: (s: string) => `批准这份会撤销对「${s}」的批准。同一个版本只能批准一份。`,
-    cancel: '取消',
-    replaceConfirm: '批准并撤销另一份',
   },
 
   // ---- 方案 B：视觉预览页 ----
@@ -304,16 +279,12 @@ export const T = {
       B: { name: '侧边表单', desc: '右侧固定表单，明确选「从哪个版本出发」，可以起名' } },
   },
 
-  // ---- 方案 B：B2 精简版（灵动岛 / Robinhood / OpenEvidence 方向）----
+  // ---- 方案 B：B2 批准计划（答案卡；胶囊来自灵动岛，大字来自 Robinhood，引用来自 OpenEvidence）----
   lite: {
     yourIdea: '你的想法',
     confirmIdea: '对，就是这个意思',
     editIdea: '改一下',
     done: '好',
-    headlineNone: (n: number) => `${n} 个结论，还没批准`,
-    headlineApproved: (s: string) => `已批准：${s}`,
-    subNone: '挑一份看看。一份都不批也可以。',
-    subApproved: '同一版本只能批准一份。',
     believe: '你需要相信',
     sharedPremises: '和其他结论共用全部前提',
     watch: '盯这些信号',
@@ -339,14 +310,8 @@ export const T = {
     islandNeedIdea: '先确认上面「你的想法」',
     islandMissing: (n: number) => `还有 ${n} 个阈值没设，进场判定会保持「先别动」`,
     islandNotOrder: '批准的是计划，不是下单',
-    variant: 'B2 设计',
-    variantA: 'A 列表展开',
-    variantB: 'B 答案卡',
-    variantOld: '原版',
   },
 
-  // ---- B2 精简版：两种布局的少量文字 ----
-  liteList: { direction: (instrument: string, side: 'long' | 'short') => `${instrument} · ${side === 'long' ? '看多' : '看空'}` },
   liteCard: {
     headline: (side: 'long' | 'short', instrument: string) => `${side === 'long' ? '看多' : '看空'} ${instrument}`,
     horizon: (days: number | null) => (days ? `${days} 天` : ''),

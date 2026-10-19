@@ -1,8 +1,22 @@
-// B2 各个版本共用的属性和只读推导：按终点顺序排的计划、已批准的那份、当前选中、分支、前提。
+// B2（答案卡）的属性、草稿类型和只读推导：按终点顺序排的计划、已批准的那份、当前选中、分支、前提。
 import { nodeLabel } from '../../node/labels';
 import { toFlow } from '../../toFlow';
-import type { Claim, PlanBBundle, TradeProposal } from '../../types';
-import type { PlanDraft, Understood } from '../ApprovePlans';
+import type { Claim, ConditionOverride, PlanBBundle, TradeProposal } from '../../types';
+
+/** 一份计划还没提交的输入：改过的阈值 / 截止、勾选的前提、备注。 */
+export interface PlanDraft {
+  overrides: Record<string, ConditionOverride>;
+  confirmedClaimIds: string[];
+  note: string;
+}
+
+export const EMPTY_DRAFT: PlanDraft = { overrides: {}, confirmedClaimIds: [], note: '' };
+
+/** 「你的想法」确认；text 是用户改过的说法，null = 沿用后端的 clarified_statement。 */
+export interface Understood {
+  confirmed: boolean;
+  text: string | null;
+}
 
 export interface ApproveProps {
   bundle: PlanBBundle;

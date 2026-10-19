@@ -1,9 +1,9 @@
-// B2 精简版 B：OpenEvidence 答案卡。顶部一排胶囊切换结论（像 Robinhood 的 1D / 1W）；下面只有一张卡：大标题 + 前提（带引用）+ 信号；底部是批准胶囊。
+// B2「批准计划」（Mia 选定的答案卡）：OpenEvidence 式。顶部一排胶囊切换结论（像 Robinhood 的 1D / 1W）；下面只有一张卡：大标题 + 前提（带引用）+ 信号；底部是批准胶囊。
+import { ancestors, changedTargets } from '../../lookup';
 import { BRANCH_KIND, GATE } from '../../status';
 import { T } from '../../strings';
-import { EMPTY_DRAFT } from '../ApprovePlans';
 import { BranchTag } from '../BranchSwatch';
-import { approveModel, type ApproveProps } from './model';
+import { approveModel, EMPTY_DRAFT, type ApproveProps } from './model';
 import { ApproveIsland, PlanDetail, UnderstoodPill } from './Pieces';
 
 export default function ApproveCard(props: ApproveProps) {
@@ -12,7 +12,10 @@ export default function ApproveCard(props: ApproveProps) {
   if (!m.uj) return <p className="ap-muted">{T.approve.noPlans}</p>;
   const plan = m.current ?? m.approved ?? m.rows[0];
   const b = m.branchOf(plan);
-  const shock = b?.own_node_ids.map(m.node).find((n) => n.role === 'shock');
+  // 横幅里写清楚是哪个假设：这条分支上的冲击节点，或者情景里改过的假设（只查表：scenario.ops 的 target、分支的祖先）
+  const chain = b ? new Set([...b.own_node_ids, ...ancestors(bundle.graph, b.terminal_id)]) : new Set<string>();
+  const changed = changedTargets(bundle.scenario).find((id) => chain.has(id));
+  const shock = b?.own_node_ids.map(m.node).find((n) => n.role === 'shock') ?? (changed ? m.node(changed) : undefined);
   const needIdea = m.uj.requires_user_confirmation && !understood.confirmed;
   return (
     <div className="ap-page">
