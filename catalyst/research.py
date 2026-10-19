@@ -1,15 +1,18 @@
-"""Inspect 的研究 loop（联网打开时才跑），依据 docs/changes/2026-10-18-agent-loop.md。
+"""Inspect's research loop (runs only with web retrieval on), per docs/changes/2026-10-18-agent-loop.md.
 
-  第 1 轮：入口之前的联网检索（websearch.run_web_stage，round=1），资料包已经冻结并注册。
-  建图：照常跑 Inspect（建图 + 出计划），这一遍写进 runs/<id>/research/r1/，只用来找缺口。
-  缺口：由代码找（find_gaps；方案 B 合并后换成 branches.py 的 kind，接口是 GapDetector）。
-  第 2 轮：有缺口才补查。输入只有事件、缺口所在的 claim / 边 / 条件、已有片段 id，不给结论和计划；
-         仍由 web.label 标立场，冻结成第二份资料包（检索键含轮次和缺口）。
-  定稿：带上全部资料包，从头重跑 Inspect，写进运行目录。没有补查时，重跑的请求和第 1 遍逐字相同，
-       由 Memo 直接返回同一份输出，不多调模型。
+  Round 1: the web retrieval before the entry points (websearch.run_web_stage, round=1); its pack is already frozen
+           and registered.
+  Draft:   Inspect runs as usual (graph + plan) into runs/<id>/research/r1/; this pass is only used to find gaps.
+  Gaps:    found by code (find_gaps; after plan B merges it switches to branches.py's kind, via GapDetector).
+  Round 2: only when there are gaps. Its input is the event, the claims / edges / conditions where the gaps are, and
+           the ids of excerpts already collected, never the conclusions or the plan. Stance is still labelled by
+           web.label, and the round is frozen as a second pack (the retrieval key includes the round and the gaps).
+  Final:   Inspect reruns from scratch with all packs into the run directory. Without a follow-up the rerun's requests
+           are identical to the draft pass, so Memo returns the same outputs and no extra model calls are made.
 
-研究最多 2 轮（MAX_ROUNDS）；要不要补查由代码决定，不由模型决定。对外契约不变：图、计划、版本包形状不改，
-新增信息只在 dump() 里（case.json 与 API 返回体的 web 字段）。
+At most two rounds (MAX_ROUNDS); code, not the model, decides whether to follow up. The external contract does not
+change: graph, plan and version bundle keep their shape, and new information appears only in dump() (the web field of
+case.json and the API response). Status lines (message / gap reason) stay in Chinese because the CLI and UI show them.
 """
 from __future__ import annotations
 
@@ -28,14 +31,16 @@ MAX_ROUNDS = 2
 MAX_GAPS = 8
 
 GapDetector = Callable[[dict], list[dict]]
-"""输入 inspect 的返回值，输出缺口清单（每个缺口一个 dict，含 kind 与 id）。空清单 = 不补查。"""
+"""Takes an inspect result and returns the gaps (one dict each, with kind and id). An empty list means no follow-up."""
 
-_NEEDS_DATA = re.compile(r"缺|没有|无法|不知道|未知|数据|资料|基准|序列|data|missing|unknown", re.I)
+# threshold_note wording that means "missing data" (the model writes notes in the prompt language, so both)
+_NEEDS_DATA = re.compile(r"缺|没有|无法|不知道|未知|数据|资料|基准|序列|data|missing|unknown|no baseline|not available", re.I)
 
 
 def find_gaps(result: dict) -> list[dict]:
-    """默认规则（D-A5）：model_only 的边；numeric 条件阈值为 null 且 threshold_note 写的是缺数据（或连序列都没有）。
-    只给缺口所在的 claim、边、条件，不给结论（edge 的 mechanism）和计划（proposal）。"""
+    """Default rule (D-A5): model_only edges; numeric conditions whose threshold is null because data is missing
+    (or that have no series at all). Gives only the claims, edges and conditions where the gaps are, never the
+    conclusions (edge mechanism) or the plan (proposal)."""
     g = result.get("graph")
     if not g:
         return []
@@ -57,8 +62,8 @@ def _gap_reason(gaps: list[dict]) -> str:
 
 
 class Memo:
-    """同一次运行里请求逐字相同就直接返回上一次的输出：没有补查时，定稿重跑不多调模型；录制和回放走同一条路，
-    所以 cassette 里每个请求只出现一次。"""
+    """Within one run, an identical request returns the previous output. Without a follow-up the final rerun makes no
+    extra model calls; recording and replay take the same path, so each request appears once in the cassette."""
 
     def __init__(self, inner: Reasoner):
         self.inner, self.name, self._seen = inner, inner.name, {}
@@ -83,7 +88,7 @@ class ResearchLoop:
     followup: dict = field(default_factory=lambda: {"triggered": False, "reason": "研究 loop 没有运行", "gaps": []})
 
     def __call__(self, run: Callable[..., dict], cfg, store: RunStore | None, reasoner: Reasoner) -> dict:
-        """run(config=, store=, reasoner=) 跑一遍 Inspect（由 entrypoints.inspect 的挂钩传进来）。"""
+        """run(config=, store=, reasoner=) runs Inspect once (passed in by the hook in entrypoints.inspect)."""
         self.rounds = [self.round1]
         memo = Memo(reasoner)
         scratch = RunStore(store.root / "research" / "r1") if store else None
@@ -121,7 +126,7 @@ class ResearchLoop:
         return f"{msg}；补查：触发（{f['reason']}）但没有拿到新片段：{r2.reason if r2 else '未运行'}"
 
     def dump(self) -> dict:
-        """web 字段：保留第 1 轮的字段（向后兼容），加上每轮明细和补查信息。"""
+        """The web field: round 1's fields (backward compatible) plus per-round details and follow-up info."""
         rounds = self.rounds or [self.round1]
         return {**self.round1.dump(), "excerpts": sum(r.n for r in rounds), "pack_ids": self.packs,
                 "rounds": [r.dump() for r in rounds],

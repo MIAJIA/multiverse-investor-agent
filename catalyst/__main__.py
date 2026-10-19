@@ -2,7 +2,7 @@
 
   python -m catalyst run D1 --live                 # 实时调用模型，录音 + 快照落到 runs/D1/<时间戳>/
   python -m catalyst run D1 --replay runs/D1/<ts>  # 用录音回放：零成本、确定性，prompt 变了会报错
-  python -m catalyst run case.json --live --online # 先在白名单网站联网检索，冻结成资料包再推理
+  python -m catalyst run case.json --live --online # web retrieval on allow-listed sites first, frozen as a pack
   python -m catalyst run C3 --live --base runs/C1/<ts>   # 在录制的 C1 图上分叉
   python -m catalyst promote runs/D1/<ts> d1       # 生成 fixtures/d1.json：UI 与测试共用这一份
   python -m catalyst show runs/D1/<ts>             # 打印摘要
@@ -29,7 +29,8 @@ from catalyst.websearch import WebResult, run_web_stage
 
 def attach_web(event: str, target: str | None, *, cfg, ev: EvidenceProvider, store: RunStore, reasoner,
                replay_dir=None) -> WebResult:
-    """开着联网时，在入口之前跑检索，把冻结的 web 资料包注册进 provider 并加进 cfg.packs。CLI 与 API 共用。"""
+    """With web retrieval on, run round 1 before the entry points, register the frozen web pack and add it to
+    cfg.packs. Shared by the CLI and the API."""
     web = run_web_stage(event, target, cfg=cfg, store=store, reasoner=reasoner, replay_dir=replay_dir)
     if web.pack is not None:
         ev.register(web.pack)
@@ -39,17 +40,18 @@ def attach_web(event: str, target: str | None, *, cfg, ev: EvidenceProvider, sto
 
 def research_for(event: str, target: str | None, *, cfg, ev: EvidenceProvider, web: WebResult,
                  replay_dir=None) -> ResearchLoop | None:
-    """联网开着时，Inspect 带上研究 loop（第 2 轮由代码按缺口决定要不要补查）；关着时返回 None，行为不变。"""
+    """With web retrieval on, Inspect gets the research loop (code decides from the gaps whether round 2 runs);
+    off returns None and nothing changes."""
     return ResearchLoop(event, target, evidence=ev, round1=web, replay_dir=replay_dir) if cfg.online else None
 
 
 def web_summary(web: WebResult, research: ResearchLoop | None) -> dict:
-    """case.json 与 API 返回体的 web 字段：研究 loop 跑过就带上每轮明细和补查信息。"""
+    """The web field of case.json and the API response; per-round details and follow-up info once the loop ran."""
     return research.dump() if research is not None and research.rounds else web.dump()
 
 
 def _record_web(store: RunStore, web: WebResult, research: ResearchLoop | None) -> None:
-    """研究结束后把每轮结果写回 case.json（回放靠它知道某一轮当时是空的还是失败的）。"""
+    """Write per-round results back to case.json (replay uses it to know a round was empty or failed)."""
     path = store.root / "case.json"
     meta = json.loads(path.read_text())
     meta["web"] = web_summary(web, research)
@@ -134,7 +136,7 @@ def cmd_run(a) -> None:
         rec = Path(a.replay)
         recorded = json.loads((rec / "case.json").read_text())
         recorded_today = recorded.get("today")  # 回放必须用录制当天的日期
-        online = bool(recorded.get("online"))  # 联网与否由录制决定，回放读冻结的资料包，不上网
+        online = bool(recorded.get("online"))  # online follows the recording; replay reads frozen packs, no network
         store = RunStore(rec.parent / f"{rec.name}.replay-{_dt.datetime.now():%H%M%S}")
         reasoner = ReplayReasoner(rec / "cassette.jsonl")
     else:
@@ -255,7 +257,7 @@ def main(argv=None) -> None:
     mode.add_argument("--replay", metavar="RUN_DIR")
     r.add_argument("--base", metavar="RUN_DIR")
     r.add_argument("--online", action="store_true",
-                   help="入口之前在白名单网站里联网检索，结果作为一个资料包加进来（默认关；回放时由录制决定）")
+                   help="web retrieval on allow-listed sites before the entry points, added as a pack (off by default; replay follows the recording)")
     r.add_argument("--today")
     r.add_argument("--cases-dir", default=os.environ.get("CATALYST_CASES_DIR", str(ROOT / "eval" / "cases")))
     r.add_argument("--packs-dir", default=str(ROOT / "packs"))

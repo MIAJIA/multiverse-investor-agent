@@ -5,7 +5,7 @@
 
 接口（所有写操作都返回 {ok, errors, version}，前端再 GET 这个版本）：
   POST /api/runs                          {event, target?, packs?, online?}
-                                          → 返回体另有 web: {online, status, excerpts, message…}：联网开 / 关、拿到几段或失败原因
+                                          → the response also has web: {online, status, excerpts, rounds, followup, message…}
   GET  /api/runs/{run_id}/versions/{v}    → {graph, proposal, scenario, diff, excerpts}
   POST /api/runs/{run_id}/fork            {base_version, op}
   POST /api/runs/{run_id}/sign            {version, clarified_statement, criteria, deadline,
@@ -42,7 +42,7 @@ def _reasoner(store: RunStore):
 
 
 def _web(event, target, *, cfg, ev, store, reasoner):
-    """联网检索（默认关）。CATALYST_REPLAY 时读录制目录里冻结的资料包，不上网。"""
+    """Web retrieval round 1 (off by default). With CATALYST_REPLAY it reads the frozen pack, no network."""
     from catalyst.__main__ import attach_web
 
     replay = os.environ.get("CATALYST_REPLAY")
@@ -51,7 +51,7 @@ def _web(event, target, *, cfg, ev, store, reasoner):
 
 
 def _research(event, target, *, cfg, ev, web):
-    """联网开着时 Inspect 带研究 loop（按缺口补查一轮）；CATALYST_REPLAY 时逐轮读冻结的资料包。"""
+    """With web retrieval on, Inspect gets the research loop; with CATALYST_REPLAY it reads each round's frozen pack."""
     from catalyst.__main__ import research_for
 
     replay = os.environ.get("CATALYST_REPLAY")
