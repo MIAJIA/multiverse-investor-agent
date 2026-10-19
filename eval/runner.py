@@ -203,6 +203,10 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
             res["checks"].append(check("candidate_labels", "Discovery", all(l in allowed for l in labels),
                                        str(labels), "wrong_candidate_count"))
         if not cands:
+            if case.get("then") == "inspect":
+                res["checks"].append(check("flow_reached_proposal", "E2", False,
+                                           f"Discover 弃权（{get(d, 'abstain_reason') or '无理由'}），没有进入 Inspect，"
+                                           "进场判定与阈值检查都没跑；弃权是否合理由人工判断", "missing_proposal"))
             return
         pick = next((c for c in cands if get(c, "label") == "grounded"), cands[0])
         # 传整个候选，不只传 id：Inspect 要知道用户选中的方向是什么
@@ -356,6 +360,12 @@ def _run_baseline(case: dict, res: dict, reasoner: Reasoner, evidence: Evidence 
         lo, hi = exp["candidates_min"], exp.get("candidates_max", 3)
         res["checks"].append(check("candidate_count", "Discovery", lo <= len(cands) <= hi,
                                    f"{len(cands)} 个", "wrong_candidate_count"))
+    if case.get("then") == "inspect" and not cands:
+        res["checks"].append(check("flow_reached_proposal", "E2", False,
+                                   "弃权，没有给出方向与进场条件；弃权是否合理由人工判断", "missing_proposal"))
+        return
+    if out.get("no_chain"):
+        return  # 和 pipeline 组一致：no_chain 时不查条件，理由归人工复核
     res["checks"] += _kind_checks(case, conditions)
     res["checks"] += _threshold_checks(case, conditions)
 
@@ -401,15 +411,23 @@ def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需�
     ap.add_argument("--out", default=None, help="results.json 路径；默认 <record 目录>/results.json 或 eval/out/results.json")
     ap.add_argument("--record", metavar="DIR", help="录制目录（cassette.jsonl、results.json、report.md）")
     ap.add_argument("--today", help="条件判定用的日期，默认今天")
+    ap.add_argument("--replay", metavar="DIR", help="按 <DIR>/cassette.jsonl 零成本回放（只重新判分，不调模型）")
     args = ap.parse_args(argv)
 
     import catalyst.evidence as evidence_mod  # noqa: WPS433
     import catalyst.reasoner as reasoner_mod  # noqa: WPS433
     from eval import report
 
-    reasoner = reasoner_mod.default_reasoner()
-    model = getattr(reasoner, "name", "unknown")
-    out_dir = Path(args.record) if args.record else Path("eval/out")
+    if args.replay:
+        out_dir = Path(args.replay)
+        reasoner = reasoner_mod.ReplayReasoner(out_dir / "cassette.jsonl")
+        prev = out_dir / "results.json"
+        model = (json.loads(prev.read_text(encoding="utf-8"))[0].get("model", "unknown") + "（回放）") \
+            if prev.exists() else reasoner.name
+    else:
+        reasoner = reasoner_mod.default_reasoner()
+        model = getattr(reasoner, "name", "unknown")
+        out_dir = Path(args.record) if args.record else Path("eval/out")
     out_dir.mkdir(parents=True, exist_ok=True)
     if args.record:
         reasoner = reasoner_mod.RecordingReasoner(reasoner, out_dir / "cassette.jsonl")
