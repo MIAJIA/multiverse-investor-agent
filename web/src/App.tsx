@@ -84,6 +84,17 @@ export default function App() {
       }, 'analyze');
   };
 
+  // 真实模式：?run=<run_id>&v=<version> 直接打开已经录好的一次运行（不调模型），复现问题和演示录制用
+  useEffect(() => {
+    if (api.MOCK) return;
+    const q = new URLSearchParams(location.search);
+    const runId = q.get('run'), version = q.get('v');
+    if (!runId || !version) return;
+    api.getVersion(runId, version).then((bundle) => setS((prev) => ({
+      ...prev, runId, baseVersion: version, versions: { ...prev.versions, [version]: bundle }, tab: 'workspace',
+    }))).catch((e) => patch({ errors: [String(e)] }));
+  }, []);
+
   // MOCK：页头选一份 fixture，输入框换成它的事件原话
   const [mockOptions, setMockOptions] = useState<{ name: string; label: string; event: string }[]>([]);
   const [mockName, setMockName] = useState('c1');
