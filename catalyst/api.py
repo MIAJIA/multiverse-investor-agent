@@ -78,7 +78,7 @@ def fork_run(run_id: str, body: dict) -> dict:
     cfg = ep.Config(packs=meta.get("packs", []), today=meta["today"], run_prefix="r")
     pack = {"pack_id": f"observed:{base_v}", "excerpts": bundle["excerpts"]} if bundle["excerpts"] else None
     res = ep.fork(bundle["graph"], body["op"], reasoner=_reasoner(store), evidence=None, config=cfg, pack=pack,
-                  proposal=bundle["proposal"], store=store)
+                  proposal=bundle["proposal"], scenario=bundle["scenario"], store=store)
     return {**res, "version": res["graph"]["version"] if res.get("graph") else None}
 
 
