@@ -4,7 +4,8 @@ A research copilot for retail traders. You type a belief ("the Strait of Hormuz 
 
 > **Status (2026-10-19).** Everything described below is built and merged: the pipeline, plan B (competing branches with one plan per conclusion, and approving a plan), the research loop for online runs, the React front end, and the eval. The front end has been walked end to end against the real back end: each question opens its own research workspace (kept in the browser), and every edit happens on the graph itself, either by rewriting a node or by adding a new cause and linking it to the nodes it affects; plans whose premises changed are flagged for re-approval. The numbers in the evaluation section come from real model runs that are recorded in `eval/results/`, so you can replay them without an API key.
 
-**Demo video:** _link to be added._ A walkthrough of the system design is in the separate presentation.
+- **Demo video (2 min 10 s, narrated):** [demo/catalyst-demo.mp4](demo/catalyst-demo.mp4). The core user case end to end: a belief becomes three competing branches, one plan is approved, a premise is rewritten on the graph, and the approved plan is flagged for re-approval. The model answers were generated live with Claude Opus 5.5 and the screen was recorded on a replay of that run, so nothing in the video is mocked.
+- **Leadership review deck (5 slides):** [docs/presentation/catalyst-leadership-review.pdf](docs/presentation/catalyst-leadership-review.pdf): product focus, customer and problem, technical complexity, evaluation, next stage.
 
 ---
 
@@ -50,7 +51,15 @@ We do **not** claim that the plans make money, that the failure conditions are c
 Deterministic behaviour is covered by tests, and the eval is reserved for model behaviour that code cannot check.
 
 - **Deterministic tests (over 200, all offline):** the entry-gate truth table, condition time semantics, reference validation, stance consistency, fork non-interference (hashes of every out-of-scope node, edge and condition), stacked scenarios, sign-off, the HTTP API, evidence packs, the web-search whitelist and replay.
-- **Eval:** 11 cases. Six are CausalT5k causal-judgment items (YES / NO / AMBIGUOUS, including a skepticism trap and a sycophancy probe), four are built from the assignment's own examples (C1–C4), and one is the founder's Hormuz example (D1). Every case also runs as a single-prompt baseline with the same model and the same evidence. Per-case results and failure types stay the main output; each run also gets a 100-point score from six core metrics, so runs can be compared at a glance.
+- **Eval:** 20 offline cases, 1 online case and 5 probe pairs. The offline cases are six CausalT5k causal-judgment items (YES / NO / AMBIGUOUS, including a skepticism trap and a sycophancy probe), four built from the assignment's own examples (C1–C4), the founder's Hormuz example (D1), six key scenarios (B1–B6) and three backtests (R2, R3, K3). The probes rerun a case with one change, such as a confident user or a removed key excerpt. Every case also runs as a single-prompt baseline with the same model and the same evidence. Per-case results and failure types stay the main output; each run also gets a 100-point score from six core metrics, so runs can be compared at a glance.
+
+### Results at a glance
+
+**78.3 out of 100: the guardrails hold, the content is only fair.** The total is half code checks (91.6 out of 100) and half an LLM judge (6.5 out of 10), from the latest recorded run (Claude Haiku 5.5, prompt p7, offline and online cases). No red line was crossed: no write outside a fork's scope, no systematic refusal or following, and no backtest leak.
+
+- **What works.** Plans never enter before their conditions are met (discipline 13/13). An edit to one premise never touches anything outside its scope (fork integrity 18/18). The agent abstains when there is no causal link and keeps its verdict when the user pushes (refusal calibration 11/12). In both clean backtests the plan stayed out before the outcome turned against the thesis.
+- **What is weak.** Grounding is the weakest metric: 51 of 75 edges rest on cited evidence, so close to a third are the model's own inference. The judge's recurring complaints are counter-evidence that is acknowledged and then explained away, evidence statuses that contradict each other, and exit conditions that are too thin compared with the entry conditions.
+- **What the score does not prove.** Samples are small (one to three cases per scenario), and no human has calibrated the judge yet. The recording predates prompt p8, which sends every grounded and hypothesis candidate to Inspect, so the multi-branch improvement is not measured here; the discover-entry cases C1, D1, P3 and P4 need a re-record to replay. Nothing here shows that the plans make money.
 
 ### Scorecard
 
