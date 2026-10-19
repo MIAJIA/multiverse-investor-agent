@@ -1,6 +1,6 @@
 # 联网检索开关：设计
 
-2026-10-18 · websearch 分支 · 第一阶段（只设计，未实现）
+2026-10-18 · websearch 分支 · 第一阶段设计（a8a0174）+ 第二阶段实现与实测（见第 10 节）
 
 设计文档早就写了：「白名单内的在线搜索是同一接口下的一个 pack，开关控制，默认关」。本文把它落到实现：怎么搜、搜到的东西怎么变成资料包、怎么录制回放、怎么防止白名单被绕过和片段被转述。
 
@@ -57,7 +57,7 @@ API 事实来自 2026-10-18 读的官方文档：[web search tool](https://platf
 | T1 正式公告 | bis.gov、treasury.gov、ustr.gov、mofcom.gov.cn、prnewswire.com、nvidia.com（投资者关系） |
 | T1 官方数据 | federalreserve.gov、bls.gov、bea.gov、eia.gov、imf.org、ecb.europa.eu |
 | T2 通讯社 | focustaiwan.tw（中央社英文） |
-| T3 | trendforce.com、semiconductors.org、bbc.com |
+| T3 | trendforce.com、semiconductors.org、aljazeera.com |
 
 排除的网站和原因也写在配置文件里。主要有三类：robots.txt 对 Claude 关闭（AP、Reuters、共同社、Bloomberg、WSJ、Nikkei、CNBC、Guardian）；抓取端被拒或返回 402 / 403（韩联社、OPEC、WTO、IEA、GlobeNewswire、Business Wire、MARAD、TSMC）；付费墙（FT）。
 
@@ -211,3 +211,43 @@ API 事实来自 2026-10-18 读的官方文档：[web search tool](https://platf
 - `catalyst/api.py`：请求体 `online`；`fork_run` 载入 web pack；
 - `tests/websearch/`：第 5 节的单测；
 - `docs/core-design.md`：一小节说明（实现后补）。
+
+## 10. 实现与实测（第二阶段）
+
+主 session 的决定：检索模型跟 `CATALYST_MODEL`，`CATALYST_WEB_MODEL` 覆盖；日期用 `page_age`（a）；立场由 `web.label` 标注，note 和 source 写明「立场由模型标注，未经人工审核」；Excerpt 不加字段；T2 只有中央社，Al Jazeera 作为 T3 补进来；PDF 收，标 `api_citation`；eval 的联网案例归 eval 线。
+
+**和设计的出入**
+- `WebLabelOutput` 放在 `catalyst/websearch.py` 里，没有放进 `schema.py`：它只在检索阶段用，不进快照、不进 API，放进数据契约反而要同步 `types.ts`。
+- 白名单 w3：实测时 API 直接拒绝了含 `bbc.com` 的请求（400：`The following domains are not accessible to our user agent: ['bbc.com']`），bbc.com 移进排除列表；按主 session 的决定补了 aljazeera.com（T3）。仍是 18 个网站。
+- 提示注入说明（`WEB_DATA_NOTE`）放在 `entrypoints.py`，只在资料包含 `web-` 片段时加。
+
+**离线验证**
+- `tests/websearch/`：31 个测试；全套 `pytest -q` 205 passed。
+- 离线请求哈希没有变：用 eb92f73 的代码和本分支的代码，对 eval 的 10 个案例（discover、inspect、judge 以及各自的重试）各算一遍请求哈希，42 个哈希逐个相同。core-fixes worktree 里的旧录音在 eb92f73 上本来就回放不了（资料包后来改过），所以改用这种方式验证。
+
+**真实实测**（2026-10-18，`CATALYST_MODEL=claude-haiku-5-5`，共 13 次模型调用）
+
+新问题（不在 eval 案例里）：「美联储在 10 月底的 FOMC 会议上降息 25 个基点」→ TLT，本地资料包为空。案例文件 `runs/_cases/W1.json`。
+
+| | 关联网 `runs/W1/20261018-223217` | 开联网 `runs/W1/20261018-223507` |
+| --- | --- | --- |
+| 节点 | 7 个，全部 unknown | 6 个：5 unknown、1 contradicted（短端利率下行） |
+| 边 | 7 条，全部 model_only | 5 条，3 条 model_only，2 条有证据（共 10 处引用，全是 T1） |
+| 来源 | 无 | federalreserve.gov 9 段、bls.gov 3、eia.gov 3、treasury.gov 1 |
+| 提案 | long TLT，WAIT，support=unknown | long TLT，WAIT，support=challenged |
+
+- 检索：5 次搜索、2 次抓取，16 段进资料包（12 contradicts、4 neutral），2 段被标注为无关丢弃，没有白名单外或对不上原文的引用。16 段里 15 段来自搜索 citation（`api_citation`，其中 7 段去掉了截断省略号），1 段来自抓取全文（`substring`）。
+- 回放：不加载 API key，回放 `runs/W1/20261018-223507`，快照、提案、observations、冻结资料包逐字节相同。
+- 中途一次失败（bbc.com 被拒）走了退回路径：CLI 打印「联网：开，但没有拿到片段：…本轮只用本地资料包推理」，推理照常完成（`runs/W1/20261018-223336`）。
+- 结论：开联网让这个问题从「全是模型推测」变成「有官方数据对得上的两条边，并且暴露了关键反方（9 月纪要和 CPI 指向不降息）」；unknown 的节点数只少了 1，因为起点事件和外生假设没有入边，按规则永远是 unknown。
+
+**日期（决定项 2 的实测）**
+- 44 条搜索结果里 39 条有 `page_age`，但**全部是相对时间**（「11 days ago」「801 days ago」），按规则一律写成 unknown，所以这次 16 段的 date 全是 unknown。
+- 方案 c 不可行：web_fetch 返回的是转好的纯文本，没有 `article:published_time` 之类的 meta；正文里倒是有日期（「September 16, 2026」「Release date: October 16, 2026」），但抽出来是启发式规则。
+- 可选改进（待主 session 决定，没有实现）：把「N days ago」按检索请求的实际日期换算成绝对日期，note 写明是换算值、有 ±1 天误差。
+
+**成本（实测 usage）**
+- 检索请求：输入 206k token、输出 13.5k（其中思考 11.5k）、搜索 5 次。比设计时估的 60k–150k 高，因为服务端循环每一轮都会重读之前的搜索结果。
+- 标注请求：输入 3.4k、输出 2.7k。资料包变大后，Inspect 两步的输入从 15.9k 增加到 29.8k。
+- Haiku 5.5：关联网整次约 $0.01，开联网整次约 $0.10，其中搜索费 $0.05。
+- Opus 5.5（按同样的 token 量换算）：开联网每次约多 $1–1.5，主要是检索请求的 206k 输入。演示要用 Opus 的话，可以考虑把 `max_web_searches` 降到 3，或者用 `CATALYST_WEB_MODEL` 让检索单独用便宜的模型。

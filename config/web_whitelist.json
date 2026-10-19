@@ -1,5 +1,5 @@
 {
-  "version": "w1",
+  "version": "w3",
   "checked": "2026-10-18",
   "note": "联网检索（--online）只在这些网站里搜索和抓取。它们是研究用的证据来源，不是投资建议来源；来源可信不等于支持某条因果，每段证据仍须写明 stance。tier：T1 官方数据、监管文件与正式公告；T2 通讯社；T3 其他。domain 按 Anthropic allowed_domains 的规则写：不带协议，自动包含子域名，只用 ASCII。access 是 2026-10-18 从本机用 curl（浏览器 UA）和 Claude Code WebFetch 实测的结果，不等于 Anthropic web_fetch 一定能取到，第二阶段实测再核一遍。",
   "domains": [
@@ -55,9 +55,9 @@
     {"domain": "semiconductors.org", "name": "Semiconductor Industry Association", "tier": "T3", "kind": "行业协会",
      "use_for": "全球半导体月度销售额、产业报告、政策立场",
      "paywall": "无", "access": "curl 可读，页面带发布时间"},
-    {"domain": "bbc.com", "name": "BBC News", "tier": "T3", "kind": "主流媒体",
-     "use_for": "地缘事件（中东、航运）的事实报道，用来补通讯社缺口",
-     "paywall": "无（英国以外可能偶尔出现订阅提示，第二阶段核）", "access": "curl 可读"}
+    {"domain": "aljazeera.com", "name": "Al Jazeera", "tier": "T3", "kind": "主流媒体",
+     "use_for": "中东局势、海湾航运与能源设施的事实报道，用来补通讯社缺口",
+     "paywall": "无", "access": "robots.txt 允许 Claude-User / Claude-SearchBot；WebFetch 可读，页面带发布日期"}
   ],
   "excluded": [
     {"domain": "apnews.com", "reason": "robots.txt 对 Claude-User / Claude-SearchBot / ClaudeBot 全站 Disallow；WebFetch 拒绝抓取"},
@@ -72,6 +72,7 @@
     {"domain": "iea.org", "reason": "对抓取返回 403；石油市场报告（OMR）全文付费"},
     {"domain": "globenewswire.com / businesswire.com", "reason": "反爬 403"},
     {"domain": "maritime.dot.gov", "reason": "MARAD 航运通告：反爬 403"},
+    {"domain": "bbc.com", "reason": "2026-10-18 实测：API 拒绝 allowed_domains 里的 bbc.com（400：not accessible to our user agent）"},
     {"domain": "tsmc.com", "reason": "pr.tsmc.com / investor.tsmc.com 要求 JS 与 cookie，抓不到正文"}
   ]
 }
