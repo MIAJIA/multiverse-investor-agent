@@ -7,19 +7,19 @@ import * as api from './api';
 import ApproveCard from './components/approve/ApproveCard';
 import { EMPTY_DRAFT, type PlanDraft, type Understood } from './components/approve/model';
 import BusyHint, { type BusyKind } from './components/BusyHint';
-import Scenario from './components/Scenario';
 import Workspace from './components/Workspace';
 import WorkspaceSidebar from './components/WorkspaceSidebar';
+import { plainForkError } from './edits';
 import { planOf } from './lookup';
 import { nodeLabel } from './node/labels';
-import type { RunCreated, VersionBundle, WriteResult } from './types';
+import type { Op, RunCreated, VersionBundle, WriteResult } from './types';
 import { T } from './strings';
 import {
   addWorkspace, createWorkspace, currentWorkspace, EMPTY_STORE, loadStore, recordApproval, recordVersion, saveStore,
   switchWorkspace, updateWorkspace, type Workspace as Ws, type WorkspaceStore,
 } from './workspaces';
 
-type Tab = 'workspace' | 'signoff' | 'scenario';
+type Tab = 'workspace' | 'signoff'; // B3 已去掉：改节点、加原因都在 B1 的图上做
 
 export interface AppState {
   runId: string | null;
@@ -47,7 +47,7 @@ const INITIAL: AppState = {
   busy: false, errors: null, notices: null, runNote: null, webMessage: null, busyKind: null, busySince: null,
 };
 
-const TABS: [Tab, string][] = [['workspace', T.app.tabs.workspace], ['signoff', T.app.tabs.signoff], ['scenario', T.app.tabs.scenario]];
+const TABS: [Tab, string][] = [['workspace', T.app.tabs.workspace], ['signoff', T.app.tabs.signoff]];
 
 export default function App() {
   const [store, setStore] = useState<WorkspaceStore>(() => loadStore());
@@ -78,7 +78,7 @@ export default function App() {
 
   /** 改假设 / 批准：成功后取回新版本，记进发起它的工作区；用户这时已经切到别的工作区就不动视图。 */
   async function write(run: () => Promise<WriteResult>, after: (version: string) => Partial<AppState>,
-    persist: (st: WorkspaceStore, wsId: string, version: string) => WorkspaceStore, kind: BusyKind) {
+    persist: (st: WorkspaceStore, wsId: string, version: string) => WorkspaceStore, kind: BusyKind, explain: (e: string) => string = (e) => e) {
     const wsId = storeRef.current.currentId;
     const runId = s.runId;
     if (!wsId || !runId) return;
@@ -86,7 +86,7 @@ export default function App() {
     try {
       const res = await run();
       if (!res.ok || !res.version) {
-        if (isCurrent(wsId)) patch({ busy: false, errors: res.errors.length ? res.errors : [T.app.noVersion] });
+        if (isCurrent(wsId)) patch({ busy: false, errors: res.errors.length ? res.errors.map(explain) : [T.app.noVersion] });
         return;
       }
       const version = res.version;
@@ -97,7 +97,7 @@ export default function App() {
         notices: res.errors.length ? res.errors : null,
       }));
     } catch (e) {
-      if (isCurrent(wsId)) patch({ busy: false, errors: [String(e)] });
+      if (isCurrent(wsId)) patch({ busy: false, errors: [explain(String(e))] });
     }
   }
 
@@ -216,12 +216,11 @@ export default function App() {
       (version) => ({ baseVersion: version, drafts: {} }),
       (st, id, version) => recordApproval(st, id, { version, terminalId: null, title: null, at: Date.now() }), 'sign');
 
-  const forkNow = (target: string, value: string) =>
-    write(() => api.fork(s.runId!, {
-      base_version: s.baseVersion!,
-      op: { kind: 'change_assumption', target, value, impacts: [], new_nodes: [], new_edges: [] },
-    }), (version) => ({ scenarioVersion: version, viewing: 'scenario', selectedNodeId: null }),
-    (st, id, version) => recordVersion(st, id, version), 'fork');
+  /** 在 B1 图上改节点 / 加原因：从当前显示的版本 fork，新版本显示在同一块画布上。 */
+  const editOnGraph = (baseVersion: string, op: Op) =>
+    write(() => api.fork(s.runId!, { base_version: baseVersion, op }),
+      (version) => ({ scenarioVersion: version, viewing: 'scenario', selectedNodeId: null, selectedTerminalId: null }),
+      (st, id, version) => recordVersion(st, id, version), 'fork', plainForkError);
 
   const reapproveHere = () => {
     const id = storeRef.current.currentId, v = s.scenarioVersion;
@@ -302,20 +301,17 @@ export default function App() {
               <div className="empty muted">{T.ws.loading}</div>
             )}
             {base && s.tab === 'workspace' && (
-              <Workspace bundle={base} selectedNodeId={s.selectedNodeId} selectedTerminalId={s.selectedTerminalId}
+              <Workspace versions={s.versions} base={base} scenario={scen} viewing={s.viewing} busy={s.busy}
+                selectedNodeId={s.selectedNodeId} selectedTerminalId={s.selectedTerminalId}
                 onSelectNode={(id) => patch({ selectedNodeId: id })} onSelectTerminal={(id) => patch({ selectedTerminalId: id })}
-                onGoApprove={() => patch({ tab: 'signoff' })} />
+                onGoApprove={() => patch({ tab: 'signoff' })} onToggle={(viewing) => patch({ viewing })}
+                onEdit={editOnGraph} onReapproveHere={reapproveHere} />
             )}
             {base && s.tab === 'signoff' && (
               <ApproveCard bundle={base} selected={s.selectedTerminalId} onSelect={(id) => patch({ selectedTerminalId: id || null })}
                 drafts={s.drafts} onDraft={(tid, d) => patch({ drafts: { ...s.drafts, [tid]: d } })}
                 understood={s.understood} onUnderstood={(understood) => patch({ understood })}
                 onApprove={approve} onRevoke={revoke} busy={s.busy} />
-            )}
-            {base && s.tab === 'scenario' && (
-              <Scenario versions={s.versions} base={base} scenario={scen} viewing={s.viewing} busy={s.busy}
-                selectedNodeId={s.selectedNodeId} onSelect={(id) => patch({ selectedNodeId: id })}
-                onToggle={(viewing) => patch({ viewing })} onFork={forkNow} onReapproveHere={reapproveHere} />
             )}
           </main>
         </div>

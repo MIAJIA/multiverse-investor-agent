@@ -1,5 +1,5 @@
 // 节点类型符号（线条风格参照 Lucide：zap / cloud-lightning / cog / circle-help / flag / search / pencil），单色，跟文字同色。
-import type { Claim } from '../../types';
+import type { Claim } from '../types';
 
 const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 

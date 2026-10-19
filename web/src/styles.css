@@ -175,3 +175,8 @@ table.assumptions th { font-size: 12px; color: var(--muted); font-weight: 600; }
 .ws-status.failed, .ws-status.missing { background: #fdecea; color: #b42318; }
 .ws-approved { border-left: 3px solid #34c759; border-radius: 0 8px 8px 0; }
 .ws-approved-title { font-size: 13px; font-weight: 600; }
+
+/* B1 画布上的工具条（加原因） */
+.canvas-tools { position: absolute; top: 10px; left: 12px; display: flex; gap: 10px; align-items: center; z-index: 5; pointer-events: none; }
+.canvas-tools > * { pointer-events: auto; }
+.canvas-tools .muted { background: #ffffffd9; border-radius: 6px; padding: 2px 6px; max-width: 420px; }

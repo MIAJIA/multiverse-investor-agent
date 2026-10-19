@@ -10,7 +10,7 @@ import { toFlow } from '../../toFlow';
 import type { BranchKind, Claim, Fixture, VersionBundle } from '../../types';
 import { demoLabel } from '../demoLabels';
 import GrammarNode, { Evidence, KeyBadge, LINE, type GrammarData, type Variant } from './GrammarNode';
-import { Pencil, TYPE_ICON } from './Icons';
+import { Pencil, TYPE_ICON } from '../../node/Icons';
 import './grammar.css';
 
 const nodeTypes = { g: GrammarNode };

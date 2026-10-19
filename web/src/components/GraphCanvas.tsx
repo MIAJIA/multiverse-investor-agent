@@ -14,13 +14,13 @@ import { T } from '../strings';
 export const LOOK: Look = { shape: 'card', strength: 'ring', color: 'role', expand: 'panel', scenario: 'dim' };
 
 const nodeTypes = { design: DesignNode };
-const FIT = { padding: 0.12 };
+export const FIT = { padding: 0.12 };
 
 /** 画布尺寸变了（窗口缩放、侧栏出现）就重新铺满。
  *  React Flow 自己靠 ResizeObserver 和 window 的 resize 事件知道容器变了；页面没有在前台渲染时（例如藏在后台的浏览器面板），
  *  这两样都可能不触发，它记下的宽度就停在旧值，fitView 和左下角的「适应视图」都会按旧宽度铺，图的右边压在右侧面板下面。
  *  所以每秒比一次容器的真实尺寸和 React Flow 记下的尺寸，不一样就补发一次 resize，让它自己重新量；量完再铺满。 */
-function FitOnResize() {
+export function FitOnResize() {
   const { fitView } = useReactFlow();
   const width = useStore((st) => st.width);
   const height = useStore((st) => st.height);

@@ -4,7 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import type { Strength } from '../../node/strength';
 import { T } from '../../strings';
 import type { BranchKind, Claim } from '../../types';
-import { Pencil, Search, TYPE_ICON } from './Icons';
+import { Pencil, Search, TYPE_ICON } from '../../node/Icons';
 
 export type Variant = 'A' | 'B';
 

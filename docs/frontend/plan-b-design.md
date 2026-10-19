@@ -395,3 +395,23 @@ Also checked along the way: c1_blocked's LITE is BLOCKED; c4_abstain shows the a
 - Option A: a round symbol badge, no type word; conclusions are capsules with a thick dark border. Option B: every card starts with "symbol + type word"; conclusions have a dark header band carrying the ticker.
 - Background research (quick): Munzner / Bertin — shape and hue for categories, length or text for amounts; mixing two channels on one boundary slows search; dashing is the preferred line encoding for uncertainty; BPMN and flowchart standards use shape for type with an inner glyph.
 - Not changed: the real B1 / B3 canvas. It switches only after Mia picks A or B. Screenshots: `screenshots/grammar-A.jpg`, `grammar-B-focus.jpg`.
+
+## All edits on the B1 graph (B3 removed)
+
+- Problem (Mia): editing through the top "假如…改成…" bar on B3 made it unclear which node was being changed. Every edit now happens on the B1 graph itself, and the B3 tab and the top bar are gone. B1 and B2 stay.
+- Node look: the B1 canvas now uses node visual B from `/#grammar`, which Mia picked (`node/CanvasNode.tsx`). The first line shows a symbol plus the type word. Conclusions get a dark header band with the ticker. Border line style shows the branch kind. The bottom line shows evidence counts. An orange "先查" badge marks the key dependency.
+- Edit a node in place: assumption nodes always show a pencil, and any other non-conclusion node shows one when selected. Clicking the pencil turns the card's statement into a text field with 确认修改 / 取消. Confirm sends `change_assumption` (target = node id, value = the new text), forking from the version currently on screen.
+- Add a cause: double-click empty canvas, or click "＋ 加一个原因", to get a draft node (`node/DraftNode.tsx`). The user writes the event, then drags from the draft's bottom dot to one or more existing nodes. Each link gets a 推高 / 压低 toggle and can be removed. Confirm sends `add_shock`: a new shock node with id `user.cause.<n>`, chosen so it does not clash, plus one edge per link with channel `sentiment` and `model_only: true`. Only links from the draft into existing nodes connect (`edits.canLink`). Deleting a node, inserting a node between two nodes, rewiring edges and adding conclusions are not supported, and a drag that tries one simply does not connect. Back-end rejections are translated into plain Chinese (`edits.plainForkError`); an unrecognised one is shown verbatim.
+- After a fork, the current graph stays on screen with the waiting hint. The new version then appears on the same canvas:
+  - nodes the user changed get a blue "你改的" badge;
+  - challenged nodes get "受影响" (from the back-end assessment);
+  - unaffected nodes fade;
+  - conclusions whose plan has `approval_reset` get "需重新批准".
+  A bar above the canvas flips between 改之前 and 改之后, gives counts, and has "在这个版本上重新批准", which opens B2 on that version. Further edits stack on the version on screen. Versions are recorded in the current workspace.
+- Tests: `__tests__/edits.test.ts` covers both payloads (fields match `eval/fixtures/c3_add_shock.json`), fresh ids, link rules, error wording, edited ids, and that the app has only the B1 and B2 tabs with no Scenario component.
+- Live walkthrough (Haiku, medium; API 8022 + Vite 5176, headless Chrome), run 20261019-113033, "Photonic chips are being adopted faster than expected":
+  - Editing `h.photonic_faster` in place produced r-v2. The bar read "你改了 1 处 · 7 个节点受影响", and 改之前 / 改之后 flipped correctly.
+  - Adding the cause "US imposes 25% tariffs on imported optical modules", dragged to two nodes (one 推高, one 压低), produced r-v3 with 10 nodes. The new cause showed "你改的", and the workspace stored r-v1, r-v2, r-v3.
+  - In a second pass I approved a plan on r-v1 (r-v4) and then edited an assumption (r-v5). That conclusion showed "需重新批准", and the bar read "1 份计划需要重新批准".
+- MOCK still loads and approves. MOCK fork only replays recorded forks, so arbitrary edits there return the "only recorded" message.
+- Screenshots: `screenshots/edit-e3-after-edit.jpg`, `edit-e5-draft.jpg`, `edit-e6-after-cause.jpg`, `edit-e7-reapprove.jpg`.
