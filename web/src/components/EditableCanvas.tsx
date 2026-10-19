@@ -6,7 +6,7 @@ import {
   Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow,
   type Connection, type Edge, type Node, type NodeChange,
 } from '@xyflow/react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addShockOp, canLink, freshCauseId, type DraftLink, type Sign } from '../edits';
 import CanvasNode, { type CanvasData } from '../node/CanvasNode';
 import DraftNode, { type DraftData } from '../node/DraftNode';
@@ -26,7 +26,7 @@ export interface ScenarioMarks {
   reapprove: Set<string>; // 需要重新批准的结论 id
 }
 
-interface Draft { id: string; text: string; links: DraftLink[]; position: { x: number; y: number } }
+interface Draft { id: string; text: string; links: DraftLink[]; position: { x: number; y: number }; frozen: boolean }
 
 export interface EditableCanvasProps {
   bundle: VersionBundle;
@@ -46,6 +46,21 @@ function Inner({ bundle, branchView, keyIds, marks, selectedNodeId, busy, onSele
   const wrap = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  // 提交之后、新版本回来之前：加的原因 / 改的说法一直留在图上（只读）；后端拒绝就恢复成可编辑，用户写的字不丢
+  const [pendingEdit, setPendingEdit] = useState<{ id: string; text: string } | null>(null);
+  const [editText, setEditText] = useState<string | undefined>(undefined);
+  const prev = useRef({ busy, version: graph.version });
+  useEffect(() => {
+    const p = prev.current;
+    if (graph.version !== p.version) { // 新版本到了：草稿已经变成图里的真节点
+      setDraft((d) => (d?.frozen ? null : d));
+      setPendingEdit(null);
+    } else if (p.busy && !busy) { // 等完了但版本没变 = 被拒绝
+      setDraft((d) => d && { ...d, frozen: false });
+      if (pendingEdit) { setEditingId(pendingEdit.id); setEditText(pendingEdit.text); setPendingEdit(null); }
+    }
+    prev.current = { busy, version: graph.version };
+  }, [busy, graph.version, pendingEdit]);
   const [measured, setMeasured] = useState<Record<string, { width: number; height: number }>>({});
   const flow = useMemo(() => toFlow(graph, { keyClaimIds: keyIds }), [graph, keyIds]);
   const label = (id: string) => { const n = graph.nodes.find((x) => x.id === id); return n ? nodeLabel(n) : id; };
@@ -53,7 +68,7 @@ function Inner({ bundle, branchView, keyIds, marks, selectedNodeId, busy, onSele
   const startDraft = (position: { x: number; y: number }) => {
     if (busy) return;
     setEditingId(null);
-    setDraft((d) => d ?? { id: freshCauseId(graph), text: '', links: [], position });
+    setDraft((d) => d ?? { id: freshCauseId(graph), text: '', links: [], position, frozen: false });
   };
   const centerDraft = () => {
     const r = wrap.current?.getBoundingClientRect();
@@ -75,28 +90,29 @@ function Inner({ bundle, branchView, keyIds, marks, selectedNodeId, busy, onSele
           assessment: marks?.assessment[claim.id], changed: !!marks?.edited.includes(claim.id),
           reapprove: !!marks?.reapprove.has(claim.id),
           canEdit: !terminal && !draft && (claim.role === 'assumption' || n.id === selectedNodeId),
-          editing: n.id === editingId, busy,
-          onEditStart: () => { setEditingId(n.id); onSelect(n.id); },
+          editing: n.id === editingId, busy, editText: n.id === editingId ? editText : undefined,
+          pendingText: pendingEdit?.id === n.id ? pendingEdit.text : undefined,
+          onEditStart: () => { setEditingId(n.id); setEditText(undefined); onSelect(n.id); },
           onEditCancel: () => setEditingId(null),
-          onEditCommit: (text) => { setEditingId(null); onChangeNode(n.id, text.trim()); },
+          onEditCommit: (text) => { setEditingId(null); setPendingEdit({ id: n.id, text: text.trim() }); onChangeNode(n.id, text.trim()); },
         },
       };
     });
     if (draft) {
       out.push({
-        id: draft.id, type: 'draft', position: draft.position, draggable: true, measured: measured[draft.id], zIndex: 20,
+        id: draft.id, type: 'draft', position: draft.position, draggable: !draft.frozen, measured: measured[draft.id], zIndex: 20,
         data: {
-          text: draft.text, links: draft.links, labelOf: label, busy,
+          text: draft.text, links: draft.links, labelOf: label, busy, frozen: draft.frozen,
           onText: (text) => setDraft((d) => d && { ...d, text }),
           onSign: (to: string, sign: Sign) => setDraft((d) => d && { ...d, links: d.links.map((l) => (l.to === to ? { ...l, sign } : l)) }),
           onRemove: (to: string) => setDraft((d) => d && { ...d, links: d.links.filter((l) => l.to !== to) }),
           onCancel: () => setDraft(null),
-          onConfirm: () => { onAddCause(addShockOp(draft.id, draft.text, draft.links)); setDraft(null); },
+          onConfirm: () => { onAddCause(addShockOp(draft.id, draft.text, draft.links)); setDraft((d) => d && { ...d, frozen: true }); },
         } satisfies DraftData,
       });
     }
     return out;
-  }, [flow, graph, excerpts, branchView, keyIds, marks, selectedNodeId, editingId, draft, busy, measured]);
+  }, [flow, graph, excerpts, branchView, keyIds, marks, selectedNodeId, editingId, editText, pendingEdit, draft, busy, measured]);
 
   const edges = useMemo(() => {
     const out: Edge[] = flow.edges.map((e) => {
@@ -125,7 +141,7 @@ function Inner({ bundle, branchView, keyIds, marks, selectedNodeId, busy, onSele
       if (c.type === 'position' && c.position && draft && c.id === draft.id) { const pos = c.position; setDraft((d) => d && { ...d, position: pos }); }
     }
   };
-  const valid = (c: Connection | Edge) => !!draft && canLink(graph, draft.id, draft.links, c.source, c.target);
+  const valid = (c: Connection | Edge) => !!draft && !draft.frozen && canLink(graph, draft.id, draft.links, c.source, c.target);
 
   return (
     <div className="canvas" ref={wrap} onDoubleClick={(e) => {
@@ -135,7 +151,7 @@ function Inner({ bundle, branchView, keyIds, marks, selectedNodeId, busy, onSele
         key={graph.version}
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange}
         fitView fitViewOptions={FIT} zoomOnDoubleClick={false}
-        nodesDraggable={false} nodesConnectable={!!draft} edgesFocusable={false}
+        nodesDraggable={false} nodesConnectable={!!draft && !draft.frozen} edgesFocusable={false}
         isValidConnection={valid}
         onConnect={(c) => { if (valid(c)) setDraft((d) => d && { ...d, links: [...d.links, { to: c.target!, sign: '+' }] }); }}
         onNodeClick={(_, n) => { if (n.type === 'canvas') onSelect(n.id); }}
