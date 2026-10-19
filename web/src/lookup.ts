@@ -5,6 +5,7 @@ export interface NodeEvidence {
   inEdges: Mechanism[];
   supporting: { ref: EvidenceRef; edge: Mechanism; excerpt?: Excerpt }[];
   contradicting: { ref: EvidenceRef; edge: Mechanism; excerpt?: Excerpt }[];
+  background: { ref: EvidenceRef; edge: Mechanism; excerpt?: Excerpt }[]; // stance=neutral：背景信息，不算正反方
   /** 有入边，且入边全是 model_only、没有任何引用 */
   modelOnly: boolean;
 }
@@ -18,6 +19,7 @@ export function nodeEvidence(graph: Graph, nodeId: string, excerpts: Excerpt[]):
     inEdges,
     supporting: refs.filter((r) => r.ref.stance === 'supports'),
     contradicting: refs.filter((r) => r.ref.stance === 'contradicts'),
+    background: refs.filter((r) => r.ref.stance === 'neutral'),
     modelOnly: inEdges.length > 0 && refs.length === 0 && inEdges.every((e) => e.model_only),
   };
 }

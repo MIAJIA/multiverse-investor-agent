@@ -1,6 +1,6 @@
 // 所有枚举 → 文案与颜色的唯一映射表。组件不自己写颜色或状态文案。
 import type {
-  AssessmentStatus, EvaluationStatus, EvidenceStatus, ExitLogic, Gate, ProposalStatus, Role, SupportStatus,
+  AssessmentStatus, CriticStatus, EvaluationStatus, EvidenceStatus, ExitLogic, Gate, ProposalStatus, Role, SupportStatus,
   VerificationStatus,
 } from './types';
 
@@ -68,6 +68,12 @@ export const EVALUATION: Record<EvaluationStatus, Look> = {
 export const EXIT_LOGIC: Record<ExitLogic, Look> = {
   ANY: { label: 'ANY · 任一触发（或）', ...GREY },
   ALL: { label: 'ALL · 全部触发（且）', ...GREY },
+};
+
+export const CRITIC: Record<CriticStatus, Look> = {
+  disabled: { label: 'Critic 挑刺：未启用（下一期）', ...GREY },
+  ok: { label: 'Critic 挑刺', ...ORANGE },
+  failed: { label: 'Critic 挑刺：没有跑成', ...GREY },
 };
 
 export const KEY_DEPENDENCY = { label: 'Check first · 关键依赖', ...ORANGE };

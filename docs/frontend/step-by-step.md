@@ -51,3 +51,18 @@
 - 新增第 18 步（BLOCKED）和第 19 步（弃权），通过。截图：`screenshots/b2-blocked.jpg`、`screenshots/c4-abstain.jpg`。
 - MOCK 下每次 Analyze 都会重新载入干净的 fixture，签字改过的数据不会带到下一次。
 - 短标题：`types.ts` 的 Claim 加了可选的 `label`。节点卡片有 label 就显示 label，没有就把 statement 截到 10 个字加「…」（`src/node/labels.ts` 的 `nodeLabel`）。现在的 fixture 没有 label，所以应用里显示的是截短的句子；`screenshots/b1-workspace.jpg`、`b3-scenario.jpg` 里的短标题来自 playground 的演示表，等后端加上 label、重新生成 fixture 后再更新截图。playground 仍用演示表（`src/playground/demoLabels.ts`），有 label 时优先用 label。
+
+## 跟上 core-schema@eb92f73（label / neutral / critic）
+
+- `git merge core-schema` 是快进（core-schema 已经包含 frontend 的全部提交）。
+- `types.ts`：`Claim.label: string | null`；`Stance` 加 `neutral`；`TradeProposal.critic`（`CRITIC_STATUSES` = disabled / ok / failed）。`check_fixtures.py` 去掉了 OpKind 的 PENDING（schema 已有 `sign`），并核对 critic 的取值。
+- 证据面板多一组「背景」（neutral）；圆环上 neutral 是灰格，不算正方也不算反方；卡片小字写「背景 n」。C1 数据里没有 neutral 证据，所以用单元测试（复制一份图、把一条引用改成 neutral）验证。
+- 提案卡加一行「Critic 挑刺：未启用（下一期）」；failed 时显示原因，ok 时列出 items。
+- 重新生成 3 份 fixture，全部通过 `check_fixtures.py`（14 个枚举）。golden C1 图的 label 全是 null，所以节点卡片仍是截短的 statement。
+
+## 多情景 playground（/#scenarios）
+
+- 数据：`make_fixtures.py` 新增 `c1_multi.json`，全部走真实 `ep.fork`：c1-v2 = 改假设（集成激光），c1-v3 = 预定义冲击（代工停产），c1-v4 = 在 c1-v2 上叠加同一个冲击。`DemoReasoner` 改成只看「操作：」那一行判断操作类型（叠加时基线图自己的 op 会误导 ScriptedReasoner）。
+- 五个设计问题，各两种做法：情景列表（分段胶囊 / 版本树）、比较（叠色 / 并排）、叠加着色（相对上一层 / 相对基线）、情景摘要（大数字卡片 / 表盘点阵）、新建情景（灵动岛 / 侧边表单）。截图 `screenshots/sc1–sc5`。
+- 情景名是演示表；「相对基线」由前端把每层后端结果合起来演示，正式版需要后端给。
+- 发现的后端问题：叠加分叉（c1-v4）的提案 `support_status` 回到 supported——`derive_proposal` 只看这一层的 challenged，父情景 c1-v2 让激光路径受挑战这件事没有带下来。

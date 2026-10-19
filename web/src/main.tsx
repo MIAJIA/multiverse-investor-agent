@@ -4,8 +4,9 @@ import '@xyflow/react/dist/style.css';
 import './styles.css';
 import App from './App';
 import Playground from './playground/Playground';
+import ScenarioPlayground from './scenarios/ScenarioPlayground';
 
-// #playground 打开节点视觉的 A/B playground；其余都是应用本身。
+// #playground：节点视觉 A/B；#scenarios：多情景 A/B；其余都是应用本身。
 function Root() {
   const [hash, setHash] = useState(location.hash);
   useEffect(() => {
@@ -13,7 +14,9 @@ function Root() {
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
-  return hash === '#playground' ? <Playground /> : <App />;
+  if (hash === '#playground') return <Playground />;
+  if (hash === '#scenarios') return <ScenarioPlayground />;
+  return <App />;
 }
 
 createRoot(document.getElementById('root')!).render(
