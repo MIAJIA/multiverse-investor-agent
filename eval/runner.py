@@ -320,9 +320,11 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
                                            f"Discover abstained ({get(d, 'abstain_reason') or 'no reason given'}), Inspect never ran; "
                                            "gate and threshold checks did not run; whether abstaining was right is for human review", "missing_proposal"))
             return
-        pick = next((c for c in cands if get(c, "label") == "grounded"), cands[0])
-        # 传整个候选，不只传 id：Inspect 要知道用户选中的方向是什么
-        out = ep.inspect(inp["event"], None, candidate_id=get(pick, "id"), candidate=scoring.to_plain(pick), **ins_kw)
+        # Same selection as the API and the CLI: grounded and hypothesis candidates go to Inspect together
+        # (test fakes without inspect_candidates fall back to the first candidate)
+        select = getattr(ep, "inspect_candidates", None) or (lambda cs: cs[:1])
+        picks = select([scoring.to_plain(c) for c in cands])
+        out = ep.inspect(inp["event"], None, candidates=picks, **ins_kw)
     else:
         out = ep.inspect(inp["event"], inp.get("target"), **ins_kw)
     if web is not None:

@@ -83,15 +83,15 @@ def create_run(body: dict) -> dict:
                                                       "web": web.dump()}, ensure_ascii=False))
     research = _research(event, target, cfg=cfg, ev=ev, web=web)
     disc = None
-    candidate = None
+    candidates = None
     if not target:
         disc = ep.discover(event, reasoner=reasoner, evidence=ev, config=cfg, store=store)
         cands = disc.get("candidates") or []
         if not disc["ok"] or not cands:
             return {"ok": disc["ok"], "errors": disc["errors"], "version": None, "run_id": run_id,
                     "discover": disc, "inspect": None, "notes": notes, "web": web.dump()}
-        candidate = next((c for c in cands if c["label"] == "grounded"), cands[0])
-    ins = ep.inspect(event, target, candidate=candidate, candidate_id=candidate and candidate["id"],
+        candidates = ep.inspect_candidates(cands)  # grounded + hypothesis, drawn as competing branches in one graph
+    ins = ep.inspect(event, target, candidates=candidates,
                      reasoner=reasoner, evidence=ev, config=cfg, store=store, research=research)
     version = ins["graph"]["version"] if ins.get("graph") else None
     from catalyst.__main__ import _record_web, web_summary

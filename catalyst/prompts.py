@@ -2,7 +2,7 @@
 plan, and recordings replay by request hash, so a changed prompt makes old recordings fail explicitly. Few-shot
 examples must never contain eval cases."""
 
-PROMPT_VERSION = "p7"  # p7: numeric conditions always state a comparator (p6: English; p5: plan B)
+PROMPT_VERSION = "p8"  # p8: Inspect gets every grounded and hypothesis Discover candidate together; p7: numeric conditions always state a comparator (p6: English; p5: plan B)
 
 BASE = """You are Catalyst's research reasoner. You serve retail traders who research trade directions around events. You only propose causal hypotheses, mechanisms and decision conditions; states, versions and the entry decision are decided by the system's code, and you do not write them.
 

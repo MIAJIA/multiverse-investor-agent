@@ -9,7 +9,7 @@
 | Revision | What it replaces | Basis |
 | --- | --- | --- |
 | **Positioning**: from "we provide discipline" to "**an executable plan, approved by a human**, that says clearly which conditions can be automated" | A4 "we do not claim an edge, we claim discipline" | Plan B (`docs/changes/2026-10-18-branches-and-plans.md`) |
-| **One graph, several branches**: inside the chosen direction, 2–3 competing branches are expanded where there is a real disagreement, each leading to one conclusion; when there is no real disagreement, 1 branch is also valid | A single path | Plan B, D-B1 |
+| **One graph, several branches**: the grounded and hypothesis directions from Discover are drawn together in one graph, and 2–3 competing branches are expanded where there is a real disagreement, each leading to one conclusion; when there is no real disagreement, 1 branch is also valid | A single path | Plan B, D-B1 |
 | **One pre-filled plan per conclusion**; the user reviews it, edits thresholds or dates as needed, then **approves one of them**, or none (= no trade); at most one plan per version is in the approved state | One proposal + a "sign-off gate" (three required free-text boxes) | Plan B, D-B2 to D-B4 |
 | **Branch kind is derived by code**: evidenced / model-only / hypothetical, distinguishable at a glance in the UI | — | Plan B, D-B9 |
 | **Changing an assumption invalidates only the affected plans**; the other approvals are kept; scenarios can be stacked | "Sign-off is kept on fork" | Plan B, D-B5; the fix for stacked scenarios |
