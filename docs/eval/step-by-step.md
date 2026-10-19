@@ -93,5 +93,5 @@ Check off each step when it is done. Working directory `~/Downloads/multiverse-i
 - [x] Report in English, R and P in separate sections
 - [x] CLI: `--layer`, `--online` (W needs it, R refuses it), probes, condition evaluator
 - [x] Docs in English (eval-plan, test-plan, implementation-plan, test-set-plan, step-by-step, review sheet, INTERFACE, SOURCE)
-- [ ] K3: waiting on the evidence line to build a verified pack
+- [x] K3: case file written against the evidence line's verified pack (packs/opec2022.json, evidence 2553a9f); tests skip until that pack is merged, and pass with it in place (checked with a temporary copy)
 - [ ] Real Haiku runs after Plan B and the research loop merge (main session)

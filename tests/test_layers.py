@@ -134,7 +134,10 @@ def test_drop_excerpt_removes_it_from_the_model_context():
 def test_all_layers_smoke_with_fakes():
     """所有层用 fake 端到端跑一遍并出报告：A、B、R、T 走 run_all，P 走 run_probes。"""
     from eval.runner import cases_for_layers, run_all
-    cases = cases_for_layers(["A", "B", "R", "T"])
+    from pathlib import Path
+    packs_dir = Path(__file__).resolve().parents[1] / "packs"
+    cases = [c for c in cases_for_layers(["A", "B", "R", "T"])
+             if all((packs_dir / f"{p}.json").exists() for p in c["input"].get("evidence_packs", []))]
     assert {c["id"] for c in cases} >= {"C1", "B1", "B6", "R2", "R3", "T4"}
     results = run_all(cases, reasoner=FakeReasoner(), evidence=RealPackEvidence(), entrypoints=FakeEntrypoints())
     results += run_probes(run_case, reasoner=FakeReasoner(), evidence=RealPackEvidence(), entrypoints=FakeEntrypoints())

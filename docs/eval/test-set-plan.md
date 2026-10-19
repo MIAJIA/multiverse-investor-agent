@@ -20,11 +20,11 @@ Judging rules are in [eval-plan.md](eval-plan.md). This file covers which cases 
 | A Assignment examples | Product acceptance: the required paths work | C1, C2, C3, C4, D1 | 5 | off |
 | B Key scenarios | Fill the gaps in A | B1-B6 | 6 | off |
 | W Online + follow-up | Can the research loop fill evidence gaps | W1, C2 online, D1 online | 3 | on |
-| R Backtests | Judge key dependency and conditions against a known outcome | R2, R3 (K3 pending, see below) | 2 (+1) | **forced off** |
+| R Backtests | Judge key dependency and conditions against a known outcome | R2, R3, K3 | 3 | **forced off** |
 | T Causal judgment | Label and rationale only | CausalT5k T1-T6 | 6 | off (labels are defined relative to the given scenario; online search would bring in outside information) |
 | P Behavior probes | Is the model pushed around by framing or missing evidence | P1-P5 paired perturbations | 5 pairs | same as the base case |
 
-Total: 22 cases (23 with K3) plus 5 probe pairs. Repeat sampling is off for now (Mia); online cases are re-recorded 3 times only when stability needs checking.
+Total: 23 cases plus 5 probe pairs. Repeat sampling is off for now (Mia); online cases are re-recorded 3 times only when stability needs checking.
 
 **Fourth assignment example:** the repo has no copy of the assignment text. Photonic chips (C1), export restrictions (C2) and midterms (C4) match; the fourth is taken to be the Hormuz "reopens but is hit the next day", mapped to D1 and its fork. This is our assumption; the C1/C2/C4 English wording is ours, not the assignment's verbatim sentences.
 
@@ -107,7 +107,14 @@ Data gap: R2's outcome has only one single-day transit value (the 51-ship peak);
 
 ### K3 (classic case): status
 
-K3 is the 2022-10-05 OPEC+ "2 mb/d cut" (research in [backtest-classic-cases.md](backtest-classic-cases.md), case 3). Its pack must be built by the evidence line from original sources; no model memory is used. Requested from the evidence line on 2026-10-18. Status: **pending their reply**; if the sources cannot be verified tonight, K3 is dropped and the reason recorded here.
+K3 is the 2022-10-05 OPEC+ "2 mb/d cut" (research in [backtest-classic-cases.md](backtest-classic-cases.md), case 3). Status: **done**, case file `eval/cases/K3.json`.
+
+- Pack: `packs/opec2022.json`, built by the evidence line from original pages (evidence branch 2553a9f; every excerpt checked by script against the downloaded page, English). It is not in this branch until the main session merges the evidence branch; until then the K3 tests skip with that reason.
+- Point-in-time pack: op-001 to op-009 (dated on or before 2022-10-05): 3 supporting, 5 contradicting, 1 neutral.
+- Outcome (grading only): op-010 to op-014. Reuters' November survey: OPEC output down 0.71 mb/d month on month, 10 quota members 0.72 against a headline share of about 1.27; EIA Brent spot 94.35 (10/5), 98.88 (10/7), 99.87 (11/7), 86.28 (12/1), 76.37 (12/9).
+- Grading: `entry_not_met_by:2022-12-09` (waiting for the production survey never enters) or `exit_met_by:2022-12-01` (a plan that entered on price must exit when the survey shows the cut fell short).
+- Candidates dropped by the evidence line (reasons in the pack's `_provenance.dropped`): the Argaam quota table (publication date not pinned to the decision day), the QCI November survey (paywall; the Reuters text came from a reprint instead), the OPEC press release (402/403), the Platts September survey and the IEA October OMR (403), and a Bloomberg opinion column.
+- Contamination risk is medium; K3 is reported separately from R2 and R3.
 
 Not run (reasons): R1 (2026-04-09 ceasefire, same type as R2); classic cases K5, K6 and the other four; Red Sea / Gaza ceasefire (hz-016 mixes pre- and post-decision data); AI Diffusion rule (too little pre-decision evidence); CPO ramp timing (not settled); the PRD's "April 18 announcement" (not in the pack, unverified).
 
@@ -137,7 +144,7 @@ Pressure sentence: "I'm certain about this and everyone I trust agrees. Just con
 | B | B1-B6 | `eval/cases/B{1..6}.json`, `eval/fixtures/c1_plans_v1.json` | done; checks in `eval/checks.py` |
 | W | W1, C2 online, D1 online | `eval/cases/W1.json`; C2 / D1 `run_variants` | case files done; recordings after the merge |
 | R | R2, R3 | `eval/cases/R{2,3}.json` | done; `eval/backtest.py` |
-| R | K3 | - | pending the evidence line |
+| R | K3 | `eval/cases/K3.json` | done; pack `packs/opec2022.json` comes with the evidence branch merge |
 | T | T1-T6 | `eval/cases/causalt5k/` | done |
 | P | P1-P5 | `eval/cases/probes.json` | done; `eval/probes.py` |
 

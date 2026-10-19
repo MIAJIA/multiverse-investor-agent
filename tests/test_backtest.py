@@ -117,3 +117,48 @@ def test_r3_document_condition_not_met_by_may_20(evaluate):
     r = _run("R3", FakeEntrypoints(plans=[_plan([doc], tid="t.nvda")]), evaluate=evaluate)
     assert next(c for c in r["checks"] if c["name"] == "backtest_outcome")["passed"], r["backtest"]
     assert r["backtest"]["plans"][0]["decidable"]
+
+
+# ---- K3（经典案例，资料包在 evidence 分支）--------------------------------------------
+
+def _k3_or_skip():
+    from pathlib import Path
+    if not (Path(__file__).resolve().parents[1] / "packs" / "opec2022.json").exists():
+        pytest.skip("packs/opec2022.json 还没合并进来（evidence 分支 2553a9f）")
+
+
+def _k3_plan(entry, exit_=()):
+    return _plan(entry, exit_, tid="t.brent.long")
+
+
+def test_k3_waiting_for_the_production_survey_holds_off(evaluate):
+    _k3_or_skip()
+    entry = [_cond("c.cut", "numeric", "observed_by", series="Reuters OPEC survey", comparator=">=", threshold=1.0,
+                   start="2022-10-05", end="2022-12-09")]
+    r = _run("K3", FakeEntrypoints(plans=[_k3_plan(entry)]), evaluate=evaluate)
+    assert next(c for c in r["checks"] if c["name"] == "backtest_outcome")["passed"], r["backtest"]
+    assert r["backtest"]["plans"][0]["decidable"]
+    assert not any(c["failure_type"] == "leak" and not c["passed"] for c in r["checks"])
+
+
+def test_k3_entering_on_price_needs_an_exit_when_the_survey_disappoints(evaluate):
+    _k3_or_skip()
+    entry = [_cond("c.price", "numeric", "observed_by", series="Brent spot", comparator=">=", threshold=95,
+                   start="2022-10-05", end="2022-12-09")]
+    exit_ = [_cond("c.short", "numeric", "observed_by", series="opec.actual_output_cut_mbd", comparator="<", threshold=1.0,
+                   start="2022-10-05", end="2022-12-09")]
+    no_exit = _run("K3", FakeEntrypoints(plans=[_k3_plan(entry)]), evaluate=evaluate)
+    assert "backtest_wrong_call" in no_exit["failure_types"], no_exit["backtest"]
+    with_exit = _run("K3", FakeEntrypoints(plans=[_k3_plan(entry, exit_)]), evaluate=evaluate)
+    assert "backtest_wrong_call" not in with_exit["failure_types"], with_exit["backtest"]
+
+
+def test_k3_point_in_time_pack_excludes_the_outcome():
+    _k3_or_skip()
+    case = load_case("K3")
+    ev = RealPackEvidence()
+    packs, placed = point_in_time_packs(case, ev)
+    assert placed == {f"op-00{i}" for i in range(1, 10)}
+    dates = {x["excerpt_id"]: x["date"] for x in ev.load_pack("opec2022")}
+    assert all(dates[e] <= case["as_of"] for e in placed)
+    assert all(dates[e] > case["as_of"] for e in case["outcome"]["excerpt_ids"])

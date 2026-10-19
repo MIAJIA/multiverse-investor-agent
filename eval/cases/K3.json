@@ -1,0 +1,182 @@
+{
+  "id": "K3",
+  "type": "backtest",
+  "layer": "R",
+  "title": "Backtest (classic): 'OPEC+ cut 2 mb/d, go long Brent'",
+  "entry": "inspect",
+  "as_of": "2022-10-05",
+  "input": {
+    "event": "OPEC+ just announced a 2 million barrels per day production cut from November, so go long Brent",
+    "target": null,
+    "today": "2022-10-05",
+    "evidence_packs": [
+      "opec2022"
+    ]
+  },
+  "online": false,
+  "online_locked": true,
+  "allowed_excerpts": [
+    "op-001",
+    "op-002",
+    "op-003",
+    "op-004",
+    "op-005",
+    "op-006",
+    "op-007",
+    "op-008",
+    "op-009"
+  ],
+  "allowed_exceptions": {},
+  "excluded": {
+    "op-010": "outcome (Reuters November survey, 2022-12-01)",
+    "op-011": "outcome (Reuters November survey, 2022-12-01)",
+    "op-012": "outcome (Reuters November survey, 2022-12-01)",
+    "op-013": "outcome (EIA Brent spot after the decision; the excerpt date is the EIA page release date)",
+    "op-014": "outcome (EIA Brent spot after the decision; the excerpt date is the EIA page release date)"
+  },
+  "pack_rule": "Point-in-time pack = every excerpt in packs/opec2022.json dated on or before 2022-10-05 (op-001 to op-009). The pack was built by the evidence line from original pages (evidence branch 2553a9f); candidates that could not be verified were dropped there, with reasons in the pack's _provenance.dropped.",
+  "outcome": {
+    "excerpt_ids": [
+      "op-010",
+      "op-011",
+      "op-012",
+      "op-013",
+      "op-014"
+    ],
+    "truth": "Reuters' November survey (2022-12-01): OPEC pumped 29.01 mb/d, down 710,000 b/d month on month; the 10 members with quotas cut 720,000 b/d against a headline share of about 1.27 mb/d; Saudi Arabia delivered about 500,000 b/d (op-010 to op-012). EIA Brent spot: 94.35 on 10/5, 98.88 on 10/7, 99.87 on 11/7, 86.28 on 12/1, 76.37 on 12/9 (op-013, op-014). Other factors (demand, China's Covid policy, the Russian price cap) also moved prices, so the fall is not only about the cut.",
+    "observations": [
+      {
+        "source": "opec.actual_output_cut_mbd",
+        "coverage": {
+          "start": "2022-10-05",
+          "end": "2022-12-09"
+        },
+        "records": [
+          {
+            "date": "2022-12-01",
+            "value": 0.71,
+            "excerpt_id": "op-010"
+          }
+        ],
+        "note": "month-on-month fall in OPEC crude output in November, as a positive number (0.71 mb/d)"
+      },
+      {
+        "source": "opec.crude_production_mbd",
+        "coverage": {
+          "start": "2022-10-05",
+          "end": "2022-12-09"
+        },
+        "records": [
+          {
+            "date": "2022-12-01",
+            "value": 29.01,
+            "excerpt_id": "op-010"
+          }
+        ]
+      },
+      {
+        "source": "eia.brent_spot_usd",
+        "coverage": {
+          "start": "2022-10-05",
+          "end": "2022-12-09"
+        },
+        "records": [
+          {
+            "date": "2022-10-05",
+            "value": 94.35,
+            "excerpt_id": "op-013"
+          },
+          {
+            "date": "2022-10-07",
+            "value": 98.88,
+            "excerpt_id": "op-013"
+          },
+          {
+            "date": "2022-11-07",
+            "value": 99.87,
+            "excerpt_id": "op-013"
+          },
+          {
+            "date": "2022-12-01",
+            "value": 86.28,
+            "excerpt_id": "op-014"
+          },
+          {
+            "date": "2022-12-09",
+            "value": 76.37,
+            "excerpt_id": "op-014"
+          }
+        ]
+      }
+    ],
+    "series_aliases": {
+      "opec.actual_output_cut_mbd": [
+        "OPEC+ actual output cut",
+        "actual production cut",
+        "Reuters OPEC survey",
+        "OPEC production survey",
+        "opec.output_cut"
+      ],
+      "opec.crude_production_mbd": [
+        "OPEC crude production",
+        "OPEC output",
+        "opec.production"
+      ],
+      "eia.brent_spot_usd": [
+        "Brent spot",
+        "Brent spot price",
+        "EIA Brent",
+        "RBRTE",
+        "brent.spot"
+      ]
+    }
+  },
+  "expected": {
+    "gate": "WAIT",
+    "behavior": "Separate the quota cut from actual output: several members were already producing below quota (op-001, op-002, op-004), and analysts expected the physical cut to be about half the headline (op-007, op-008). The key dependency is the actual output of members with spare capacity; the deciding data (November production surveys) arrives in early December, so hold off on 10/5. Supporting excerpts (op-003, op-006, op-009) can be weighed, but the headline alone is not an entry signal.",
+    "key_dependency_should_be": "actual output cuts by members with spare capacity, not the headline quota cut",
+    "backtest": {
+      "entry_resolution": "A plan that waits for the November survey to show an actual cut of about 1 mb/d or more never enters (the survey showed 0.71). A plan that enters on price alone enters on 10/7.",
+      "pass_if_any": [
+        "entry_not_met_by:2022-12-09",
+        "exit_met_by:2022-12-01"
+      ],
+      "grading_note": "exit_met_by:2022-12-01 is the minimum acceptable path: a plan that entered must exit when the survey shows the cut fell short. Holding off from the start (entry never met) is the call the research note expects.",
+      "counter_excerpts_to_address": [
+        "op-001",
+        "op-007",
+        "op-008"
+      ]
+    }
+  },
+  "contamination_probe": "Without any documents: after OPEC+ announced a 2 million barrels per day cut on October 5, 2022, how much did OPEC's actual output fall in November 2022, and where was Brent in early December 2022?",
+  "contamination_markers": [
+    "710,000",
+    "0.71",
+    "710 thousand",
+    "720,000",
+    "76.37",
+    "$76",
+    "86.28",
+    "less than the headline",
+    "paper cut"
+  ],
+  "evals": [
+    "E1",
+    "E2",
+    "Backtest"
+  ],
+  "auto_checks": [
+    "online_forced_off",
+    "only_allowed_excerpts_cited",
+    "gate_per_plan",
+    "backtest_condition_resolution",
+    "contamination_probe"
+  ],
+  "human_review": [
+    "Backtest: is the key dependency actual output or the headline quota",
+    "E1: are op-001, op-007 and op-008 addressed",
+    "E2: does an entry condition wait for the November production data"
+  ],
+  "notes": "Classic case: contamination risk is medium (the cut is well known; the survey figures are less likely to be memorized). Report separately from R2 and R3. Backtests must run offline: the runner refuses --online for layer R; the pack holds only allowed_excerpts; the contamination probe runs first; citing anything outside allowed_excerpts counts as a leak."
+}
