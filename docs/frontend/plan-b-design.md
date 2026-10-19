@@ -1,22 +1,22 @@
-# 前端设计：方案 B-最小（分支 + 批准计划）
+# Frontend design: Plan B-minimal (branches + plan approval)
 
-2026-10-18 · frontend 分支（已合 core-schema@da2d097）· 状态：**已审过（第 10 节是审后的决定，优先于正文），等后端实现 commit 后开工**
+2026-10-18 · frontend branch (core-schema@da2d097 merged) · Status: **reviewed (section 10 holds the post-review decisions and takes precedence over the body), start once the backend implementation is committed**
 
-依据：`docs/changes/2026-10-18-branches-and-plans.md`（下称「改动说明」）第 3、5、9 节。本文只写前端；数据契约以方案 B 后端最终交付的 schema 为准，本文先按主 session 转来的契约设计，第 7 节列出需要后端补的地方。
+Basis: sections 3, 5, and 9 of `docs/changes/2026-10-18-branches-and-plans.md` (hereafter "the change notes"). This document covers only the frontend; the data contract is whatever schema Plan B's backend finally delivers. This document is designed for now against the contract relayed by the main session, and section 7 lists what the backend needs to add.
 
-原则不变：**模型提议，代码裁决；前端只展示、编辑、确认、比较。** 分支、分支类别、gate、失效判定都由后端给；前端只做按 id 查找和集合运算。
+The principle is unchanged: **the model proposes, the code decides; the frontend only displays, edits, confirms, and compares.** Branches, branch kinds, gate, and invalidation are all provided by the backend; the frontend only does lookups by id and set operations.
 
-## 1. 范围
+## 1. Scope
 
-| 页面 | 做 | 不做（下一期） |
+| Page | Do | Don't do (next phase) |
 | --- | --- | --- |
-| B1 | 三类分支截然不同的视觉（D-B9）；点结论高亮整条分支；共用主干按 `trunk` 显示 | 分叉点标记；前提勾选后变淡（D-B6） |
-| B2 | 「签字」改成「批准计划」：结论列表 + 预填计划 + 理解确认 + 批准 / 撤销批准 + 可选备注（D-B3、D-B4、D-B7） | 组合批准；导出给执行层 |
-| B3 | 维持现状；受影响的已批准计划标「前提已改动，请重新批准」；对手分支变了给一句提示；加一个「在这个版本上重新批准」入口（见 4.3） | 撤销栈、「设为当前版本」的完整流程 |
-| #scenarios | 保留，标「实验」，从顶栏挪进 playground 的二级入口，跟上新 schema 能编译 | 进入主流程 |
-| 顶栏（可选） | 联网开关 + 一行状态「联网：开，拿到 N 段」，取自 `web.message` | — |
+| B1 | Clearly distinct visuals for the three branch kinds (D-B9); clicking a conclusion highlights the whole branch; the shared trunk is displayed according to `trunk` | Divergence point markers; premises fading after being checked (D-B6) |
+| B2 | "签字" ("Sign") becomes "批准计划" ("Approve plan"): conclusion list + prefilled plan + understanding confirmation + approve / revoke approval + optional note (D-B3, D-B4, D-B7) | Portfolio approval; export to the execution layer |
+| B3 | Keep as is; affected approved plans are marked "前提已改动，请重新批准" ("premise changed, please re-approve"); a one-line hint when a rival branch changed; add a "在这个版本上重新批准" ("re-approve on this version") entry point (see 4.3) | Undo stack, the full "set as current version" flow |
+| #scenarios | Keep, mark "实验" ("experimental"), move from the top bar to a secondary entry inside the playground, catch up with the new schema so it compiles | Joining the main flow |
+| Top bar (optional) | Online toggle + a one-line status "联网：开，拿到 N 段" ("online: on, got N excerpts"), taken from `web.message` | — |
 
-## 2. 数据契约（前端这边的类型）
+## 2. Data contract (frontend-side types)
 
 ```ts
 type BranchKind = 'evidenced' | 'model_only' | 'hypothetical';
@@ -30,21 +30,21 @@ interface Branch {
   trunk: 'evidenced' | 'model_only';
 }
 
-interface TradeProposal { /* 现有字段 */ terminal_id: string; }
+interface TradeProposal { /* existing fields */ terminal_id: string; }
 
 interface VersionBundle {
   graph: Graph;
-  proposals: TradeProposal[];   // 取代 proposal，不保留旧字段
+  proposals: TradeProposal[];   // replaces proposal; the old field is not kept
   branches: Branch[];
   scenario: Scenario | null;
   diff: GraphDiff | null;
   excerpts: Excerpt[];
 }
 
-interface SignBody {            // 语义是「批准」，接口名不变
+interface SignBody {            // semantics are "approve"; the interface name is unchanged
   version: string;
-  terminal_id: string;          // 必填
-  clarified_statement?: string; // 可选：用户在「我们把你的想法理解为……」里改过才发
+  terminal_id: string;          // required
+  clarified_statement?: string; // optional: only sent if the user edited it in "we understand your idea as ..."
   criteria?: string | null;
   deadline?: string | null;
   confirmed_claim_ids: string[];
@@ -52,52 +52,52 @@ interface SignBody {            // 语义是「批准」，接口名不变
 }
 ```
 
-前端按 `terminal_id` 关联 `proposals` 和 `branches`，不依赖数组顺序（改动说明 4.1：避免「默认显示哪一份」由模型的输出顺序决定）。列表按画布上终点的左右顺序排（`toFlow` 的坐标），这是纯展示。
+The frontend associates `proposals` and `branches` by `terminal_id` and doesn't depend on array order (change notes 4.1: avoid letting "which one is shown by default" be decided by the model's output order). The list is ordered by the left-to-right order of terminals on the canvas (`toFlow`'s coordinates), which is purely presentational.
 
-## 3. B1：三类分支的视觉规范
+## 3. B1: visual spec for the three branch kinds
 
-### 3.1 规范
+### 3.1 Spec
 
-| | 有资料支持 evidenced | 仅模型推断 model_only | 假设 hypothetical |
+| | Evidence-backed (evidenced) | Model inference only (model_only) | Hypothetical (hypothetical) |
 | --- | --- | --- | --- |
-| 节点底色 | 现在的类型淡底色（事件蓝 / 假设绿 / 终点紫） | 白底 | 灰紫底 `#f1eef7` + 45° 斜线底纹（`repeating-linear-gradient(45deg, #e3ddef 0 2px, transparent 2px 8px)`） |
-| 节点描边 | 1px 实线，类型色 | 1px 虚线 `#b9bfc8`（5 4） | 1.5px 点线 `#8e7cc3`（2 3） |
-| 文字 | 正常 | 整体减淡：标题 `#6b7280`，不用 opacity（避免叠加后发灰） | 标题 `#4b3f72` |
-| 边 | 实线 `#9aa1ab` 1.2px | 虚线 `#c4c9d0`（5 4） | 点线 `#8e7cc3`（2 3） |
-| 标签 | 无（默认状态不加字） | 小字「仅推断」，灰 | 醒目胶囊「假设 · 未观测」：`#5b4a9e` 字、`#e6e0f5` 底，**每个节点和结论卡片都有**，放在标题前 |
-| 圆环 | 照常（绿 / 红 / 灰格） | 照常；没有引用时是虚线空环 | 照常，但底色换成灰紫 |
+| Node background | Current light type background (event blue / assumption green / terminal purple) | White | Gray-violet `#f1eef7` + 45° diagonal hatching (`repeating-linear-gradient(45deg, #e3ddef 0 2px, transparent 2px 8px)`) |
+| Node border | 1px solid, type color | 1px dashed `#b9bfc8` (5 4) | 1.5px dotted `#8e7cc3` (2 3) |
+| Text | Normal | Faded overall: title `#6b7280`, no opacity (avoids going gray when layered) | Title `#4b3f72` |
+| Edge | Solid `#9aa1ab` 1.2px | Dashed `#c4c9d0` (5 4) | Dotted `#8e7cc3` (2 3) |
+| Label | None (no text in the default state) | Small text "仅推断" ("inferred only"), gray | Prominent pill "假设 · 未观测" ("hypothetical · not observed"): `#5b4a9e` text, `#e6e0f5` background, **on every node and conclusion card**, placed before the title |
+| Ring | As usual (green / red / gray segments) | As usual; a dashed empty ring when there are no citations | As usual, but the background becomes gray-violet |
 
-- **颜色只给状态**的原则保留：分支类别靠底纹 + 线型 + 标签区分，所以灰度打印或色弱也能分辨。橙色仍只留给「关键依赖」和情景里的「受挑战」。
-- 合成资料包导致的降级（改动说明 4.2 第 3 条）：在 model_only 的标签后加「· 资料为占位」。需要后端给出这个标记，见第 7 节第 3 条。
+- The principle that **color is only for status** is kept: branch kinds are distinguished by hatching + line style + label, so they can be told apart in grayscale printing or with color vision deficiency. Orange is still reserved for "关键依赖" ("key dependency") and, in scenarios, "受挑战" ("challenged").
+- Downgrade caused by a synthetic evidence pack (change notes 4.2 item 3): append "· 资料为占位" ("· evidence is placeholder") after the model_only label. This needs the backend to provide the flag; see section 7 item 3.
 
-### 3.2 每个节点用哪一类
+### 3.2 Which kind each node uses
 
-后端只给了「分支」级别的 kind，节点要落到某一类，规则如下（只查表，不推导证据）：
+The backend only gives a branch-level kind; to assign a node to a kind, the rules are as follows (table lookups only, no inference from evidence):
 
-1. 节点是 shock，或是本版本 `scenario.ops` 的 target → **假设**；
-2. 节点在某条分支的 `own_node_ids` 里 → 该分支的 `kind`；
-3. 其余（共用主干）→ 包含它的分支的 `trunk`；几条分支的 trunk 不一致时取较弱的一档（model_only）。
+1. The node is a shock, or is a target of this version's `scenario.ops` → **hypothetical**;
+2. The node is in some branch's `own_node_ids` → that branch's `kind`;
+3. Everything else (the shared trunk) → the `trunk` of the branches that contain it; when the trunks of several branches disagree, take the weaker tier (model_only).
 
-第 3 条是前端在后端结果上做的取舍。**建议后端直接给 `node_kinds` / `edge_kinds` 两张表**（第 7 节第 1 条），前端就不需要这条规则。边的类别跟它的终点节点走。
+Rule 3 is a trade-off the frontend makes on top of the backend's results. **Suggest the backend directly provide two tables, `node_kinds` / `edge_kinds`** (section 7 item 1), so the frontend doesn't need this rule. An edge's kind follows its end node.
 
-### 3.3 高亮整条分支
+### 3.3 Highlighting a whole branch
 
-点一个结论（terminal）：这条分支 = 它的 `own_node_ids` + 它的全部祖先（共用主干）。祖先用图结构上溯，是按边查找，不做判断。高亮时其余节点退到 32% 透明度（沿用 B3 的「其余退后」），右侧面板显示这个结论的计划摘要，并提供「去批准这份计划 →」，跳到 B2 并选中这一行。点空白处取消。
+Click a conclusion (terminal): this branch = its `own_node_ids` + all its ancestors (the shared trunk). Ancestors are traced upward through the graph structure, which is a lookup along edges, not a judgment. While highlighted, the other nodes recede to 32% opacity (reusing B3's "the rest recede"), the right-hand panel shows this conclusion's plan summary and offers "去批准这份计划 →" ("go approve this plan →"), which jumps to B2 and selects this row. Click empty space to cancel.
 
-### 3.4 组件改动
+### 3.4 Component changes
 
-- `node/DesignNode.tsx`：`DesignData` 加 `kind: BranchKind`、`highlighted?: boolean`；按 3.1 出样式。现在的 `look.color` / `look.shape` 分支保留给 playground。
-- `components/GraphCanvas.tsx`：读 `bundle.branches`，按 3.2 给每个节点、每条边定 kind；`selectedTerminalId` 时按 3.3 高亮。
-- `lookup.ts`：`keyClaimId(proposal)` 改成 `keyClaimIds(proposals)`（每份计划一个）；新增 `branchOf(bundle, terminalId)`、`ancestors(graph, id)`。
-- `Workspace.tsx`：点 terminal 时右侧显示「计划摘要」而不是证据面板（证据面板仍可从摘要里展开）。
-- `NodePanel.tsx`：「为什么先查这一步」改成列出把这个节点当关键依赖的那几份计划。
+- `node/DesignNode.tsx`: `DesignData` adds `kind: BranchKind`, `highlighted?: boolean`; styled per 3.1. The existing `look.color` / `look.shape` branches are kept for the playground.
+- `components/GraphCanvas.tsx`: reads `bundle.branches`, assigns a kind to every node and edge per 3.2; when `selectedTerminalId` is set, highlights per 3.3.
+- `lookup.ts`: `keyClaimId(proposal)` becomes `keyClaimIds(proposals)` (one per plan); adds `branchOf(bundle, terminalId)`, `ancestors(graph, id)`.
+- `Workspace.tsx`: when a terminal is clicked, the right side shows the "计划摘要" ("plan summary") instead of the evidence panel (the evidence panel can still be expanded from the summary).
+- `NodePanel.tsx`: "为什么先查这一步" ("why check this step first") becomes a list of the plans that use this node as their key dependency.
 
-## 4. B2：「批准计划」
+## 4. B2: "批准计划"
 
-### 4.1 页面结构
+### 4.1 Page structure
 
 ```text
-┌ 我们把你的想法理解为：「2027-06-30 前 CPO 出货……」   ✓ 对   改一下 ┐   ← 只出现一次，所有计划共用
+┌ 我们把你的想法理解为：「2027-06-30 前 CPO 出货……」   ✓ 对   改一下 ┐   ← appears only once, shared by all plans
 ├ 结论列表 ────────────────────────────────────────────────────────────┤
 │ ▌ 光源营收超预期  LITE 看多     你需要相信：外置光源架构、光源需求上升   WAIT 先别动   ✓ 已批准 │
 │ ▒ 硅光代工营收占比升  TSM 看多  你需要相信：硅光代工利用率升           WAIT 先别动          │
@@ -112,239 +112,257 @@ interface SignBody {            // 语义是「批准」，接口名不变
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
-- 行首的竖条是分支类别的缩略：▌实色（有资料）、┆ 虚线（仅推断）、▒ 斜线灰紫（假设），和画布同一套视觉。假设分支的行还带「假设 · 未观测」胶囊。
-- 「你需要相信」= 这条分支的 `own_node_ids` 去掉 terminal 本身，用短标题列出，最多 3 个，多了写「等 N 个」；空的时候（分支只在终点分开）写「与其他结论共用全部前提」。
-- 状态列只用 gate（先别动 / 受阻 / 待复核），不再单独显示 draft / needs_review，后者放进计划卡片的小字里。
-- 原来的逐条假设表和三项必填表单（`SignDialog`）删掉。
+- The vertical bar at the start of each row is a miniature of the branch kind: ▌ solid (evidence-backed), ┆ dashed (inferred only), ▒ diagonal gray-violet (hypothetical), the same visual system as the canvas. Rows of hypothetical branches also carry the "假设 · 未观测" ("hypothetical · not observed") pill.
+- "你需要相信" ("you need to believe") = this branch's `own_node_ids` minus the terminal itself, listed by short title, at most 3, with "等 N 个" ("and N more") beyond that; when empty (the branch only splits at the terminal), write "与其他结论共用全部前提" ("shares all premises with other conclusions").
+- The status column uses only gate (先别动 "hold off" / 受阻 "blocked" / 待复核 "awaiting review"), and no longer shows draft / needs_review separately; the latter goes into the small text on the plan card.
+- The original per-assumption table and the three-required-field form (`SignDialog`) are removed.
 
-### 4.2 交互流程
+### 4.2 Interaction flow
 
-1. 进入 B2，默认选中：本版本已批准的那一份；没有就选列表第一行。不自动批准任何一份。
-2. **理解确认**：任何一份计划的 `user_judgment.requires_user_confirmation` 为 true 时，顶部那一行必须点「✓ 对」才能批准；点「改一下」原地变成输入框，改完再 ✓，改过的文字随批准请求以 `clarified_statement` 发出。没改就不发这个字段（后端沿用计划里的值）。
-3. **改阈值 / 日期**：只在选中的计划里改，记在这份计划的草稿里（`drafts[terminal_id].overrides`），和现在一样标「已修改，批准后由后端重算」。
-4. **批准**：
-   - 本版本没有已批准的计划 → 直接发 `sign`。
-   - 本版本已有另一份已批准 → 先弹一句确认「批准这份会撤销对『光源营收超预期』的批准」，确认后再发。
-   - 返回新版本号 → `getVersion` → 当前版本切到新版本，列表里这一行显示「✓ 已批准」，其余行没有。
-5. **撤销批准**：已批准的那一行旁边有「撤销批准」。撤销后本版本没有任何已批准的计划，界面上写「本版本没有批准任何计划（= 不交易）」。**后端目前没有撤销接口**，见第 7 节第 2 条。
-6. **不批准**：不需要专门的按钮；离开页面就是不批准。顶部一行小字常驻：「一份都不批准也是一个决定」。
-7. 批准按钮旁边常驻小字「批准的是一份计划，不是下单」，没有执行按钮。
+1. On entering B2, the default selection is: the plan already approved in this version; if none, the first row of the list. No plan is approved automatically.
+2. **Understanding confirmation**: when any plan's `user_judgment.requires_user_confirmation` is true, the top row's "✓ 对" ("✓ right") must be clicked before approving; clicking "改一下" ("edit") turns it into an input box in place, then ✓ after editing, and the edited text is sent with the approval request as `clarified_statement`. If unedited, this field isn't sent (the backend keeps the value in the plan).
+3. **Changing thresholds / dates**: only in the selected plan, recorded in this plan's draft (`drafts[terminal_id].overrides`), and, as now, marked "已修改，批准后由后端重算" ("modified, will be recomputed by the backend after approval").
+4. **Approve**:
+   - No plan approved yet in this version → send `sign` directly.
+   - Another plan already approved in this version → first pop a one-line confirmation "批准这份会撤销对『光源营收超预期』的批准" ("approving this will revoke the approval of 『光源营收超预期』 (light source revenue beats expectations)"), and send after confirmation.
+   - New version number returned → `getVersion` → the current version switches to the new version; this row in the list shows "✓ 已批准" ("✓ approved"), the other rows don't.
+5. **Revoke approval**: the approved row has "撤销批准" ("revoke approval") beside it. After revoking, no plan is approved in this version, and the UI says "本版本没有批准任何计划（= 不交易）" ("no plan approved in this version (= no trade)"). **The backend currently has no revoke endpoint**; see section 7 item 2.
+6. **Not approving**: no dedicated button is needed; leaving the page means not approving. A permanent line of small text at the top: "一份都不批准也是一个决定" ("approving none is also a decision").
+7. Permanent small text next to the approve button "批准的是一份计划，不是下单" ("what you approve is a plan, not an order"); there is no execute button.
 
-### 4.3 B3 的改动
+### 4.3 B3 changes
 
-- 情景页右侧「提案 v1 → v2」改成「计划」：只列**基线里已批准的那一份**和情景版本里同一个 terminal 的计划，并排显示 gate / 支持度 / 批准状态。
-- **失效标记**：基线里已批准、情景里 `user_judgment.confirmed` 变成 false 的计划 → 橙色标「前提已改动，请重新批准」。判定用两个版本的后端字段对比（查表），不自己判断写范围；后端若补了显式字段就改用字段（第 7 节第 4 条）。
-- **对手分支提示**：已批准的计划没有失效，但本次 `diff.changed_claim_ids` 和**其他分支**的 `own_node_ids` 有交集 → 灰字「对手分支变了，你的计划没有直接受影响，但值得再看一眼」。
-- 「在这个版本上重新批准」：把情景版本设为 B2 的当前版本并跳到 B2。这是 B3 里唯一新增的动作，用来接上失效标记，否则用户看到「请重新批准」却无处可批。撤销栈不做。
+- The scenario page's right-hand "提案 v1 → v2" ("proposal v1 → v2") becomes "计划" ("plans"): only lists **the one approved in the baseline** and the plan for the same terminal in the scenario version, showing gate / support / approval state side by side.
+- **Invalidation marker**: a plan approved in the baseline whose `user_judgment.confirmed` became false in the scenario → orange "前提已改动，请重新批准". Determined by comparing backend fields across the two versions (table lookup), without judging write scope ourselves; if the backend adds an explicit field, switch to that field (section 7 item 4).
+- **Rival branch hint**: the approved plan isn't invalidated, but this fork's `diff.changed_claim_ids` intersects the `own_node_ids` of **other branches** → gray text "对手分支变了，你的计划没有直接受影响，但值得再看一眼" ("the rival branch changed; your plan isn't directly affected, but it's worth another look").
+- "在这个版本上重新批准": sets the scenario version as B2's current version and jumps to B2. This is the only new action in B3, used to connect to the invalidation marker; otherwise the user sees "请重新批准" ("please re-approve") with nowhere to approve. No undo stack.
 
-### 4.4 state 改动（仍是一份 state）
+### 4.4 State changes (still one state)
 
 ```ts
 type AppState = {
   runId: string | null;
   versions: Record<string, VersionBundle>;
-  baseVersion: string | null;            // B1 / B2 看的版本，fork 的 base_version
+  baseVersion: string | null;            // the version B1 / B2 look at, fork's base_version
   scenarioVersion: string | null;
   viewing: 'base' | 'scenario';
   tab: 'workspace' | 'signoff' | 'scenario';
   selectedNodeId: string | null;
-  selectedTerminalId: string | null;      // 新：B1 高亮和 B2 选中行共用
-  understood: { confirmed: boolean; text: string | null }; // 新：理解确认，按版本重置
-  drafts: Record<string, {                 // 新：按 terminal_id 存未提交的输入，取代 signoff
+  selectedTerminalId: string | null;      // new: shared by B1 highlighting and B2's selected row
+  understood: { confirmed: boolean; text: string | null }; // new: understanding confirmation, reset per version
+  drafts: Record<string, {                 // new: unsubmitted input stored by terminal_id, replaces signoff
     overrides: Record<string, ConditionOverride>;
     confirmedClaimIds: string[];
     note: string;
   }>;
-  online: boolean;                         // 新（可选）：联网开关
-  webMessage: string | null;               // 新（可选）：上一次建 run 返回的 web.message
+  online: boolean;                         // new (optional): online toggle
+  webMessage: string | null;               // new (optional): web.message returned by the last run creation
   busy: boolean; errors: string[] | null; notices: string[] | null; runNote: string | null;
 };
 ```
 
-`selectedTerminalId` 在 B1 和 B2 之间共享：B1 点结论，切到 B2 时默认选中同一行。`drafts` 和 `understood` 在 `baseVersion` 变化时清空。
+`selectedTerminalId` is shared between B1 and B2: click a conclusion in B1, and when switching to B2 the same row is selected by default. `drafts` and `understood` are cleared when `baseVersion` changes.
 
-### 4.5 组件改动
+### 4.5 Component changes
 
-| 文件 | 改动 |
+| File | Change |
 | --- | --- |
-| `types.ts` | 第 2 节的类型；`VersionBundle.proposal` → `proposals`；`Branch`、`BranchKind` |
-| `api.ts` | `sign` 的请求体；mock 的 `sign`：按 terminal 把这一份设为 confirmed、其余 false（gate 不重算，照旧标 MOCK）；mock 的 `fork` 不变；可选：`createRun` 带 `online`，返回 `web` |
-| `App.tsx` | 4.4 的 state；`signNow(terminalId)`；`revoke()`（等后端接口） |
-| `components/Signoff.tsx` | 重写：理解确认行 + 结论列表 + 计划区 + 批准 / 撤销 |
-| `components/SignDialog.tsx` | 删除，换成「批准会撤销另一份」的确认小框 `ApproveConfirm.tsx` |
-| `components/ConclusionList.tsx` | 新：结论列表，一行一个 terminal |
-| `components/ProposalCard.tsx` | 加分支类别横幅；null 阈值高亮「需要你确认」；去掉「研究判断」段（移到顶部理解确认行） |
-| `components/BranchSwatch.tsx` | 新：行首的类别缩略 + 「假设 · 未观测」胶囊，B1 / B2 / B3 共用 |
-| `components/Scenario.tsx` | 4.3 的计划对比、失效标记、对手提示、「在这个版本上重新批准」 |
-| `components/GraphCanvas.tsx`、`node/DesignNode.tsx`、`node/node.css`、`lookup.ts`、`Workspace.tsx`、`NodePanel.tsx` | 第 3 节 |
-| `scenarios/*` | 跟上 `proposals`（`scenario_ref` 从对应 terminal 的计划里取）；页头加「实验」标签；从 App 顶栏移除入口，只从 `#playground` 页头进入 |
-| `status.ts` | 新增 `BRANCH_KIND` 映射（文案、颜色、线型、底纹），所有组件从这里取 |
+| `types.ts` | The types in section 2; `VersionBundle.proposal` → `proposals`; `Branch`, `BranchKind` |
+| `api.ts` | `sign`'s request body; mock `sign`: sets this plan confirmed by terminal and the rest false (gate not recomputed, marked MOCK as before); mock `fork` unchanged; optional: `createRun` takes `online` and returns `web` |
+| `App.tsx` | The state in 4.4; `signNow(terminalId)`; `revoke()` (waiting for the backend endpoint) |
+| `components/Signoff.tsx` | Rewrite: understanding confirmation row + conclusion list + plan area + approve / revoke |
+| `components/SignDialog.tsx` | Delete, replaced by the small "批准会撤销另一份" ("approving will revoke the other one") confirmation box `ApproveConfirm.tsx` |
+| `components/ConclusionList.tsx` | New: conclusion list, one row per terminal |
+| `components/ProposalCard.tsx` | Add a branch-kind banner; null thresholds highlighted with "需要你确认" ("needs your confirmation"); remove the "研究判断" ("research judgment") section (moved to the top understanding confirmation row) |
+| `components/BranchSwatch.tsx` | New: the kind miniature at row start + the "假设 · 未观测" pill, shared by B1 / B2 / B3 |
+| `components/Scenario.tsx` | 4.3's plan comparison, invalidation marker, rival hint, "在这个版本上重新批准" |
+| `components/GraphCanvas.tsx`, `node/DesignNode.tsx`, `node/node.css`, `lookup.ts`, `Workspace.tsx`, `NodePanel.tsx` | Section 3 |
+| `scenarios/*` | Catch up with `proposals` (`scenario_ref` taken from the corresponding terminal's plan); add an "实验" label to the page header; remove the entry from the App top bar, entered only from the `#playground` page header |
+| `status.ts` | Add the `BRANCH_KIND` mapping (label, color, line style, hatching); all components take it from here |
 
-## 4.6 顶栏联网开关（可选）
+## 4.6 Top-bar online toggle (optional)
 
-- 位置：Analyze 按钮右边，一个小开关「联网」，默认关。打开后 `createRun` 的请求体带 `online: true`。
-- 状态行：开关下方一行小字，原样显示上一次 `POST /api/runs` 返回的 `web.message`（如「联网：开，拿到 6 段」或失败原因）；没有 `web` 字段时不显示。
-- 联网拿到的片段和资料包片段一样进证据面板，前端不区分来源样式（来源名本身会写明）。MOCK 下开关可点，但状态行写「MOCK：不联网」。
+- Position: to the right of the Analyze button, a small toggle "联网" ("online"), off by default. When on, `createRun`'s request body includes `online: true`.
+- Status line: a line of small text below the toggle, showing verbatim the `web.message` returned by the last `POST /api/runs` (e.g. "联网：开，拿到 6 段" ("online: on, got 6 excerpts") or the failure reason); not shown when there's no `web` field.
+- Excerpts fetched online go into the evidence panel just like evidence-pack excerpts; the frontend doesn't style sources differently (the source name itself says where it's from). Under MOCK the toggle is clickable, but the status line says "MOCK：不联网" ("MOCK: not online").
 
-## 5. fixture 怎么改
+## 5. How to change the fixtures
 
-等后端交付 schema 的 commit 后再动，步骤：
+Wait until the backend delivers the schema commit, then:
 
-1. `make_fixtures.py`：`DRAFT` 改成 3 份，每个 terminal 一份（LITE 看多、TSM 看多、MRVL 看空），各自的进场 / 离场条件取自这条分支上的条件，`terminal_id` 填上；调用后端的派生函数得到 `proposals`，调用 `catalyst/branches.py` 的函数得到 `branches`，**不在脚本里手算**。
-2. 四份 fixture 都按新格式生成：
-   - `c1`：基线 3 份计划；分叉到「改用集成激光」后，LITE 那条分支应变成 hypothetical；
-   - `c1_blocked`：同上，`cond.c1.els_design_wins` 判 not_met，LITE 计划 BLOCKED；
-   - `c1_multi`：加冲击的 c1-v3 让 TSM 那条分支变成 hypothetical，叠加的 c1-v4 两条都是；
-   - `c4_abstain`：不变（没有图）。
-3. 再加一份 `c1_approved`：在 c1 上用后端的 sign 入口批准 LITE 那份，然后分叉。这是演示「前提已改动，请重新批准」和「对手分支变了」的唯一办法，必须走后端，不在前端模拟。
-4. `check_fixtures.py`：每个版本 `proposals` 的 terminal 集合 = 图上 terminal 集合；每份计划 `TradeProposal.model_validate` 并检查规范形式；`branches` 与后端函数复算一致；同一版本最多一份 `confirmed`。
-5. **已知限制**：fixture 用的是合成资料包，按改动说明 4.2，所有分支都会降级成 model_only，fixture 里**看不到「有资料支持」的样式**。办法见第 7 节第 5 条；在那之前，evidenced 的样式只在 playground 里预览，并标明是演示。
+1. `make_fixtures.py`: `DRAFT` becomes 3 drafts, one per terminal (LITE bullish, TSM bullish, MRVL bearish), each taking its entry / exit conditions from the conditions on that branch, with `terminal_id` filled in; call the backend's derivation function to get `proposals`, and call the function in `catalyst/branches.py` to get `branches`, **not computed by hand in the script**.
+2. All four fixtures are generated in the new format:
+   - `c1`: 3 baseline plans; after forking to "改用集成激光" ("switch to integrated lasers"), the LITE branch should become hypothetical;
+   - `c1_blocked`: same as above, `cond.c1.els_design_wins` judged not_met, LITE plan BLOCKED;
+   - `c1_multi`: c1-v3 with the added shock makes the TSM branch hypothetical, and in the stacked c1-v4 both are;
+   - `c4_abstain`: unchanged (no graph).
+3. Add one more, `c1_approved`: on c1, approve the LITE plan via the backend's sign entrypoint, then fork. This is the only way to demo "前提已改动，请重新批准" and "对手分支变了"; it must go through the backend, not be simulated in the frontend.
+4. `check_fixtures.py`: for every version, the terminal set of `proposals` = the terminal set on the graph; each plan passes `TradeProposal.model_validate` and the canonical-form check; `branches` matches a recompute by the backend function; at most one `confirmed` per version.
+5. **Known limitation**: the fixtures use a synthetic evidence pack, so per change notes 4.2 all branches are downgraded to model_only, and **the "有资料支持" ("evidence-backed") style can't be seen** in the fixtures. For a remedy see section 7 item 5; until then, the evidenced style is only previewed in the playground and labeled as a demo.
 
-## 6. 测试计划
+## 6. Test plan
 
-### 自动化
+### Automated
 
-| 测试 | 内容 |
+| Test | Content |
 | --- | --- |
-| `branchStyle.test.ts`（新） | 3.2 的落类规则：shock / 改过的假设 → hypothetical；own 节点 → 分支 kind；共用主干 → trunk，不一致取 model_only；边跟终点走 |
-| `lookup.test.ts` | `ancestors`、`branchOf`、`keyClaimIds`；「你需要相信」= own 去掉 terminal |
-| `approval.test.ts`（新） | mock `sign`：批准一份后同版本只有它 confirmed；B3 失效判定（父 confirmed 且子 false）；对手提示（changed ∩ 其他分支 own） |
-| `status.test.ts` | `BRANCH_KIND` 覆盖三类，文案里有「假设 · 未观测」 |
-| `toFlow` / `strength` / `scenarios` | 跟上 `proposals` |
-| `check_fixtures.py` | 第 5 节第 4 条 |
-| typecheck、build | 照旧；`#scenarios` 必须能编译 |
+| `branchStyle.test.ts` (new) | 3.2's assignment rules: shock / changed assumption → hypothetical; own nodes → branch kind; shared trunk → trunk, take model_only on disagreement; edges follow their end node |
+| `lookup.test.ts` | `ancestors`, `branchOf`, `keyClaimIds`; "你需要相信" = own minus the terminal |
+| `approval.test.ts` (new) | mock `sign`: after approving one, only it is confirmed in that version; B3 invalidation check (parent confirmed and child false); rival hint (changed ∩ other branches' own) |
+| `status.test.ts` | `BRANCH_KIND` covers the three kinds, and the labels include "假设 · 未观测" |
+| `toFlow` / `strength` / `scenarios` | Catch up with `proposals` |
+| `check_fixtures.py` | Section 5 item 4 |
+| typecheck, build | As before; `#scenarios` must compile |
 
-### 手动演示（MOCK，接真实后端后重走）
+### Manual demo (MOCK, rerun after connecting the real backend)
 
-| # | 操作 | 预期 |
+| # | Action | Expected |
 | --- | --- | --- |
-| P1 | c1，B1 | 3 个结论；fixture 里全是「仅推断」样式（合成资料包），标「资料为占位」 |
-| P2 | B1 点 LITE 终点 | LITE 整条分支高亮（含共用主干），其余退后；右侧是 LITE 计划摘要和「去批准这份计划 →」 |
-| P3 | 去 B2 | LITE 行已选中；顶部「我们把你的想法理解为……」；批准按钮在 ✓ 之前不可用 |
-| P4 | ✓，填 CPO 出货阈值，批准 | LITE「✓ 已批准」；阈值那条标「已修改，批准后由后端重算」 |
-| P5 | 选 TSM，批准 | 先弹「会撤销对 LITE 的批准」；确认后只有 TSM 已批准 |
-| P6 | 撤销批准 | 「本版本没有批准任何计划（= 不交易）」（需后端接口；MOCK 下先模拟） |
-| P7 | c1_approved，B3 分叉「改用集成激光」 | 画布上 LITE 分支变成灰紫斜线 + 「假设 · 未观测」；LITE 计划标「前提已改动，请重新批准」 |
-| P8 | c1_approved 里批准的是 TSM 时再分叉同一处 | TSM 计划保留批准，出现「对手分支变了……值得再看一眼」 |
-| P9 | 「在这个版本上重新批准」 | 跳到 B2，当前版本是情景版本，LITE 未批准 |
-| P10 | #playground 页头进 #scenarios | 页头有「实验」，能正常显示 |
+| P1 | c1, B1 | 3 conclusions; in the fixture all are the "仅推断" style (synthetic evidence pack), marked "资料为占位" ("evidence is placeholder") |
+| P2 | In B1 click the LITE terminal | The whole LITE branch is highlighted (including the shared trunk), the rest recede; on the right, the LITE plan summary and "去批准这份计划 →" |
+| P3 | Go to B2 | The LITE row is selected; at the top "我们把你的想法理解为……" ("we understand your idea as ..."); the approve button is disabled until ✓ |
+| P4 | ✓, fill the CPO shipment threshold, approve | LITE "✓ 已批准"; the threshold condition is marked "已修改，批准后由后端重算" |
+| P5 | Select TSM, approve | First pops "会撤销对 LITE 的批准" ("will revoke approval of LITE"); after confirming only TSM is approved |
+| P6 | Revoke approval | "本版本没有批准任何计划（= 不交易）" (needs the backend endpoint; simulated under MOCK for now) |
+| P7 | c1_approved, fork "改用集成激光" in B3 | On the canvas the LITE branch becomes gray-violet hatching + "假设 · 未观测"; the LITE plan is marked "前提已改动，请重新批准" |
+| P8 | In c1_approved, with TSM being the approved one, fork the same spot again | The TSM plan keeps its approval, and "对手分支变了……值得再看一眼" ("the rival branch changed ... worth another look") appears |
+| P9 | "在这个版本上重新批准" | Jumps to B2, the current version is the scenario version, LITE not approved |
+| P10 | From the #playground page header into #scenarios | The page header has "实验", displays correctly |
 
-## 7. 需要后端确认或补的地方
+## 7. What the backend needs to confirm or add
 
-1. **节点 / 边的类别表**：契约只有分支级别的 kind，共用主干上的节点要前端按 3.2 第 3 条取舍。建议版本包加 `node_kinds: {id: kind}`、`edge_kinds: {id: kind}`，由 `branches.py` 一起算；有了它，3.2 整节变成查表。
-2. **撤销批准**：主 session 要求设计「撤销批准」，但现有接口只能批准。建议 `sign` 接受 `terminal_id: null`，表示本版本一份都不批准，产出新版本；或者新开 `POST /runs/{id}/revoke {version}`。前端两种都能接。
-3. **「资料为占位」的标记**：分支降级的原因前端拿不到。建议 `Branch` 加 `synthetic: bool`（或 `note`）。
-4. **失效的显式字段**：4.3 的失效标记现在靠「父版本 confirmed、子版本不是」推出来。建议 fork 在受影响的计划上写 `user_judgment.reset_by: <fork 版本号>`（或 `invalidated: true`），前端直接读，也能区分「本来就没批准」和「被分叉撤销」。
-5. **能看到「有资料支持」的演示数据**：合成资料包会让所有分支降成 model_only。要演示 evidenced 样式，需要一份用真实资料包录制的 C1（改动说明第 9 节的重录计划里本来就有）。在那之前，B1 的 evidenced 样式只在 playground 预览。
-6. **备注放哪**：「可选备注」没有对应字段。建议 `UserJudgment` 和 sign 请求体加 `note: str | None`；不建议塞进 `criteria`（语义不同）。
-7. **理解确认是否每份计划一份**：现在每份 `TradeProposal` 都带 `user_judgment`，但「我们把你的想法理解为……」是对用户原话的改写，应该全图只有一句。前端按「取第一份计划的 `clarified_statement`」显示；如果几份不一样，就逐份显示在计划卡片里。建议后端保证同一版本的几份计划这一句相同，或把它提到版本级别。
+1. **Node / edge kind tables**: the contract only has branch-level kind, so for nodes on the shared trunk the frontend has to make the 3.2 rule 3 trade-off. Suggest the version bundle add `node_kinds: {id: kind}`, `edge_kinds: {id: kind}`, computed together by `branches.py`; with that, all of 3.2 becomes a table lookup.
+2. **Revoke approval**: the main session asked for "撤销批准" to be designed, but the existing endpoint can only approve. Suggest `sign` accept `terminal_id: null`, meaning no plan is approved in this version, producing a new version; or open a new `POST /runs/{id}/revoke {version}`. The frontend can handle either.
+3. **The "资料为占位" flag**: the frontend can't get the reason a branch was downgraded. Suggest `Branch` add `synthetic: bool` (or `note`).
+4. **Explicit invalidation field**: 4.3's invalidation marker is currently inferred from "parent version confirmed, child version not". Suggest fork write `user_judgment.reset_by: <fork version number>` (or `invalidated: true`) on the affected plan, so the frontend reads it directly and can also distinguish "never approved" from "revoked by a fork".
+5. **Demo data where "有资料支持" is visible**: the synthetic evidence pack downgrades all branches to model_only. To demo the evidenced style, a C1 recorded with a real evidence pack is needed (already in the re-recording plan in section 9 of the change notes). Until then, B1's evidenced style is only previewed in the playground.
+6. **Where the note goes**: the "可选备注" ("optional note") has no corresponding field. Suggest `UserJudgment` and the sign request body add `note: str | None`; not recommended to stuff it into `criteria` (different semantics).
+7. **Is there one understanding confirmation per plan**: currently every `TradeProposal` carries a `user_judgment`, but "我们把你的想法理解为……" is a rewrite of the user's original words and should be a single sentence for the whole graph. The frontend displays "the first plan's `clarified_statement`"; if the plans differ, it shows each one in its plan card. Suggest the backend guarantee this sentence is identical across plans in the same version, or lift it to the version level.
 
-## 8. 可选：给 Mia 挑的 playground
+## 8. Optional: playgrounds for Mia to choose from
 
-实现阶段可以先做两组 A/B，用真实 fixture 渲染，放进现有 `#playground`：
+During implementation, two A/B groups can be built first, rendered with real fixtures, and put into the existing `#playground`:
 
-1. **假设分支的视觉**：A 斜线底纹 + 灰紫（本文默认） / B 整个分支套一个灰紫虚线外框（「泡泡」），节点本身不变色。
-2. **B2 的布局**：A 列表在上、计划在下（本文默认） / B 左列表右计划，两栏。
+1. **Visuals for hypothetical branches**: A diagonal hatching + gray-violet (this document's default) / B wrap the whole branch in a gray-violet dashed outer frame (a "bubble"), with the nodes themselves unchanged in color.
+2. **B2 layout**: A list on top, plan below (this document's default) / B list on the left, plan on the right, two columns.
 
-各约 20 分钟。如果主 session 觉得没必要，直接按默认实现。
+About 20 minutes each. If the main session thinks it's unnecessary, implement the defaults directly.
 
-## 9. 步骤清单与估时
+## 9. Step checklist and estimates
 
-数据结构以后端 commit 为准，第 1 步要等它。
+Data structures follow the backend commit; step 1 has to wait for it.
 
-- [x] **1. 合并后端 schema，改 `types.ts`、mock `api.ts`，重新生成 5 份 fixture，改 `check_fixtures.py`**（30 分钟）
-- [x] **2. 现有组件跟上 `proposals`，先保证 typecheck 和现有测试能过**（20 分钟）
-- [x] **3. B1：三类样式 + 高亮整条分支 + `BRANCH_KIND` 映射 + 单测**（35 分钟）
-- [x] **4. B2：理解确认、结论列表、计划区、批准 / 撤销、确认小框 + 单测**（50 分钟）
-- [x] **5. B3：计划对比、失效标记、对手提示、「在这个版本上重新批准」**（25 分钟）
-- [x] **6. #scenarios 标实验、入口挪走**（10 分钟）
-- [x] **7. 可选：联网开关和状态行**（15 分钟）
-- [ ] **8. 可选：第 8 节的两组 playground**（40 分钟）
-- [x] **9. typecheck / test / build / check_fixtures，手动演示 P1–P10，截图，更新 `docs/frontend/`，commit**（30 分钟）
+- [x] **1. Merge the backend schema, change `types.ts`, mock `api.ts`, regenerate 5 fixtures, change `check_fixtures.py`** (30 minutes)
+- [x] **2. Existing components catch up with `proposals`; first make sure typecheck and existing tests pass** (20 minutes)
+- [x] **3. B1: three kind styles + whole-branch highlighting + `BRANCH_KIND` mapping + unit tests** (35 minutes)
+- [x] **4. B2: understanding confirmation, conclusion list, plan area, approve / revoke, confirmation box + unit tests** (50 minutes)
+- [x] **5. B3: plan comparison, invalidation marker, rival hint, "在这个版本上重新批准"** (25 minutes)
+- [x] **6. Mark #scenarios experimental, move the entry** (10 minutes)
+- [x] **7. Optional: online toggle and status line** (15 minutes)
+- [ ] **8. Optional: the two playground groups from section 8** (40 minutes)
+- [x] **9. typecheck / test / build / check_fixtures, manual demo P1–P10, screenshots, update `docs/frontend/`, commit** (30 minutes)
 
-必做（1–6、9）约 **3 小时 20 分钟**；加上两项可选约 4 小时 15 分钟。第 2 步之后每一步都能单独验收。
+Required (1–6, 9) about **3 hours 20 minutes**; with the two optional items about 4 hours 15 minutes. After step 2, each step can be accepted independently.
 
-## 10. 审后的决定（优先于上文）
+## 10. Post-review decisions (take precedence over the above)
 
-| # | 决定 | 改了上文哪里 |
+| # | Decision | What it changes above |
 | --- | --- | --- |
-| 1 | 后端在版本包里给 `node_kinds`、`edge_kinds` 两张表 | 3.2 整节改成查表，第 3 条的取舍规则删掉 |
-| 2 | 撤销批准 = `sign` 发 `terminal_id: null`，产出新版本 | 4.2 第 5 步调这个 |
-| 3 | 「资料为占位」读 `Branch.synthetic_evidence` | 3.1 |
-| 4 | 失效用后端字段：`TradeProposal.approval_reset` → 「前提已改动，请重新批准」；`TradeProposal.rival_changed` → 「同一版本里另一份计划受了影响，值得再看一眼」。rival_changed 不判断是不是竞争关系，文案不写「对手」 | 4.3 的两条推断规则删掉，改读字段 |
-| 5 | evidenced 样式的演示数据等真实资料包重录；在那之前只在 playground 预览并标明演示 | 第 5 节第 5 条 |
-| 6 | 备注：`UserJudgment.note`，sign 请求体加可选 `note` | 4.2、`SignBody` |
-| 7 | 后端保证同一版本几份计划的 `original_statement`、`clarified_statement` 相同，顶部只显示一句 | 4.1 |
-| 8 | 第 8 节的两组 playground 不做，按默认实现 | 第 8 节、第 9 步 |
-| 9 | 联网开关和状态行做 | 4.6、第 7 步 |
+| 1 | The backend provides two tables, `node_kinds` and `edge_kinds`, in the version bundle | All of 3.2 becomes a table lookup; rule 3's trade-off is removed |
+| 2 | Revoke approval = `sign` sends `terminal_id: null`, producing a new version | 4.2 step 5 calls this |
+| 3 | "资料为占位" reads `Branch.synthetic_evidence` | 3.1 |
+| 4 | Invalidation uses backend fields: `TradeProposal.approval_reset` → "前提已改动，请重新批准"; `TradeProposal.rival_changed` → "同一版本里另一份计划受了影响，值得再看一眼" ("another plan in the same version was affected; worth another look"). rival_changed doesn't judge whether it's a competing relationship, and the copy doesn't say "对手" ("rival") | 4.3's two inference rules are removed, replaced by reading the fields |
+| 5 | Demo data for the evidenced style waits for re-recording with a real evidence pack; until then it's only previewed in the playground and labeled as a demo | Section 5 item 5 |
+| 6 | Note: `UserJudgment.note`, sign request body adds optional `note` | 4.2, `SignBody` |
+| 7 | The backend guarantees `original_statement` and `clarified_statement` are identical across plans in the same version; only one sentence shown at the top | 4.1 |
+| 8 | The two playground groups in section 8 are not built; implement the defaults | Section 8, step 9 |
+| 9 | The online toggle and status line are built | 4.6, step 7 |
 
-后端字段（d105c45 加上面几处）：`ProposalDraft` / `TradeProposal.terminal_id`（必填）；`TradeProposal.approval_reset`、`rival_changed`（默认 false）；`UserJudgment.note`；`Branch = {terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}`；`VersionBundle = {graph, proposals, branches, node_kinds, edge_kinds, scenario, diff, excerpts}`；inspect / fork / sign 返回体里 `proposal` → `proposals`；`proposal_version = "{graph_version}.{terminal_id}"`。
+Backend fields (d105c45 plus the points above): `ProposalDraft` / `TradeProposal.terminal_id` (required); `TradeProposal.approval_reset`, `rival_changed` (default false); `UserJudgment.note`; `Branch = {terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}`; `VersionBundle = {graph, proposals, branches, node_kinds, edge_kinds, scenario, diff, excerpts}`; in the inspect / fork / sign return bodies `proposal` → `proposals`; `proposal_version = "{graph_version}.{terminal_id}"`.
 
-估时随之变成：必做 1–7、9 约 3 小时 15 分钟（去掉 8，第 3、5 步因为查表各少 5 分钟，加上联网 15 分钟）。
+Estimates change accordingly to: required 1–7, 9 about 3 hours 15 minutes (drop 8, steps 3 and 5 each 5 minutes shorter because of table lookups, plus 15 minutes for online).
 
-### 开工前已做（不依赖后端数据）
+### Done before starting (not dependent on backend data)
 
-- `types.ts` 加了方案 B 的类型（`Branch`、`BranchKind`、`PlanBBundle`、`ApproveBody`，`TradeProposal` / `UserJudgment` 的新字段）。`VersionBundle` 暂时不切，等第 1 步和 fixture 一起切，保证每个 commit 都能编译。
-- `status.ts` 的 `BRANCH_KIND`（文案、颜色、线型、底纹）和 `components/BranchSwatch.tsx`（行首缩略 + 「假设 · 未观测」胶囊）。
+- `types.ts` gained Plan B's types (`Branch`, `BranchKind`, `PlanBBundle`, `ApproveBody`, new fields on `TradeProposal` / `UserJudgment`). `VersionBundle` isn't switched yet; it will be switched together with the fixtures in step 1, so every commit compiles.
+- `status.ts`'s `BRANCH_KIND` (label, color, line style, hatching) and `components/BranchSwatch.tsx` (row-start miniature + "假设 · 未观测" pill).
 
-### 视觉预览（/#plan-b，开工前先做）
+### Visual preview (/#plan-b, built before starting)
 
-- 用 `c1_multi` 的 c1-v3（加了「代工停产」冲击）做演示数据（`src/preview/demoPlanB.ts`）：LITE 分支手动指定为有资料支持，TSM 分支是假设（含冲击节点），MRVL 是仅推断 · 资料为占位；TSM、MRVL 两份计划是手写的。页头常驻「演示数据」说明。后端交付后删掉这份演示数据，换成真实 fixture。
-- 预览里用到的都是正式实现要复用的：`GraphCanvas` 加了可选的 `branchView`（`node_kinds` / `edge_kinds` / 高亮）和 `labelOf`；`DesignNode` 加了 `kind` / `synthetic` / `dimmed`；`ConditionRow` / `ProposalCard` 加了「需要你确认」和 `planB`；新组件 `ApprovePlans`（B2 整页）；`lookup.ancestors`。
-- 浏览器里走过：B1 点 LITE、TSM 高亮整条分支；B2 理解确认前不能批准；批准 TSM；改批 LITE 时弹「会撤销对硅光代工的批准」；撤销批准后显示「本版本没有批准任何计划（= 不交易）」；勾「演示：改了假设之后回到这里」后，已批准的那份显示「前提已改动，请重新批准」，其余显示「另一份计划受了影响，值得再看一眼」（真实数据里这两个由后端字段决定）。截图 `screenshots/pb-*`。
+- Uses c1-v3 of `c1_multi` (with the "代工停产" ("foundry shutdown") shock added) as demo data (`src/preview/demoPlanB.ts`): the LITE branch is manually set to evidence-backed, the TSM branch is hypothetical (contains the shock node), MRVL is inferred only · evidence is placeholder; the TSM and MRVL plans are handwritten. The page header permanently shows a "演示数据" ("demo data") note. After the backend delivers, delete this demo data and replace it with real fixtures.
+- Everything used in the preview is to be reused by the real implementation: `GraphCanvas` gained an optional `branchView` (`node_kinds` / `edge_kinds` / highlighting) and `labelOf`; `DesignNode` gained `kind` / `synthetic` / `dimmed`; `ConditionRow` / `ProposalCard` gained "需要你确认" and `planB`; new component `ApprovePlans` (the whole B2 page); `lookup.ancestors`.
+- Walked through in the browser: in B1 clicking LITE, TSM highlights the whole branch; in B2 approval isn't possible before understanding confirmation; approve TSM; switching approval to LITE pops "会撤销对硅光代工的批准" ("will revoke approval of silicon photonics foundry"); after revoking, shows "本版本没有批准任何计划（= 不交易）"; after checking "演示：改了假设之后回到这里" ("demo: come back here after changing the assumption"), the approved plan shows "前提已改动，请重新批准" and the rest show "另一份计划受了影响，值得再看一眼" ("another plan was affected; worth another look") (in real data these two are determined by backend fields). Screenshots `screenshots/pb-*`.
 
-### 界面文字（主 session 决定）
+### UI text (decided by the main session)
 
-- 界面文字全部集中在 `web/src/strings.ts`（`T`），组件里不写字符串；`status.ts` 只管颜色和线型，文案也从 `T` 取。现在是中文，提交前统一换英文，只改这一个文件。
-- `src/__tests__/strings.test.ts` 扫描 `src` 下的源码（去掉注释后），出现中文就失败。例外：`strings.ts` 和演示数据（`playground/demoLabels.ts`、`preview/demoPlanB.ts`、`scenarios/demoNames.ts`）。
-- 后端生成的内容（节点陈述、条件、理由）以后会是英文，界面中文、内容英文是预期的。MOCK fixture 的中文内容不动，等重录替换。`T.app.defaultEvent` 要和 fixture 的事件一致，换英文时一起换。
+- All UI text is centralized in `web/src/strings.ts` (`T`); no strings are written in components; `status.ts` only handles colors and line styles, and its labels also come from `T`. It's Chinese now; before submission it's all switched to English, changing only this one file.
+- `src/__tests__/strings.test.ts` scans the source under `src` (with comments stripped) and fails if Chinese appears. Exceptions: `strings.ts` and demo data (`playground/demoLabels.ts`, `preview/demoPlanB.ts`, `scenarios/demoNames.ts`).
+- Backend-generated content (node statements, conditions, reasons) will be English later; Chinese UI with English content is expected. The Chinese content of the MOCK fixtures is left alone until replaced by re-recording. `T.app.defaultEvent` must match the fixture's event and be switched together when changing to English.
 
-### B2 精简版（Mia：原版太满，参考灵动岛 / Robinhood / OpenEvidence）
+### B2 streamlined version (Mia: the original is too full; reference Dynamic Island / Robinhood / OpenEvidence)
 
-预览页 B2 右上角可以切换 A / B / 原版，三者用同一套属性（`components/approve/model.ts`），批准逻辑完全一样。
+The preview page's B2 can switch between A / B / original in the top right; all three use the same set of props (`components/approve/model.ts`), and the approval logic is exactly the same.
 
-- 共用件（`components/approve/Pieces.tsx`）：
-  - 「你的想法」收成顶部一颗胶囊，点「对，就是这个意思」确认；「改一下」原地展开成输入框（灵动岛）。
-  - 批准收成底部黑色胶囊：「批准「X」」/「改批这份 · 会撤销「Y」」/「✓ 已批准「X」 撤销」；点开原地展开出阈值提醒、可选备注和确认，取代原来的弹窗。没确认想法时胶囊变灰并提示。
-  - 计划详情像 OpenEvidence 的答案卡：「你需要相信」是带引用数的小标签（上标数字，仅推断写「仅推断」），点开在下面列出编号的原文和来源；「盯这些信号」一行一条（状态圆点 · 进场 / 离场 · 规则 · 截止），缺阈值的那条有黄色「需要你确认 · 设一个阈值」，点了原地出输入框；完整计划卡和逐条勾选前提收进「更多细节」。
-- A 列表展开（Robinhood）：一个大标题（「3 个结论，还没批准」/「已批准：X」）+ 一行一个结论（名字、标的 · 方向、一个状态），点一行原地展开；假设分支整行带斜线底纹。
-- B 答案卡（OpenEvidence）：顶部一排胶囊切换结论，下面只有一张卡：大字「看多 TSM」、一句衬线体的论点、前提和信号。
-- 截图：`screenshots/pb-b2-lite-*`。原版（`ApprovePlans`）先保留做对比，定了之后删掉没选中的。
+- Shared pieces (`components/approve/Pieces.tsx`):
+  - "你的想法" ("your idea") is collapsed into a pill at the top; click "对，就是这个意思" ("yes, that's what I mean") to confirm; "改一下" expands in place into an input box (Dynamic Island).
+  - Approval is collapsed into a black pill at the bottom: "批准「X」" ("approve 「X」") / "改批这份 · 会撤销「Y」" ("approve this one instead · will revoke 「Y」") / "✓ 已批准「X」 撤销" ("✓ approved 「X」 revoke"); clicking it expands in place to show the threshold reminder, optional note, and confirmation, replacing the original dialog. When the idea hasn't been confirmed, the pill turns gray with a hint.
+  - Plan details look like an OpenEvidence answer card: "你需要相信" are small tags with citation counts (superscript numbers; inferred-only ones say "仅推断"), clicking lists the numbered original text and sources below; "盯这些信号" ("watch these signals") is one per line (status dot · entry / exit · rule · deadline), the one missing a threshold has a yellow "需要你确认 · 设一个阈值" ("needs your confirmation · set a threshold"), clicking it shows an input box in place; the full plan card and per-premise checkboxes are tucked into "更多细节" ("more details").
+- A expanding list (Robinhood): one big heading ("3 个结论，还没批准" ("3 conclusions, none approved yet") / "已批准：X" ("approved: X")) + one row per conclusion (name, instrument · direction, one status), clicking a row expands it in place; hypothetical-branch rows carry diagonal hatching across the whole row.
+- B answer card (OpenEvidence): a row of pills at the top switches conclusions, below it only one card: large text "看多 TSM" ("bullish TSM"), a one-sentence thesis in a serif font, premises and signals.
+- Screenshots: `screenshots/pb-b2-lite-*`. The original (`ApprovePlans`) is kept for comparison for now; once decided, delete the ones not chosen.
 
-## 正式实现记录（core-schema@ffbd2a3 之后）
+## Implementation log (after core-schema@ffbd2a3)
 
-- 合并 core-schema（含 plan-b@ffbd2a3）。`types.ts` 的 `VersionBundle` 一次切到 `proposals` / `branches` / `node_kinds` / `edge_kinds`，`TradeProposal.terminal_id`、`approval_reset`、`rival_changed`、`UserJudgment.note` 改为必填；旧的 `SignBody`、`Signoff`、`SignDialog` 删除。
-- fixture：`make_fixtures.py` 把版本写进临时 `RunStore`，用 `store.bundle(v)` 读出（和 `GET /versions/{v}` 同一段代码）；批准走 `ep.sign`，分叉走 `ep.fork`。五份：`c1`、`c1_blocked`、`c1_multi`、`c1_approved`（v2 批准 LITE → v3 改假设；v4 批准 TSM → v5 改同一处）、`c4_abstain`。内容随 golden 图变成英文。`check_fixtures.py`：没有旧字段 `proposal`；计划的 terminal 集合 = 图上的 terminal；同一版本最多一份已批准；几份计划的理解确认相同；`branches` / `node_kinds` / `edge_kinds` 用 `catalyst.branches.dump_views` 复算一致；diff 相对父版本复算一致。
-- B1：`Workspace` 用后端的类别表（`GraphCanvas` 的 `branchView`），点结论高亮独有部分 + 祖先，右侧 `PlanSummary`；三份计划的关键依赖都标出来（`toFlow` 的 `keyClaimIds`）。
-- B2：用精简版 A（`components/approve/ApproveList`）——Mia 说原版太满，A 的结构就是设计 4.1 的「列表在上、计划在下」，只是计划在选中的行里原地展开。批准 = `sign`（带这份的草稿、改过的理解、备注），撤销 = `sign` 发 `terminal_id: null`；改批另一份时底部胶囊写明会撤销哪一份。预览页仍可切 A / B / 原版。
-- B3：「计划 vN → vM」列出情景版本的每份计划（gate、支持度、是否已批准），`approval_reset` → 「前提已改动，请重新批准」，`rival_changed` → 「同一版本里另一份计划受了影响，值得再看一眼」；加「在这个版本上重新批准 →」。
-- #scenarios：从主导航拿掉，只从节点视觉 playground 的页头进入，标题带「（实验）」。
-- 联网：顶栏一个开关，`createRun` 带 `online`，状态行原样显示 `web.message`（MOCK 下是「MOCK：不联网」）。
-- 英文内容的短标题：没有 label 时英文截前 4 个词（中文仍截 10 个字）。
-- MOCK：批准优先用 fixture 里录好的批准版本（后端算的 approval_reset 等都是真的），没录到才在内存里改并提示「gate 未重算」；分叉按「从哪个版本出发 + 这一层的操作」找录好的版本。
+- Merged core-schema (including plan-b@ffbd2a3). `types.ts`'s `VersionBundle` switched in one go to `proposals` / `branches` / `node_kinds` / `edge_kinds`; `TradeProposal.terminal_id`, `approval_reset`, `rival_changed`, `UserJudgment.note` made required; the old `SignBody`, `Signoff`, `SignDialog` deleted.
+- Fixtures: `make_fixtures.py` writes versions into a temporary `RunStore` and reads them out with `store.bundle(v)` (the same code as `GET /versions/{v}`); approval goes through `ep.sign`, forking through `ep.fork`. Five: `c1`, `c1_blocked`, `c1_multi`, `c1_approved` (v2 approves LITE → v3 changes the assumption; v4 approves TSM → v5 changes the same spot), `c4_abstain`. The content became English along with the golden graph. `check_fixtures.py`: no old `proposal` field; the plans' terminal set = the terminals on the graph; at most one approved per version; understanding confirmation identical across plans; `branches` / `node_kinds` / `edge_kinds` match a recompute with `catalyst.branches.dump_views`; diff matches a recompute relative to the parent version.
+- B1: `Workspace` uses the backend's kind tables (`GraphCanvas`'s `branchView`); clicking a conclusion highlights its own part + ancestors, `PlanSummary` on the right; the key dependencies of all three plans are marked (`toFlow`'s `keyClaimIds`).
+- B2: uses streamlined A (`components/approve/ApproveList`) — Mia said the original was too full; A's structure is exactly design 4.1's "list on top, plan below", just with the plan expanding in place within the selected row. Approve = `sign` (with this plan's draft, the edited understanding, the note), revoke = `sign` sending `terminal_id: null`; when switching approval to another plan, the bottom pill states which one will be revoked. The preview page can still switch A / B / original.
+- B3: "计划 vN → vM" ("plans vN → vM") lists every plan in the scenario version (gate, support, whether approved), `approval_reset` → "前提已改动，请重新批准", `rival_changed` → "同一版本里另一份计划受了影响，值得再看一眼"; adds "在这个版本上重新批准 →".
+- #scenarios: removed from the main navigation, entered only from the node-visuals playground's page header, with "（实验）" ("(experimental)") in the title.
+- Online: a toggle in the top bar, `createRun` takes `online`, the status line shows `web.message` verbatim (under MOCK it's "MOCK：不联网").
+- Short titles for English content: without a label, English is truncated to the first 4 words (Chinese still truncated to 10 characters).
+- MOCK: approval prefers the approval versions recorded in the fixture (so the backend-computed approval_reset etc. are real), and only when none was recorded does it change data in memory with the notice "gate 未重算" ("gate not recomputed"); forking finds the recorded version by "which version it starts from + this layer's operation".
 
-### MOCK 下的 P1–P10（2026-10-19，内置浏览器）
+### P1–P10 under MOCK (2026-10-19, built-in browser)
 
-| # | 结果 |
+| # | Result |
 | --- | --- |
-| P1 | 3 个结论；fixture 用占位资料包，分支都是「仅推断」，带「资料为占位」的显示出来 |
-| P2 | 点 LITE：独有部分 + 共用主干高亮，其余退后；右侧计划摘要 +「去批准这份计划 →」 |
-| P3 | B2 里 LITE 这行原地展开；没确认「你的想法」时批准胶囊是灰的，提示「先确认上面「你的想法」」 |
-| P4 | 确认、设阈值、批准：LITE「✓ 已批准」，大标题变成「已批准：…」（c1 没录批准版本，提示 gate 未重算） |
-| P5 | 选 TSM：胶囊写「改批这份 · 会撤销「…」」，确认后只有 TSM 已批准 |
-| P6 | 撤销：三行都没批准，大标题回到「3 个结论，还没批准」 |
-| P7 | c1_approved：批准 LITE（录好的 c1-v2）→ B3 改外置光源 → c1-v3：LITE「前提已改动，请重新批准」，其余「另一份计划受了影响」 |
-| P8 | 批准 TSM（c1-v4）→ 改同一处 → c1-v5：TSM 保留「✓ 已批准」并有「另一份计划受了影响」 |
-| P9 | 「在这个版本上重新批准」→ B2、当前版本 c1-v3，LITE 显示「前提已改动，请重新批准」；B1 上 LITE 分支是假设样式 |
-| P10 | 节点视觉 playground 页头「多情景（实验）」→ #scenarios，标题带「（实验）」，正常显示；主导航不再有它 |
+| P1 | 3 conclusions; the fixtures use a placeholder evidence pack, so branches are all "仅推断", and the "资料为占位" ones are shown |
+| P2 | Click LITE: its own part + the shared trunk highlighted, the rest recede; on the right the plan summary + "去批准这份计划 →" |
+| P3 | In B2 the LITE row expands in place; before confirming "你的想法" the approve pill is gray, with the hint "先确认上面「你的想法」" ("confirm 「你的想法」 above first") |
+| P4 | Confirm, set threshold, approve: LITE "✓ 已批准", the big heading becomes "已批准：…" (c1 has no recorded approval version, so the notice gate not recomputed appears) |
+| P5 | Select TSM: the pill says "改批这份 · 会撤销「…」", after confirming only TSM is approved |
+| P6 | Revoke: none of the three rows approved, the big heading goes back to "3 个结论，还没批准" |
+| P7 | c1_approved: approve LITE (recorded c1-v2) → in B3 change the external light source → c1-v3: LITE "前提已改动，请重新批准", the rest "另一份计划受了影响" ("another plan was affected") |
+| P8 | Approve TSM (c1-v4) → change the same spot → c1-v5: TSM keeps "✓ 已批准" and has "另一份计划受了影响" |
+| P9 | "在这个版本上重新批准" → B2, current version c1-v3, LITE shows "前提已改动，请重新批准"; on B1 the LITE branch is in the hypothetical style |
+| P10 | Node-visuals playground page header "多情景（实验）" ("multi-scenario (experimental)") → #scenarios, title has "（实验）", displays correctly; the main navigation no longer has it |
 
-另外顺带检查：c1_blocked 的 LITE 是 BLOCKED；c4_abstain 显示弃权；联网开关打开后状态行显示；预览页（#plan-b）B1 / B2 正常；控制台无报错。截图：`screenshots/planb-b1-highlight.jpg`、`planb-b3-reset.jpg`。
+Also checked along the way: c1_blocked's LITE is BLOCKED; c4_abstain shows the abstention; with the online toggle on, the status line appears; the preview page (#plan-b) B1 / B2 work; no console errors. Screenshots: `screenshots/planb-b1-highlight.jpg`, `planb-b3-reset.jpg`.
 
-**还没做**：用 `VITE_MOCK=0` 接本地真实后端走 B1 → B2 → B3，等主 session 给录制目录。
+**Not done yet**: connecting the local real backend with `VITE_MOCK=0` and walking B1 → B2 → B3, waiting for the main session to provide the recording directory.
 
-### B2 定稿：答案卡（Mia 选定，2026-10-19）
+### B2 final: answer card (chosen by Mia, 2026-10-19)
 
-- 正式 B2 用答案卡（`components/approve/ApproveCard.tsx`）：顶部「你的想法」胶囊，一排胶囊切换结论（已批准的带 ✓，被分叉撤销的带橙点），下面一张卡：大字「看多 LITE」、一句论点、类别标签、前提（带引用数，点开看原文）、信号（缺阈值的原地填），完整计划卡收进「更多细节」；底部黑色胶囊批准 / 改批 / 撤销。
-- 假设分支的横幅写清楚是哪个假设：分支上的冲击节点，或者情景里改过、且在这条分支祖先里的假设（查 `scenario.ops` 的 target）。
-- 列表版（ApproveList）和原版（ApprovePlans）已删除；草稿和理解确认的类型移到 `components/approve/model.ts`。预览页（#plan-b）的 B2 也只剩答案卡。截图：`screenshots/planb-b2-card.jpg`、`pb-b2-lite-b-card.jpg`。
-- 浏览器里走过：确认想法前胶囊是灰的；批准 LITE（录好的 c1-v2）；切到 TSM 胶囊写「改批这份 · 会撤销…」；B3 改假设 →「在这个版本上重新批准」→ 卡片显示「前提已改动，请重新批准」和带假设名的横幅；批准再撤销后没有 ✓。
+- The official B2 uses the answer card (`components/approve/ApproveCard.tsx`): the "你的想法" pill at the top, a row of pills switching conclusions (approved ones carry ✓, ones revoked by a fork carry an orange dot), below that one card: large text "看多 LITE" ("bullish LITE"), a one-sentence thesis, kind label, premises (with citation counts, click to see original text), signals (fill missing thresholds in place), the full plan card tucked into "更多细节"; at the bottom the black pill for approve / switch approval / revoke.
+- The hypothetical branch's banner states clearly which assumption: the shock node on the branch, or the assumption changed in the scenario that is among this branch's ancestors (look up `scenario.ops`'s target).
+- The list version (ApproveList) and the original (ApprovePlans) have been deleted; the draft and understanding confirmation types moved to `components/approve/model.ts`. The preview page (#plan-b)'s B2 also has only the answer card now. Screenshots: `screenshots/planb-b2-card.jpg`, `pb-b2-lite-b-card.jpg`.
+- Walked through in the browser: the pill is gray before confirming the idea; approve LITE (recorded c1-v2); switching to TSM the pill says "改批这份 · 会撤销…" ("approve this one instead · will revoke ..."); in B3 change the assumption → "在这个版本上重新批准" → the card shows "前提已改动，请重新批准" and the banner with the assumption's name; after approving and then revoking there's no ✓.
+
+## Round after core-schema@248abcf (user_event, real-backend walkthrough)
+
+- Merged core-schema (fast-forward to 248abcf). `Graph.user_event` added to `types.ts`. Typecheck, tests and `check_fixtures.py` passed right after the merge.
+- Analyze wait hint (`components/BusyHint.tsx`): the API exposes no stage or progress, so the hint shows only real elapsed time (m:ss, ticking every second) and a sentence saying the analysis usually takes two to three minutes and that the backend does not report which step it is on. There is no progress bar and no percentage. With the online toggle on, it adds one sentence about web search. Fork and approve get the same hint with their own notes. A unit test checks that the elapsed time is real and that no percentage appears.
+- Default event in `strings.ts` is now English ("Photonic chips are being adopted faster than expected"); all other UI strings stay Chinese.
+- B3 baseline canvas now uses the same branch-kind styling as B1 (the scenario canvas still uses assessment coloring).
+- Hypothetical banner on the answer card: it names the assumption changed in the scenario first, then a shock node, and skips the node that restates the user's own event (same rule as the backend's `user_event_nodes`: `original_statement` equals `user_event`, ignoring case, whitespace and trailing punctuation). Before this fix, the live D1 run showed the user's own event as the reason.
+- Terminal cards show only the first instrument, cut to 14 characters, with the full list in a tooltip (the real model wrote "Brent crude futures, oil ETFs such as USO").
+- Docs in `docs/frontend/*.md` translated to English; literal Chinese UI strings are kept with English glosses.
+
+### Real-backend walkthrough (2026-10-19, Haiku 5.5, medium effort, port 8020, runs/e2e)
+
+- C1 ("Photonic chips are being adopted faster than expected"): Analyze returned in about 70 seconds. The graph carried `user_event`, and its restating node was not hypothetical. The model produced a single branch (TSEM, model_only), so branch kinds could not differ in this run.
+- D1 ("I think the Strait of Hormuz is going to open up next week"): Analyze returned in about 85 seconds, again with a single branch (Brent, model_only). The canvas and the answer card both showed "仅推断". B2 approval created r-v2. A B3 fork on `h.transit` created r-v3 in about 50 seconds; the backend set `approval_reset` on the approved plan, B3 showed "前提已改动，请重新批准", "在这个版本上重新批准" opened B2 on r-v3 with the same notice, and B1 on r-v3 showed the branch in the hypothetical style. The B3 baseline canvas showed branch-kind tags.
+- Not verified live: two branches with different kinds in one graph. Both live runs produced a single branch. The differing-kind rendering is covered by the plan B preview (demo data) and by unit tests on the fixtures, not by a live run.
+- Backend observation: after a fork, every own node of a hypothetical branch is marked hypothetical in `node_kinds`, including the node that restates the user's event, because own nodes take the branch's kind.
+- Screenshots: `screenshots/live-analyze-wait.jpg`, `live-b2-card.jpg`, `live-b3-fork.jpg`, `live-b1-after-fork.jpg`.

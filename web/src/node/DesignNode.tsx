@@ -53,7 +53,13 @@ export default function DesignNode({ data, selected }: NodeProps<Node<DesignData
   const challenged = assessment === 'challenged';
   const receded = assessment && !challenged && !isChanged && look.scenario === 'dim';
   const glyph = look.strength === 'ring' ? <Ring s={s} size={expanded ? 30 : 22} /> : <Bars s={s} />;
-  const ticker = claim.instruments.length > 0 && <span className="pg-ticker">{claim.instruments.join(' ')}</span>;
+  // 真实模型有时把标的写成一句话（如 "Brent crude futures"、"oil ETFs such as USO"）：卡片上只放第一个、截到 14 个字符，完整列表放提示里
+  const first = claim.instruments[0] ?? '';
+  const ticker = claim.instruments.length > 0 && (
+    <span className="pg-ticker" title={claim.instruments.join(', ')}>
+      {first.length > 14 ? `${first.slice(0, 14)}…` : first}{claim.instruments.length > 1 ? ' +' : ''}
+    </span>
+  );
 
   const bg = tint ? `${tint}1f` : challenged ? 'var(--pg-orange-bg)' : look.color === 'role' ? ROLE_TINT[claim.role] : 'var(--pg-surface)';
   const border = tint ? tint : challenged || isKey ? 'var(--pg-orange)' : isChanged ? 'var(--pg-blue)' : 'var(--pg-line)';

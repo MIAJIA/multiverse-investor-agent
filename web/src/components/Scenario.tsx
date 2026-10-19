@@ -8,6 +8,7 @@ import type { TradeProposal, VersionBundle } from '../types';
 import Badge from './Badge';
 import GraphCanvas from './GraphCanvas';
 import NodePanel from './NodePanel';
+import { branchViewOf } from './Workspace';
 import { T } from '../strings';
 
 function ForkForm({ bundle, busy, onFork }: { bundle: VersionBundle; busy: boolean; onFork: (t: string, v: string) => void }) {
@@ -75,7 +76,9 @@ export default function Scenario({ versions, base, scenario, viewing, busy, sele
         </div>
       )}
       <div className="split">
-        <GraphCanvas bundle={shown} opts={opts} selectedNodeId={selectedNodeId} onSelect={onSelect} />
+        {/* 基线画布用和 B1 一样的三类分支样式；情景画布仍按 assessment 三态着色 */}
+        <GraphCanvas bundle={shown} opts={opts} selectedNodeId={selectedNodeId} onSelect={onSelect}
+          branchView={showScenario ? undefined : branchViewOf(baseB, null)} />
         {selectedNodeId && shown.graph.nodes.some((n) => n.id === selectedNodeId) ? (
           <div className="panel" style={{ padding: 0 }}>
             <div style={{ padding: '8px 16px' }}><button className="link" onClick={() => onSelect(null)}>{T.scenario.backToSummary}</button></div>

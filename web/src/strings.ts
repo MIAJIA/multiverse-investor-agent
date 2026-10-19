@@ -118,10 +118,9 @@ export const T = {
   // ---- 页面骨架 ----
   app: {
     brand: 'Catalyst',
-    defaultEvent: '光子芯片采用快于预期', // 和 MOCK fixture 的事件一致；换英文时连同 fixture 一起换
+    defaultEvent: 'Photonic chips are being adopted faster than expected', // 模型输入是英文；MOCK 下由 fixture 的事件覆盖
     eventPlaceholder: '你相信什么会发生？',
     analyze: 'Analyze',
-    busy: '处理中…',
     runInfo: (run: string | null, v: string, scen?: string) => `run ${run} · ${v}${scen ? ` → ${scen}` : ''}`,
     linkPlayground: '节点视觉 playground',
     linkScenarios: '多情景 playground',
@@ -340,5 +339,17 @@ export const T = {
     rivalChanged: '同一版本里另一份计划受了影响，值得再看一眼',
     reapproveHere: '在这个版本上重新批准 →',
     support: (s: string) => `支持度 ${s}`,
+  },
+
+  // ---- 长请求的等待提示：只显示真实的已用时间，不编进度 ----
+  busy: {
+    elapsed: (s: number) => `已用 ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`,
+    analyze: '正在分析',
+    analyzeNote: '分析一般要两到三分钟：模型要读资料、画出因果图、再给每个结论写计划。后端目前不报告进行到哪一步，所以这里只显示已用时间。',
+    analyzeOnline: '联网已打开，还要先检索网上的资料，可能更久一些。',
+    fork: '正在改假设，重算受影响的部分',
+    forkNote: '通常要几十秒到一分钟。',
+    sign: '正在批准',
+    signNote: '不调用模型，一般几秒。',
   },
 } as const;

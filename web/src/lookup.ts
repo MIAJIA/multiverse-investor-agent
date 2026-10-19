@@ -75,3 +75,13 @@ export function keyClaimIds(bundle: Pick<VersionBundle, 'proposals' | 'graph'>):
 export function approvedPlan(bundle: Pick<VersionBundle, 'proposals'>): TradeProposal | null {
   return bundle.proposals.find((p) => p.user_judgment.confirmed) ?? null;
 }
+
+const norm = (t: string | null | undefined) => (t ?? '').toLowerCase().split(/\s+/).filter(Boolean).join(' ').replace(/[ .\u3002!\uff01?\uff1f]+$/, ''); // 句末的中英文句号、叹号、问号
+
+/** 重述用户自己输入事件的节点（original_statement 等于 graph.user_event，忽略大小写和空白）。
+ *  和后端 branches.user_event_nodes 同一条规则：这类节点不算「尚未发生的假设」，横幅里不拿它当原因。 */
+export function isUserEventNode(graph: Graph, nodeId: string): boolean {
+  const want = norm(graph.user_event);
+  const n = graph.nodes.find((x) => x.id === nodeId);
+  return !!want && !!n && norm(n.original_statement) === want;
+}

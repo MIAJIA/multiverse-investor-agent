@@ -106,6 +106,7 @@ export interface Graph {
   conditions: Condition[];
   model_output_ref: string | null;
   observations_ref: string | null;
+  user_event: string | null; // 用户输入的事件原话：重述它的节点不算「尚未发生」，不会让分支变成假设类
 }
 
 export interface Scenario {
