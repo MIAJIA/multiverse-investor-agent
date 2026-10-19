@@ -161,6 +161,38 @@ def backtest_section(results: list[dict]) -> str:
     return "\n".join(out)
 
 
+def research_section(results: list[dict]) -> str:
+    rows = [r for r in results if r.get("research") and r["group"] == "pipeline"]
+    if not rows:
+        return ""
+    out = ["## Online research (layer W): before and after the follow-up search", "",
+           "Round 1 = the draft built from the first web search; Final = the rerun after the follow-up search (identical to "
+           "round 1 when no follow-up ran). Fewer gaps after the follow-up means it found evidence, not that the reasoning "
+           "is right; that stays with human review.", "",
+           "| Case | Follow-up | Excerpts per round | Model-only edges (R1 -> final) | Model-only branches (R1 -> final) "
+           "| Null thresholds (R1 -> final) | Queries per round |",
+           "| --- | --- | --- | --- | --- | --- | --- |"]
+    for r in rows:
+        m = r["research"]
+        r1, fin = m.get("round1") or {}, m.get("final") or {}
+
+        def pair(k):
+            return f"{r1.get(k, '?')} -> {fin.get(k, '?')}"
+        follow = (f"yes ({m.get('gaps')} gaps)" if m.get("followup_triggered") else "no") + \
+            (f": {m['followup_reason']}" if m.get("followup_reason") else "")
+        out.append("| " + " | ".join(_cell(x) for x in [
+            r["case_id"], follow, " / ".join(str(x) for x in m.get("excerpts_by_round") or []),
+            pair("model_only_edges"), pair("model_only_branches"), pair("null_threshold_conditions"),
+            " / ".join(str(len(q)) for q in m.get("queries_by_round") or [])]) + " |")
+    out += ["", "Queries per round, for the human check \"did each round search for counter-evidence\":", ""]
+    for r in rows:
+        for i, qs in enumerate(r["research"].get("queries_by_round") or [], start=1):
+            shown = "; ".join(str(q.get("query") or q.get("url")) for q in qs if isinstance(q, dict)) or "-"
+            out.append(f"- {r['case_id']} round {i}: {shown}")
+    out.append("")
+    return "\n".join(out)
+
+
 def probes_section(results: list[dict]) -> str:
     rows = [r for r in results if _layer(r) == "P"]
     if not rows:
@@ -216,7 +248,7 @@ def render_report(results: list[dict], title: str = "Catalyst eval per-case repo
         out += [f"## {g} group", "", _counts(rows), "", case_table(rows), ""]
     if len(groups) == 2:
         out += ["## pipeline vs baseline", "", comparison_table(main), ""]
-    for section in (backtest_section(results), probes_section(results)):
+    for section in (research_section(results), backtest_section(results), probes_section(results)):
         if section:
             out += [section]
     out += ["## Failure criteria", "", criteria_section(results, groups or ["pipeline"]), "",

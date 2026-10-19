@@ -147,3 +147,26 @@ def test_all_layers_smoke_with_fakes():
     assert all(r["status"] == "N/A" for r in results if r.get("layer") == "R" and r["group"] == "baseline")
     md = report.render_report(results)
     assert "## Backtests (layer R" in md and "## Behavior probes (layer P" in md and "%" not in md
+
+
+# ---- W 层：补查前后的对比 ---------------------------------------------------------
+
+def test_research_metrics_compare_round1_with_final():
+    from eval.checks import research_metrics
+    draft = {"graph": {"edges": [{"model_only": True}, {"model_only": True}, {}],
+                       "conditions": [{"kind": "numeric", "threshold": None}, {"kind": "numeric", "threshold": 3},
+                                      {"kind": "event", "threshold": None}]},
+             "branches": [{"kind": "model_only"}, {"kind": "evidenced"}]}
+    final = {"graph": {"edges": [{"model_only": True}, {}], "conditions": [{"kind": "numeric", "threshold": 2}]},
+             "branches": [{"kind": "evidenced"}]}
+    web = {"rounds": [{"excerpts": 19, "queries": [{"query": "a"}, {"query": "b"}]}, {"excerpts": 8, "queries": [{"query": "c"}]}],
+           "followup": {"triggered": True, "reason": "gaps", "gaps": [{"kind": "edge", "id": "e1"}, {"kind": "condition", "id": "c1"}]}}
+    m = research_metrics(draft, final, web)
+    assert m["round1"] == {"model_only_edges": 2, "model_only_branches": 1, "null_threshold_conditions": 1, "no_chain": False}
+    assert m["final"] == {"model_only_edges": 1, "model_only_branches": 0, "null_threshold_conditions": 0, "no_chain": False}
+    assert m["excerpts_by_round"] == [19, 8] and m["followup_triggered"] and m["gaps"] == 2
+    row = {"case_id": "W1", "group": "pipeline", "layer": "W", "status": "PENDING_REVIEW", "research": m,
+           "expected": {}, "actual": {}, "failure_types": [], "checks": [], "human_review": []}
+    md = report.render_report([row])
+    assert "## Online research (layer W)" in md and "| 2 -> 1 |" in md and "| 1 -> 0 |" in md
+    assert "W1 round 2: c" in md and "%" not in md

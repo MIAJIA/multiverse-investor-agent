@@ -65,6 +65,10 @@ Online runs Inspect's research loop first; code finds evidence gaps and runs at 
 | C2 online | C2 with online on | known pack gap: no excerpt links model-weight controls to NVDA revenue | the follow-up targets that gap; round-2 model_only edges no more than round 1; keep model_only if nothing is found |
 | D1 online | D1 with online on | the real timeline (closed again 7/12, about 3.5 ships/day in October) goes beyond the local pack | research results used honestly; threshold still confirmed by the user; counter-evidence searched each round |
 
+How the metrics are read: the research loop saves its round-1 draft under `<record dir>/web_runs/<case>/research/r1/inspect.result.json`; the runner counts model-only edges, model-only branches and numeric conditions with a null threshold in that draft and in the final result, and the report shows them side by side ("Online research" section) with excerpts and queries per round. Note: the core's follow-up trigger only counts model-only edges on model-only branches (a hypothetical branch is not a gap), so its "0 model_only edges" can differ from the report's count of all model-only edges.
+
+First real W1 run (haiku-p7-online, replayed): follow-up triggered for 2 null thresholds; round 1 found 19 excerpts, round 2 found 8; model-only edges 5 -> 3; null thresholds 2 -> 3; model-only branches 0 -> 0.
+
 The existing W1 recording (`~/Downloads/multiverse-investor-agent-websearch/runs/W1/20261018-223507`, 16 excerpts) predates the agent loop and the Plan B prompt bump; re-record after both merge. Metrics per case: round-1 and round-2 model_only edge counts, null-threshold condition counts, new excerpts and sources, whether the follow-up fired and why. Numbers only. Stability: replaying one recording is deterministic; only re-recording changes results.
 
 ## R Backtests

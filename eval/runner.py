@@ -16,7 +16,7 @@ from typing import Any, Callable, Protocol
 
 from eval import backtest as bt
 from eval import scoring
-from eval.checks import cited_excerpts, model_only_edge_count, scenario_checks
+from eval.checks import cited_excerpts, model_only_edge_count, research_metrics, scenario_checks
 from eval.loader import FIXTURES_DIR, load_all_cases, load_fixture, load_json
 from eval.scoring import check, get
 
@@ -319,6 +319,13 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
     if web is not None:
         from catalyst.__main__ import web_summary  # noqa: WPS433
         res["web"] = web_summary(web, research)
+        # 补查前后对比：研究 loop 把第 1 轮的草稿存在 <store>/research/r1/inspect.result.json
+        draft = None
+        if web_store is not None:
+            draft_path = web_store.root / "research" / "r1" / "inspect.result.json"
+            if draft_path.exists():
+                draft = json.loads(draft_path.read_text(encoding="utf-8"))
+        res["research"] = research_metrics(draft, out, res["web"])
     if not _structured_ok(res, "inspect", out):
         return
 
