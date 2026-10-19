@@ -53,15 +53,15 @@ We do **not** claim that the plans make money, that the failure conditions are c
 
 Deterministic behaviour is covered by tests, and the eval is reserved for model behaviour that code cannot check.
 
-- **Tests (215 on `main`):** the entry-gate truth table, condition time semantics, reference validation, stance consistency, fork non-interference (hashes of every out-of-scope node, edge and condition), stacked scenarios, sign-off, the HTTP API, evidence packs, the web-search whitelist and replay.
-- **Eval:** 10 cases. Six are CausalT5k causal-judgment items (YES / NO / AMBIGUOUS, including a skepticism trap and a sycophancy probe). Four are built from the assignment's own examples, plus the founder's Hormuz example. Every case also runs as a single-prompt baseline with the same model and the same evidence. We report per-case results and failure types, never percentages.
+- **Deterministic tests (over 200, all offline):** the entry-gate truth table, condition time semantics, reference validation, stance consistency, fork non-interference (hashes of every out-of-scope node, edge and condition), stacked scenarios, sign-off, the HTTP API, evidence packs, the web-search whitelist and replay.
+- **Eval:** 11 cases. Six are CausalT5k causal-judgment items (YES / NO / AMBIGUOUS, including a skepticism trap and a sycophancy probe), four are built from the assignment's own examples (C1–C4), and one is the founder's Hormuz example (D1). Every case also runs as a single-prompt baseline with the same model and the same evidence. We report per-case results and failure types, never percentages.
 
 Latest run on the real evidence packs (Claude Haiku 5.5):
 
 | Case | Result |
 | --- | --- |
 | C1 photonic adoption → laser / foundry names | 3 grounded directions with real tickers (LITE, AVGO, TSEM); the key dependency came from counter-evidence: external light sources cut laser count to a quarter, so CPO volume must grow more than 4× before laser demand grows |
-| C2 frontier-model export limits → NVDA | Declined to build a chain offline: the model-weight rule had been rescinded and the remaining material covers chips, not models. With web search on, it found 17 official excerpts and built a chain that ends in WAIT |
+| C2 frontier-model export limits → NVDA | Declined to build a chain offline: the model-weight rule had been rescinded and the remaining material covers chips, not models. With web search on, it retrieved 17 excerpts from whitelisted sites (BIS, SEC, ECB, Al Jazeera) and built a chain that ends in WAIT |
 | C3 fork the C1 graph twice | Both forks pass: challenged claims match the golden set, 0 out-of-scope writes |
 | C4 midterm split → distant ticker | Abstains, as intended |
 | D1 Hormuz reopens next week | Three directions (grounded / hypothesis / not recommended); the plan is WAIT; "transits recover" is marked contradicted by history; the key dependency is the Saudi East-West pipeline |
