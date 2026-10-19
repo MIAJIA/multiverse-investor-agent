@@ -4,21 +4,21 @@ import { nodeLabel } from '../node/labels';
 import type { Claim } from '../types';
 
 const DEMO_LABELS: Record<string, string> = {
-  'c1.event': '光子芯片采用提前',
-  'c1.assume.capex': '资本开支不下修',
-  'c1.assume.external_laser': '外置光源架构',
-  'c1.cpo_ramp': 'CPO 出货提前',
-  'c1.laser_demand': '光源需求上升',
-  'c1.siph_foundry': '硅光代工利用率升',
-  'c1.pluggable_dsp': 'DSP 需求放缓',
-  'c1.term.laser_vendor': '光源营收超预期',
-  'c1.term.foundry': '硅光代工营收占比升',
-  'c1.term.dsp_vendor': 'DSP 业务承压',
-  'shock.siph_fab_outage': '代工厂停产一季',
+  'c1.event': 'Photonics adopted early',
+  'c1.assume.capex': 'Capex holds',
+  'c1.assume.external_laser': 'External laser design',
+  'c1.cpo_ramp': 'CPO ships early',
+  'c1.laser_demand': 'Laser demand rises',
+  'c1.siph_foundry': 'SiPh fab utilization up',
+  'c1.pluggable_dsp': 'DSP demand slows',
+  'c1.term.laser_vendor': 'Laser revenue beats',
+  'c1.term.foundry': 'SiPh foundry share up',
+  'c1.term.dsp_vendor': 'DSP business squeezed',
+  'shock.siph_fab_outage': 'Foundry down a quarter',
 };
 
 export function demoLabel(claim: Claim, changed = false): string {
   if (claim.label) return nodeLabel(claim);
-  if (changed && claim.id === 'c1.assume.external_laser') return '改用集成激光';
+  if (changed && claim.id === 'c1.assume.external_laser') return 'Integrated lasers instead';
   return DEMO_LABELS[claim.id] ?? nodeLabel(claim);
 }

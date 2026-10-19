@@ -295,9 +295,9 @@ Estimates change accordingly to: required 1–7, 9 about 3 hours 15 minutes (dro
 
 ### UI text (decided by the main session)
 
-- All UI text is centralized in `web/src/strings.ts` (`T`); no strings are written in components; `status.ts` only handles colors and line styles, and its labels also come from `T`. It's Chinese now; before submission it's all switched to English, changing only this one file.
+- All UI text is centralized in `web/src/strings.ts` (`T`); no strings are written in components; `status.ts` only handles colors and line styles, and its labels also come from `T`. The UI was kept in Chinese during development and switched to English for submission (see "Submission: UI in English" at the end).
 - `src/__tests__/strings.test.ts` scans the source under `src` (with comments stripped) and fails if Chinese appears. Exceptions: `strings.ts` and demo data (`playground/demoLabels.ts`, `preview/demoPlanB.ts`, `scenarios/demoNames.ts`).
-- Backend-generated content (node statements, conditions, reasons) will be English later; Chinese UI with English content is expected. The Chinese content of the MOCK fixtures is left alone until replaced by re-recording. `T.app.defaultEvent` must match the fixture's event and be switched together when changing to English.
+- Back-end content (node statements, conditions, reasons) is English, like the UI. The MOCK fixtures are data and are left as recorded; their picker names (the `label` field in `web/fixtures/*.json`) are still Chinese. `T.app.defaultEvent` must match the fixture's event.
 
 ### B2 streamlined version (Mia: the original is too full; reference Dynamic Island / Robinhood / OpenEvidence)
 
@@ -416,3 +416,11 @@ Also checked along the way: c1_blocked's LITE is BLOCKED; c4_abstain shows the a
 - MOCK still loads and approves. MOCK fork only replays recorded forks, so arbitrary edits there return the "only recorded" message.
 - Screenshots: `screenshots/edit-e3-after-edit.jpg`, `edit-e5-draft.jpg`, `edit-e6-after-cause.jpg`, `edit-e7-reapprove.jpg`.
 - Follow-up (Mia): an added cause used to disappear while the back end recomputed. Now, after confirm, the draft stays on the canvas read-only with "重算中" and its links until the new version arrives, and then the real node replaces it. An edited node shows the new text with "重算中" in the same way. If the back end rejects the change, the draft becomes editable again and the edit box reopens, with the user's text and links kept. Checked live: run 20261019-113033, add cause → r-v6, draft visible at about 2 s and 20 s, replaced at about 45 s. The rejection path was checked in MOCK. Screenshot: `screenshots/edit-pending.jpg`.
+
+## Submission: UI in English (2026-10-19)
+
+- Every string in `web/src/strings.ts` is now English. Entries from earlier rounds above that quote Chinese UI text (for example 你改的, 受影响, 需重新批准, 先查) describe the UI as it was then; the current labels are Your edit, Affected, Re-approve and Check first.
+- Back-end rejections are now translated into plain English (`edits.plainForkError`).
+- Demo data shown on the playground and preview pages (`playground/demoLabels.ts`, `preview/demoPlanB.ts`, `scenarios/demoNames.ts`) is English too. `index.html` declares `lang="en"`.
+- Tests that asserted Chinese text now assert the English text. `strings.test.ts` is unchanged and still fails on any CJK outside comments, `strings.ts` and the demo data.
+- Not changed: fixtures, recorded runs and model output. The MOCK picker names come from the fixtures' `label` field and are still Chinese.

@@ -48,9 +48,9 @@ describe('在图上改：请求体', () => {
     expect(canLink(graph, 'd', [], 'd', 'nope')).toBe(false);
   });
 
-  it('后端拒绝理由翻成白话中文，认不出的原样附上', () => {
-    expect(plainForkError('[x] an id added by add_shock clashes with an existing object')).toMatch(/重复/);
-    expect(plainForkError('[e] a Stage 1 edge must go from a new node to the impacts: a → b')).toMatch(/只能从它自己连/);
+  it('后端拒绝理由翻成白话英文，认不出的原样附上', () => {
+    expect(plainForkError('[x] an id added by add_shock clashes with an existing object')).toMatch(/clashes/);
+    expect(plainForkError('[e] a Stage 1 edge must go from a new node to the impacts: a → b')).toMatch(/only link from itself/);
     expect(plainForkError('boom')).toContain('boom');
   });
 

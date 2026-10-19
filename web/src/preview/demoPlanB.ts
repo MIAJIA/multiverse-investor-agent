@@ -2,8 +2,8 @@
 // 给的；只有一处手改：把 LITE 分支和共用主干改成「有资料支持」，因为 fixture 用的是占位资料包，真实数据里没有这一类。
 import type { Fixture, VersionBundle } from '../types';
 
-export const DEMO_SUBTITLE = 'C1 + 情景「代工停产」';
-export const DEMO_NOTE = '演示数据：LITE 分支和共用主干的「有资料支持」是手动改的，其余来自后端';
+export const DEMO_SUBTITLE = 'C1 + scenario "foundry outage"';
+export const DEMO_NOTE = 'Demo data: "Backed by sources" on the LITE branch and the shared trunk was set by hand; everything else comes from the back end';
 
 const DEMO_EVIDENCED = 'c1.term.laser_vendor';
 

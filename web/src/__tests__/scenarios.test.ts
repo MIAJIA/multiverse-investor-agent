@@ -14,7 +14,7 @@ describe('多情景辅助', () => {
     expect(scenarioIds(v)).toEqual(['c1-v2', 'c1-v3', 'c1-v4']);
     expect(chain(v, 'c1-v4')).toEqual(['c1-v1', 'c1-v2', 'c1-v4']);
     expect(v['c1-v4'].scenario!.root_version).toBe('c1-v1');
-    expect(fullName(v, 'c1-v4')).toBe('改用集成激光 › + 停产');
+    expect(fullName(v, 'c1-v4')).toBe('Integrated lasers instead › + outage');
   });
 
   it('累计：直接用后端给的 scenario_ref.challenged_claim_ids（叠加后的全部）', () => {

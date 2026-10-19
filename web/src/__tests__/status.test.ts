@@ -27,7 +27,7 @@ describe('status 映射', () => {
   });
 
   it('gate 没有执行类文案', () => {
-    for (const look of Object.values(S.GATE)) expect(look.label).not.toMatch(/execute|执行|下单/i);
+    for (const look of Object.values(S.GATE)) expect(look.label).not.toMatch(/execute|order|执行|下单/i);
   });
 
   it('status 和 gate 是两张表，文案不重叠', () => {
@@ -37,8 +37,8 @@ describe('status 映射', () => {
   });
 
   it('exit_logic 显式写出或 / 且', () => {
-    expect(S.EXIT_LOGIC.ANY.label).toContain('或');
-    expect(S.EXIT_LOGIC.ALL.label).toContain('且');
+    expect(S.EXIT_LOGIC.ANY.label).toContain('OR');
+    expect(S.EXIT_LOGIC.ALL.label).toContain('AND');
   });
 
   it('三态着色：challenged 橙、unresolved 虚线', () => {
@@ -46,10 +46,10 @@ describe('status 映射', () => {
     expect(S.ASSESSMENT.unresolved.border).toBe('dashed');
   });
 
-  it('三类分支：线型各不相同，假设分支有底纹和「假设 · 未观测」标签，有资料的默认不加字', () => {
+  it('三类分支：线型各不相同，假设分支有底纹和「Assumed · not observed」标签，有资料的默认不加字', () => {
     const k = S.BRANCH_KIND;
     expect(new Set([k.evidenced.line, k.model_only.line, k.hypothetical.line]).size).toBe(3);
-    expect(k.hypothetical.tag).toBe('假设 · 未观测');
+    expect(k.hypothetical.tag).toBe('Assumed · not observed');
     expect(k.hypothetical.pattern).toContain('repeating-linear-gradient');
     expect(k.evidenced.tag).toBeNull();
     expect(k.model_only.dash).toBeTruthy();
