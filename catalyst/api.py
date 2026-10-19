@@ -50,6 +50,14 @@ def _web(event, target, *, cfg, ev, store, reasoner):
                       replay_dir=Path(replay) if replay else None)
 
 
+def _research(event, target, *, cfg, ev, web):
+    """联网开着时 Inspect 带研究 loop（按缺口补查一轮）；CATALYST_REPLAY 时逐轮读冻结的资料包。"""
+    from catalyst.__main__ import research_for
+
+    replay = os.environ.get("CATALYST_REPLAY")
+    return research_for(event, target, cfg=cfg, ev=ev, web=web, replay_dir=Path(replay) if replay else None)
+
+
 def _store(run_id: str) -> RunStore:
     if not re.fullmatch(r"[\w.-]+", run_id) or not (RUNS / run_id).is_dir():
         raise KeyError(f"run {run_id} 不存在")
@@ -68,6 +76,7 @@ def create_run(body: dict) -> dict:
     (store.root / "case.json").write_text(json.dumps({"case": {"id": run_id, "input": body}, "packs": cfg.packs,
                                                       "notes": notes, "today": cfg.today, "online": cfg.online,
                                                       "web": web.dump()}, ensure_ascii=False))
+    research = _research(event, target, cfg=cfg, ev=ev, web=web)
     disc = None
     candidate = None
     if not target:
@@ -78,10 +87,15 @@ def create_run(body: dict) -> dict:
                     "discover": disc, "inspect": None, "notes": notes, "web": web.dump()}
         candidate = next((c for c in cands if c["label"] == "grounded"), cands[0])
     ins = ep.inspect(event, target, candidate=candidate, candidate_id=candidate and candidate["id"],
-                     reasoner=reasoner, evidence=ev, config=cfg, store=store)
+                     reasoner=reasoner, evidence=ev, config=cfg, store=store, research=research)
     version = ins["graph"]["version"] if ins.get("graph") else None
+    from catalyst.__main__ import _record_web, web_summary
+
+    if research is not None and research.rounds:
+        _record_web(store, web, research)
+        notes = [research.message(), *notes[1:]]
     return {"ok": ins["ok"], "errors": ins["errors"], "version": version, "run_id": run_id,
-            "discover": disc, "inspect": ins, "notes": notes, "web": web.dump()}
+            "discover": disc, "inspect": ins, "notes": notes, "web": web_summary(web, research)}
 
 
 def fork_run(run_id: str, body: dict) -> dict:

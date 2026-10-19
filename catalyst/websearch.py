@@ -113,6 +113,8 @@ class WebResult:
     fetches: int = 0
     dropped: list[dict] = field(default_factory=list)
     replayed: bool = False
+    round: int = 1
+    queries: list[dict] = field(default_factory=list)  # 这一轮的查询词（人工复核：每轮是否专门找了反方）
 
     @property
     def n(self) -> int:
@@ -130,7 +132,8 @@ class WebResult:
         return {"online": self.status != "off", "status": self.status, "excerpts": self.n,
                 "pack_id": self.pack.pack_id if self.pack else None, "searches": self.searches,
                 "fetches": self.fetches, "dropped": len(self.dropped), "reason": self.reason,
-                "replayed": self.replayed, "message": self.message()}
+                "replayed": self.replayed, "round": self.round,
+                "queries": [q.get("input") for q in self.queries], "message": self.message()}
 
 
 # ---- 检索请求 -------------------------------------------------------------
@@ -189,11 +192,14 @@ def tools_for(wl: Whitelist, cfg) -> list[dict]:
     ]
 
 
-def retrieval_key(event: str, target: str | None, cfg, wl: Whitelist) -> str:
-    """检索键：输入、白名单、上限、检索 prompt 任何一项变了，冻结的资料包就不能再回放。"""
+def retrieval_key(event: str, target: str | None, cfg, wl: Whitelist, round: int = 1,
+                  gaps: list[dict] | None = None) -> str:
+    """检索键：输入、白名单、上限、检索 prompt、轮次、补查缺口任何一项变了，冻结的资料包就不能再回放。"""
     blob = json.dumps({"event": event, "target": target, "today": cfg.today, "whitelist": wl.digest,
                        "max_web_searches": cfg.max_web_searches, "max_web_fetches": cfg.max_web_fetches,
-                       "max_web_excerpts": cfg.max_web_excerpts, "prompt": prompts.WEB_PROMPT_VERSION},
+                       "max_web_excerpts": cfg.max_web_excerpts, "prompt": prompts.WEB_PROMPT_VERSION,
+                       "round": round, "gaps": gaps or [],
+                       "followup_prompt": prompts.WEB_FOLLOWUP_VERSION if round > 1 else None},
                       sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
@@ -350,8 +356,13 @@ def _note(wl: Whitelist, today: str) -> str:
             "拿不到时写 unknown。来源可信不等于支持某条因果。")
 
 
+def excerpt_prefix(round: int) -> str:
+    """第 1 轮 web-001…；补查轮 web-r2-001…。都以 web- 开头，前端和数据前缀照旧能认出联网片段。"""
+    return WEB_PREFIX if round == 1 else f"{WEB_PREFIX}r{round}-"
+
+
 def build_pack(event: str, target: str | None, cfg, wl: Whitelist, cands: list[dict], labels: WebLabelOutput,
-               ) -> tuple[EvidencePack, list[dict], list[dict]]:
+               round: int = 1) -> tuple[EvidencePack, list[dict], list[dict]]:
     by_id = {i.candidate_id: i for i in labels.items}
     kept, dropped = [], []
     for c in cands:
@@ -363,7 +374,7 @@ def build_pack(event: str, target: str | None, cfg, wl: Whitelist, cands: list[d
     excerpts, prov = [], []
     for n, c in enumerate(kept, 1):
         e = wl.entries[c["domain"]]
-        xid = f"{WEB_PREFIX}{n:03d}"
+        xid = f"{excerpt_prefix(round)}{n:03d}"
         title = f" · {c['title']}" if c.get("title") else ""
         excerpts.append(Excerpt(
             source_id=f"web:{c['domain']}:{hashlib.sha256(c['url'].encode()).hexdigest()[:8]}", excerpt_id=xid,
@@ -388,25 +399,44 @@ def freeze(store: RunStore, pack: EvidencePack, provenance: dict) -> Path:
     return path
 
 
+def _round_user(event: str, target: str | None, cfg, wl: Whitelist, round: int, gaps: list[dict] | None,
+                prior: list[EvidencePack]) -> tuple[str, str]:
+    head = (f"今天：{cfg.today}\n事件（用户原话）：{event}\n目标标的：{target or '（未给出）'}\n\n"
+            f"白名单网站（只能搜这些）：\n{wl.summary()}\n\n")
+    limits = f"最多搜索 {cfg.max_web_searches} 次、抓取 {cfg.max_web_fetches} 次。"
+    if round == 1:
+        return prompts.WEB_RETRIEVE, head + limits
+    seen = [f"{x.excerpt_id} {x.url}" for p in prior for x in p.excerpts]
+    return prompts.WEB_FOLLOWUP, (
+        head + f"第 {round} 轮补查。上一轮建图后，下面这些地方还缺证据（每行一个 JSON）：\n"
+        + "\n".join(json.dumps(g, ensure_ascii=False) for g in gaps or []) + "\n\n"
+        + "已有的联网片段（不要重复找同一段）：\n" + ("\n".join(seen) or "（无）") + "\n\n" + limits)
+
+
 def retrieve_live(event: str, target: str | None, *, cfg, searcher: Searcher, reasoner: Reasoner,
-                  store: RunStore | None, wl: Whitelist) -> WebResult:
-    user = (f"今天：{cfg.today}\n事件（用户原话）：{event}\n目标标的：{target or '（未给出）'}\n\n"
-            f"白名单网站（只能搜这些）：\n{wl.summary()}\n\n"
-            f"最多搜索 {cfg.max_web_searches} 次、抓取 {cfg.max_web_fetches} 次。")
-    responses = searcher.search(system=prompts.WEB_RETRIEVE, user=user, tools=tools_for(wl, cfg))
+                  store: RunStore | None, wl: Whitelist, round: int = 1, gaps: list[dict] | None = None,
+                  prior: list[EvidencePack] | None = None) -> WebResult:
+    prior = prior or []
+    system, user = _round_user(event, target, cfg, wl, round, gaps, prior)
+    responses = searcher.search(system=system, user=user, tools=tools_for(wl, cfg))
     if store:
         (store.root / "web").mkdir(exist_ok=True)
-        (store.root / "web" / "retrieve.json").write_text(json.dumps(
-            {"model": searcher.model, "system": prompts.WEB_RETRIEVE, "user": user, "tools": tools_for(wl, cfg),
+        name = "retrieve.json" if round == 1 else f"retrieve-r{round}.json"
+        (store.root / "web" / name).write_text(json.dumps(
+            {"round": round, "model": searcher.model, "system": system, "user": user, "tools": tools_for(wl, cfg),
              "responses": responses}, ensure_ascii=False, indent=2))
     searches, fetches = _usage(responses)
     cands, dropped, record = extract_candidates(responses, wl)
+    seen = {(x.url, _ws(x.text)) for p in prior for x in p.excerpts}
+    dropped += [{"reason": "seen_in_prior_round", "url": c["url"], "text": c["text"][:200]}
+                for c in cands if (c["url"], _ws(c["text"])) in seen]
+    cands = [c for c in cands if (c["url"], _ws(c["text"])) not in seen]
     over = cands[cfg.max_web_excerpts:]
     cands = cands[: cfg.max_web_excerpts]
     dropped += [{"reason": "over_limit", "url": c["url"], "text": c["text"][:200]} for c in over]
-    base = dict(searches=searches, fetches=fetches, dropped=dropped)
+    base = dict(searches=searches, fetches=fetches, dropped=dropped, round=round, queries=record["queries"])
     if not cands:
-        why = "检索没有返回白名单内带引用的片段"
+        why = "检索没有返回白名单内带引用的新片段"
         if record["errors"]:
             why += "（工具错误：" + ", ".join(sorted({str(e["error_code"]) for e in record["errors"]})) + "）"
         return WebResult("empty", reason=why, **base)
@@ -418,46 +448,49 @@ def retrieve_live(event: str, target: str | None, *, cfg, searcher: Searcher, re
                   max_retries=cfg.max_retries, store=store)
     if not r.ok:
         return WebResult("failed", reason="立场标注没有通过校验：" + "; ".join(r.errors[:3]), **base)
-    pack, prov, label_dropped = build_pack(event, target, cfg, wl, cands, r.value)
+    pack, prov, label_dropped = build_pack(event, target, cfg, wl, cands, r.value, round=round)
     base["dropped"] = dropped + label_dropped
     if not pack.excerpts:
         return WebResult("empty", reason="候选片段都被标注为无关", **base)
     if store:
-        freeze(store, pack, {"retrieval_key": retrieval_key(event, target, cfg, wl), "whitelist": wl.version,
-                             "whitelist_digest": wl.digest, "web_prompt_version": prompts.WEB_PROMPT_VERSION,
+        freeze(store, pack, {"retrieval_key": retrieval_key(event, target, cfg, wl, round, gaps), "round": round,
+                             "gaps": gaps or [], "whitelist": wl.version, "whitelist_digest": wl.digest,
+                             "web_prompt_version": prompts.WEB_PROMPT_VERSION,
+                             "followup_prompt_version": prompts.WEB_FOLLOWUP_VERSION if round > 1 else None,
                              "model": searcher.model, "event": event, "target": target, "today": cfg.today,
                              "searches": searches, "fetches": fetches, "excerpts": prov, **record,
                              "dropped": base["dropped"], "usage": [x.get("usage") for x in responses]})
     return WebResult("ok", pack=pack, **base)
 
 
-def load_frozen(run_dir: Path | str, event: str, target: str | None, *, cfg, wl: Whitelist) -> WebResult:
-    """回放：读录制目录里冻结的资料包，不上网。检索键对不上就报 CassetteMiss。"""
-    files = sorted((Path(run_dir) / "packs").glob(f"{WEB_PREFIX}*.json"))
+def load_frozen(run_dir: Path | str, event: str, target: str | None, *, cfg, wl: Whitelist, round: int = 1,
+                gaps: list[dict] | None = None) -> WebResult:
+    """回放：按检索键读录制目录里这一轮冻结的资料包，不上网。键对不上就报 CassetteMiss。"""
+    want = retrieval_key(event, target, cfg, wl, round, gaps)
+    for f in sorted((Path(run_dir) / "packs").glob(f"{WEB_PREFIX}*.json")):
+        data = json.loads(f.read_text())
+        p = data.get("_provenance", {})
+        if p.get("retrieval_key") == want:
+            return WebResult("ok", pack=parse_pack(data), searches=p.get("searches", 0), fetches=p.get("fetches", 0),
+                             dropped=p.get("dropped", []), replayed=True, round=round, queries=p.get("queries", []))
     case = Path(run_dir) / "case.json"
-    web = json.loads(case.read_text()).get("web") if case.exists() else None
-    if not files:
-        if web and web.get("status") in ("empty", "failed"):  # 录制时联网就没拿到片段：回放同样的结果
-            return WebResult(web["status"], reason=web.get("reason"), replayed=True)
-        raise CassetteMiss(f"web.retrieve: {run_dir} 里没有冻结的联网资料包——这次录制没有开联网，或者需要重新录制")
-    data = json.loads(files[-1].read_text())
-    key, want = data.get("_provenance", {}).get("retrieval_key"), retrieval_key(event, target, cfg, wl)
-    if key != want:
-        raise CassetteMiss(f"web.retrieve: 检索键对不上（录制 {key}，现在 {want}）——事件、日期、白名单、上限或检索 "
-                           "prompt 变了，需要重新录制")
-    p = data.get("_provenance", {})
-    return WebResult("ok", pack=parse_pack(data), searches=p.get("searches", 0), fetches=p.get("fetches", 0),
-                     dropped=p.get("dropped", []), replayed=True)
+    web = (json.loads(case.read_text()).get("web") or {}) if case.exists() else {}
+    recorded = next((r for r in web.get("rounds", [web]) if r.get("round", 1) == round), None)
+    if recorded and recorded.get("status") in ("empty", "failed"):  # 录制时这一轮就没拿到片段：回放同样的结果
+        return WebResult(recorded["status"], reason=recorded.get("reason"), replayed=True, round=round)
+    raise CassetteMiss(f"web.retrieve 第 {round} 轮: {run_dir} 里没有检索键为 {want} 的冻结资料包——事件、日期、"
+                       "白名单、上限、检索 prompt 或补查缺口变了，或者这次录制没有开联网，需要重新录制")
 
 
 def run_web_stage(event: str, target: str | None, *, cfg, store: RunStore | None, reasoner: Reasoner | None,
-                  replay_dir: Path | str | None = None, searcher: Searcher | None = None) -> WebResult:
-    """CLI 与 API 共用的入口。没开联网返回 off；回放读冻结的资料包；实时检索失败不抛异常，退回本地资料包。"""
+                  replay_dir: Path | str | None = None, searcher: Searcher | None = None, round: int = 1,
+                  gaps: list[dict] | None = None, prior: list[EvidencePack] | None = None) -> WebResult:
+    """CLI、API 与研究 loop 共用的入口。没开联网返回 off；回放读冻结的资料包；实时检索失败不抛异常，退回本地资料包。"""
     if not cfg.online:
         return WebResult("off")
     wl = Whitelist(cfg.web_whitelist)
     if replay_dir is not None:
-        res = load_frozen(replay_dir, event, target, cfg=cfg, wl=wl)
+        res = load_frozen(replay_dir, event, target, cfg=cfg, wl=wl, round=round, gaps=gaps)
         if res.pack and store and Path(store.root) != Path(replay_dir):
             src = Path(replay_dir) / "packs" / _pack_file(res.pack.pack_id)
             (store.root / "packs").mkdir(exist_ok=True)
@@ -465,9 +498,10 @@ def run_web_stage(event: str, target: str | None, *, cfg, store: RunStore | None
         return res
     try:
         searcher = searcher or AnthropicSearcher()
-        return retrieve_live(event, target, cfg=cfg, searcher=searcher, reasoner=reasoner, store=store, wl=wl)
+        return retrieve_live(event, target, cfg=cfg, searcher=searcher, reasoner=reasoner, store=store, wl=wl,
+                             round=round, gaps=gaps, prior=prior)
     except Exception as e:  # noqa: BLE001 —— 联网失败不阻断推理，原因写进结果和 notes
-        return WebResult("failed", reason=f"{type(e).__name__}: {str(e)[:300]}")
+        return WebResult("failed", reason=f"{type(e).__name__}: {str(e)[:300]}", round=round)
 
 
 def has_web(pack: EvidencePack | None) -> bool:

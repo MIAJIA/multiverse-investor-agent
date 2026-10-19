@@ -199,10 +199,14 @@ def _anchor_warnings(g: Graph) -> list[str]:
 
 def inspect(event: str, target: str | None = None, *, candidate_id: str | None = None, candidate: dict | None = None,
             material: str | None = None, judgment_only: bool = False, reasoner, evidence: EvidenceProvider | None,
-            config=None, packs: list[str] | None = None, store: RunStore | None = None) -> dict:
+            config=None, packs: list[str] | None = None, store: RunStore | None = None, research=None) -> dict:
     """两步受控生成：inspect（因果图）→ inspect.plan（判定条件 + 提案草稿）。一整份 InspectOutput 超出结构化输出的
-    语法上限，拆开后两步都能走 json_schema；第 2 步只在第 1 步的图通过校验后才跑，错误也只回给出错的那一步。"""
+    语法上限，拆开后两步都能走 json_schema；第 2 步只在第 1 步的图通过校验后才跑，错误也只回给出错的那一步。
+    research：联网研究 loop（catalyst/research.py），None 时行为与原来完全一致。"""
     cfg = _cfg(config, packs)
+    if research is not None and not judgment_only:  # 研究 loop 挂钩：按缺口补查后，带全部资料包从头重跑本入口
+        return research(lambda **kw: inspect(event, target, candidate_id=candidate_id, candidate=candidate,
+                                              material=material, evidence=evidence, **kw), cfg, store, reasoner)
     if judgment_only:
         user = f"材料：\n{material}\n\n因果断言：{event}" + (f" → {target}" if target else "")
         r = run_stage("judge", system=prompts.JUDGE, user=user, output_model=JudgmentOutput, reasoner=reasoner,

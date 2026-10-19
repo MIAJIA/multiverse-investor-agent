@@ -23,6 +23,7 @@ from catalyst import entrypoints as ep
 from catalyst.evidence import EvidenceProvider
 from catalyst.reasoner import RecordingReasoner, ReplayReasoner, default_reasoner
 from catalyst.store import RunStore
+from catalyst.research import ResearchLoop
 from catalyst.websearch import WebResult, run_web_stage
 
 
@@ -34,6 +35,27 @@ def attach_web(event: str, target: str | None, *, cfg, ev: EvidenceProvider, sto
         ev.register(web.pack)
         cfg.packs = [*cfg.packs, web.pack.pack_id]
     return web
+
+
+def research_for(event: str, target: str | None, *, cfg, ev: EvidenceProvider, web: WebResult,
+                 replay_dir=None) -> ResearchLoop | None:
+    """联网开着时，Inspect 带上研究 loop（第 2 轮由代码按缺口决定要不要补查）；关着时返回 None，行为不变。"""
+    return ResearchLoop(event, target, evidence=ev, round1=web, replay_dir=replay_dir) if cfg.online else None
+
+
+def web_summary(web: WebResult, research: ResearchLoop | None) -> dict:
+    """case.json 与 API 返回体的 web 字段：研究 loop 跑过就带上每轮明细和补查信息。"""
+    return research.dump() if research is not None and research.rounds else web.dump()
+
+
+def _record_web(store: RunStore, web: WebResult, research: ResearchLoop | None) -> None:
+    """研究结束后把每轮结果写回 case.json（回放靠它知道某一轮当时是空的还是失败的）。"""
+    path = store.root / "case.json"
+    meta = json.loads(path.read_text())
+    meta["web"] = web_summary(web, research)
+    if research is not None and research.rounds:
+        meta["packs"] = [*[p for p in meta["packs"] if p not in research.packs], *research.packs]
+    path.write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -131,6 +153,9 @@ def cmd_run(a) -> None:
     print(web.message())
     for n in notes:
         print(f"! {n}")
+    research = None
+    if case.get("type") != "causalt5k" and case.get("entry") != "fork":
+        research = research_for(inp["event"], inp.get("target"), cfg=cfg, ev=ev, web=web, replay_dir=a.replay)
 
     if case.get("type") == "causalt5k":
         res = ep.inspect(inp["event"], inp.get("target"), material=inp["material"], judgment_only=True,
@@ -145,11 +170,15 @@ def cmd_run(a) -> None:
             pick = next((c for c in cands if c["label"] == "grounded"), cands[0])
             print(f"→ inspect 候选 {pick['id']}")
             res = ep.inspect(inp["event"], None, candidate_id=pick["id"], candidate=pick, reasoner=reasoner,
-                             evidence=ev, config=cfg, store=store)
+                             evidence=ev, config=cfg, store=store, research=research)
         else:
             res = None
     else:
-        res = ep.inspect(inp["event"], inp.get("target"), reasoner=reasoner, evidence=ev, config=cfg, store=store)
+        res = ep.inspect(inp["event"], inp.get("target"), reasoner=reasoner, evidence=ev, config=cfg, store=store,
+                         research=research)
+    if research is not None and research.rounds:
+        _record_web(store, web, research)
+        print(research.message())
     if res is not None:
         print("\n".join(_summary(res)))
     print(f"\nrun: {store.root}")
