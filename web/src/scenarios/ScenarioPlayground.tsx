@@ -8,7 +8,8 @@ import { GATE, SUPPORT } from '../status';
 import Badge from '../components/Badge';
 import ScenarioCanvas from './ScenarioCanvas';
 import {
-  challenged, childrenOf, chain, cumulativeColoring, fullName, relativeColoring, rootOf, scenarioIds, scenarioName,
+  childrenOf, chain, cumulativeChallenged, cumulativeColoring, fullName, layerColoring, newChallenged, rootOf,
+  scenarioIds, scenarioName,
   type Versions,
 } from './model';
 import '../playground/playground.css';
@@ -35,7 +36,7 @@ function Segmented({ versions }: { versions: Versions }) {
           <button key={v} className={v === cur ? 'on' : ''} onClick={() => setCur(v)}>{fullName(versions, v)}</button>
         ))}
       </div>
-      <ScenarioCanvas bundle={versions[cur]} coloring={versions[cur].scenario ? relativeColoring(versions[cur]) : undefined} />
+      <ScenarioCanvas bundle={versions[cur]} coloring={versions[cur].scenario ? cumulativeColoring(versions, cur) : undefined} />
     </div>
   );
 }
@@ -48,7 +49,7 @@ function Tree({ versions }: { versions: Versions }) {
       <button className={`sc-tree-row${v === cur ? ' on' : ''}`} style={{ paddingLeft: 10 + depth * 18 }} onClick={() => setCur(v)}>
         {depth > 0 && <span className="sc-branch">└</span>}
         <span>{scenarioName(versions, v)}</span>
-        {versions[v].scenario && <span className="sc-count">{challenged(versions[v]).length}</span>}
+        {versions[v].scenario && <span className="sc-count">{newChallenged(versions, v).length}</span>}
       </button>
       {childrenOf(versions, v).map((c) => row(c, depth + 1))}
     </div>
@@ -56,7 +57,7 @@ function Tree({ versions }: { versions: Versions }) {
   return (
     <div className="sc-row">
       <nav className="sc-tree">{row(root, 0)}<div className="sc-hint">数字 = 这一层新增的受挑战前提</div></nav>
-      <ScenarioCanvas bundle={versions[cur]} coloring={versions[cur].scenario ? relativeColoring(versions[cur]) : undefined} />
+      <ScenarioCanvas bundle={versions[cur]} coloring={versions[cur].scenario ? cumulativeColoring(versions, cur) : undefined} />
     </div>
   );
 }
@@ -66,7 +67,7 @@ function Tree({ versions }: { versions: Versions }) {
 function Overlay({ versions }: { versions: Versions }) {
   const [a, b] = scenarioIds(versions).filter((v) => versions[v].scenario!.base_version === rootOf(versions));
   const tints = useMemo(() => {
-    const ca = new Set(challenged(versions[a])), cb = new Set(challenged(versions[b]));
+    const ca = new Set(cumulativeChallenged(versions[a])), cb = new Set(cumulativeChallenged(versions[b]));
     const out: Record<string, string> = {};
     for (const id of new Set([...ca, ...cb])) out[id] = ca.has(id) && cb.has(id) ? BOTH_COLOR : ca.has(id) ? A_COLOR : B_COLOR;
     return out;
@@ -90,7 +91,7 @@ function SideBySide({ versions }: { versions: Versions }) {
       {[a, b].map((v) => (
         <div key={v} className="sc-col sc-half">
           <div className="sc-half-title">{scenarioName(versions, v)}</div>
-          <ScenarioCanvas bundle={versions[v]} coloring={relativeColoring(versions[v])} compact />
+          <ScenarioCanvas bundle={versions[v]} coloring={cumulativeColoring(versions, v)} compact />
         </div>
       ))}
     </div>
@@ -107,8 +108,8 @@ function Relative({ versions }: { versions: Versions }) {
   const v = stacked(versions);
   return (
     <div className="sc-col">
-      <div className="sc-note">「{fullName(versions, v)}」：只标这一层新受挑战的；相对「{scenarioName(versions, versions[v].scenario!.base_version)}」</div>
-      <ScenarioCanvas bundle={versions[v]} coloring={relativeColoring(versions[v])} />
+      <div className="sc-note">「{fullName(versions, v)}」：只标这一层新增的（本版本减去父版本的受挑战集合）；相对「{scenarioName(versions, versions[v].scenario!.base_version)}」</div>
+      <ScenarioCanvas bundle={versions[v]} coloring={layerColoring(versions, v)} />
     </div>
   );
 }
@@ -117,7 +118,7 @@ function Cumulative({ versions }: { versions: Versions }) {
   const v = stacked(versions);
   return (
     <div className="sc-col">
-      <div className="sc-note">「{fullName(versions, v)}」：链上每一层受挑战的都标出来；相对基线。演示用前端合并，正式版要后端给</div>
+      <div className="sc-note">「{fullName(versions, v)}」：叠加后全部受挑战的；相对基线（后端的 scenario_ref.challenged_claim_ids）</div>
       <ScenarioCanvas bundle={versions[v]} coloring={cumulativeColoring(versions, v)} />
     </div>
   );
@@ -131,12 +132,12 @@ function BigNumber({ versions }: { versions: Versions }) {
     <div className="sc-cards">
       {scenarioIds(versions).map((v) => {
         const b = versions[v], p = b.proposal!, base = versions[b.scenario!.base_version].proposal!;
-        const n = challenged(b).length;
+        const n = cumulativeChallenged(b).length, added = newChallenged(versions, v).length;
         return (
           <div key={v} className="sc-card">
             <div className="sc-card-name">{fullName(versions, v)}</div>
             <div className="sc-big" style={{ color: n ? A_COLOR : '#34c759' }}>{n}</div>
-            <div className="sc-sub">个前提受挑战（这一层）</div>
+            <div className="sc-sub">个前提受挑战（相对基线），这一层新增 {added}</div>
             <div className="sc-delta">
               <span>支持度</span>
               <span style={{ color: SUPPORT[base.support_status].color }}>{base.support_status}</span>
@@ -156,7 +157,7 @@ function BigNumber({ versions }: { versions: Versions }) {
   );
 }
 
-function DotMap({ b, coloring }: { b: VersionBundle; coloring?: ReturnType<typeof relativeColoring> }) {
+function DotMap({ b, coloring }: { b: VersionBundle; coloring?: ReturnType<typeof cumulativeColoring> }) {
   const { nodes } = toFlow(b.graph);
   const xs = nodes.map((n) => n.position.x), ys = nodes.map((n) => n.position.y);
   const w = Math.max(...xs) - Math.min(...xs) || 1, h = Math.max(...ys) - Math.min(...ys) || 1;
@@ -176,7 +177,7 @@ function WatchFaces({ versions }: { versions: Versions }) {
     <div className="sc-cards">
       {[rootOf(versions), ...scenarioIds(versions)].map((v) => (
         <div key={v} className="sc-face">
-          <DotMap b={versions[v]} coloring={versions[v].scenario ? relativeColoring(versions[v]) : undefined} />
+          <DotMap b={versions[v]} coloring={versions[v].scenario ? cumulativeColoring(versions, v) : undefined} />
           <div className="sc-card-name">{fullName(versions, v)}</div>
         </div>
       ))}
@@ -206,7 +207,7 @@ function Island({ versions }: { versions: Versions }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="sc-col sc-rel">
-      <ScenarioCanvas bundle={versions[f.from]} coloring={versions[f.from].scenario ? relativeColoring(versions[f.from]) : undefined} />
+      <ScenarioCanvas bundle={versions[f.from]} coloring={versions[f.from].scenario ? cumulativeColoring(versions, f.from) : undefined} />
       <div className={`sc-island${open ? ' open' : ''}`}>
         {!open ? (
           <button className="sc-island-pill" onClick={() => setOpen(true)}>＋ 假如…<span>在「{fullName(versions, f.from)}」上</span></button>
@@ -238,7 +239,7 @@ function SideForm({ versions }: { versions: Versions }) {
   const f = useCreate(versions);
   return (
     <div className="sc-row">
-      <ScenarioCanvas bundle={versions[f.from]} coloring={versions[f.from].scenario ? relativeColoring(versions[f.from]) : undefined} />
+      <ScenarioCanvas bundle={versions[f.from]} coloring={versions[f.from].scenario ? cumulativeColoring(versions, f.from) : undefined} />
       <aside className="sc-form">
         <label>从哪个版本出发</label>
         <select value={f.from} onChange={(e) => f.setFrom(e.target.value)}>
@@ -269,8 +270,8 @@ const GROUNDS: Ground[] = [
     A: { name: '一张图叠色', desc: '在基线上按情景上色：橙 = A，蓝 = B，紫 = 两个都受挑战', render: (v) => <Overlay versions={v} /> },
     B: { name: '左右并排', desc: '两张小图并排，各自按自己的情景着色', render: (v) => <SideBySide versions={v} /> } },
   { key: 'stack', title: '叠加后的着色', question: '在 A 上再改一处，颜色以谁为准？',
-    A: { name: '相对上一层', desc: '只亮这一层新受挑战的（后端现在给的就是这个）', render: (v) => <Relative versions={v} /> },
-    B: { name: '相对基线（累计）', desc: '一路叠下来受挑战的全亮（需要后端新增「对基线」的结果）', render: (v) => <Cumulative versions={v} /> } },
+    A: { name: '相对上一层', desc: '只亮这一层新增的受挑战节点（由后端的两层结果做集合差得到）', render: (v) => <Relative versions={v} /> },
+    B: { name: '相对基线（累计）', desc: '一路叠下来受挑战的全亮（后端直接给的叠加结果）', render: (v) => <Cumulative versions={v} /> } },
   { key: 'summary', title: '情景摘要', question: '不点进去，怎么一眼看出每个情景的影响？',
     A: { name: '大数字卡片', desc: 'Robinhood 式：一个大数字 + 支持度怎么变 + gate', render: (v) => <BigNumber versions={v} /> },
     B: { name: '表盘点阵', desc: 'Apple Watch 式：每个情景一个缩略点阵，形状就是这张图', render: (v) => <WatchFaces versions={v} /> } },
