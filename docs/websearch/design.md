@@ -214,7 +214,7 @@ API 事实来自 2026-10-18 读的官方文档：[web search tool](https://platf
 
 ## 10. 实现与实测（第二阶段）
 
-主 session 的决定：检索模型跟 `CATALYST_MODEL`，`CATALYST_WEB_MODEL` 覆盖；日期用 `page_age`（a）；立场由 `web.label` 标注，note 和 source 写明「立场由模型标注，未经人工审核」；Excerpt 不加字段；T2 只有中央社，Al Jazeera 作为 T3 补进来；PDF 收，标 `api_citation`；eval 的联网案例归 eval 线。
+主 session 的决定：检索模型跟 `CATALYST_MODEL`，`CATALYST_WEB_MODEL` 覆盖（后经 Mia 决定改为：检索默认 `claude-haiku-5-5`，`CATALYST_WEB_MODEL` 覆盖；推理和立场标注仍用 `CATALYST_MODEL`）；日期用 `page_age`（a）；立场由 `web.label` 标注，note 和 source 写明「立场由模型标注，未经人工审核」；Excerpt 不加字段；T2 只有中央社，Al Jazeera 作为 T3 补进来；PDF 收，标 `api_citation`；eval 的联网案例归 eval 线。
 
 **和设计的出入**
 - `WebLabelOutput` 放在 `catalyst/websearch.py` 里，没有放进 `schema.py`：它只在检索阶段用，不进快照、不进 API，放进数据契约反而要同步 `types.ts`。
@@ -251,3 +251,12 @@ API 事实来自 2026-10-18 读的官方文档：[web search tool](https://platf
 - 标注请求：输入 3.4k、输出 2.7k。资料包变大后，Inspect 两步的输入从 15.9k 增加到 29.8k。
 - Haiku 5.5：关联网整次约 $0.01，开联网整次约 $0.10，其中搜索费 $0.05。
 - Opus 5.5（按同样的 token 量换算）：开联网每次约多 $1–1.5，主要是检索请求的 206k 输入。演示要用 Opus 的话，可以考虑把 `max_web_searches` 降到 3，或者用 `CATALYST_WEB_MODEL` 让检索单独用便宜的模型。
+
+**模型与 effort（最终设置）**
+
+| 步骤 | 模型 | effort |
+| --- | --- | --- |
+| 检索 `web.retrieve` | `CATALYST_WEB_MODEL`，默认 `claude-haiku-5-5` | `CATALYST_EFFORT`，默认 high |
+| 立场标注 `web.label`、Discover / Inspect / Fork | `CATALYST_MODEL`，默认 `claude-opus-5-5` | 同上 |
+
+检索请求 `max_tokens` 32000，带 server-side fallback，和 `AnthropicReasoner` 一致。理由：检索只挑搜索词和引用段落，白名单、原文核对、上限都由代码把关；按实测 token 量，Haiku 每次约 $0.08，Opus 约 $1–1.5。推理是否能降级，要等 eval 线做同一套案例的模型对比再定。

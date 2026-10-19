@@ -131,14 +131,23 @@ class Searcher(Protocol):
         """返回这一轮的全部响应（model_dump 后的 dict；遇 pause_turn 续传的每一段都在里面）。"""
 
 
+DEFAULT_WEB_MODEL = "claude-haiku-5-5"
+
+
+def web_model() -> str:
+    """检索阶段的模型：默认 Haiku（只挑搜索词和引用段落；白名单、原文核对、上限都由代码把关），
+    CATALYST_WEB_MODEL 可覆盖。推理阶段（含立场标注 web.label）仍用 CATALYST_MODEL。"""
+    return os.environ.get("CATALYST_WEB_MODEL") or DEFAULT_WEB_MODEL
+
+
 class AnthropicSearcher:
-    """服务端 web_search / web_fetch。模型默认跟 CATALYST_MODEL 走，CATALYST_WEB_MODEL 可覆盖。"""
+    """服务端 web_search / web_fetch。模型见 web_model()。"""
 
     def __init__(self, model: str | None = None, effort: str = DEFAULT_EFFORT, max_tokens: int = 32000):
         import anthropic  # 只有实时检索才需要 SDK
 
         self.client = anthropic.Anthropic()
-        self.model = model or os.environ.get("CATALYST_WEB_MODEL") or os.environ.get("CATALYST_MODEL", "claude-opus-5-5")
+        self.model = model or web_model()
         self.effort, self.max_tokens = effort, max_tokens
 
     def search(self, *, system: str, user: str, tools: list[dict]) -> list[dict]:

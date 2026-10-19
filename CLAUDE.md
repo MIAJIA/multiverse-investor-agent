@@ -57,7 +57,7 @@ set -a && . ./.env && set +a                        # 读入 API key（.env 永�
 cd web && VITE_MOCK=0 npm run dev                   # 前端接真实后端（默认 VITE_MOCK=1 读 fixture）
 ```
 
-- 模型：`CATALYST_MODEL`，默认 `claude-opus-5-5`；调试可以用 `claude-haiku-5-5`。effort 用 `CATALYST_EFFORT` 设置。
+- 模型：`CATALYST_MODEL`，默认 `claude-opus-5-5`；调试可以用 `claude-haiku-5-5`。effort 用 `CATALYST_EFFORT` 设置。联网检索这一步单独用 `CATALYST_WEB_MODEL`，默认 `claude-haiku-5-5`（立场标注和推理仍用 `CATALYST_MODEL`）。
 - 回放按请求哈希匹配。prompt、资料包、schema 或输入任何一项变了，旧录音都会报 `CassetteMiss`。改了 prompt 要提升 `PROMPT_VERSION`。
 
 ## 不要做的事

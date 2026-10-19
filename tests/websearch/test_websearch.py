@@ -321,3 +321,11 @@ def test_api_offline_and_failure_are_labelled(api_env):
     failed = api.create_run({"event": "霍尔木兹海峡下周重开", "target": "BZ", "today": "2026-10-18", "online": True})
     assert failed["ok"] and failed["web"]["status"] == "failed" and "no key" in failed["web"]["message"]
     assert failed["notes"][0].startswith("联网：开，但没有拿到片段")
+
+
+def test_web_model_defaults_to_haiku_independent_of_reasoning_model(monkeypatch):
+    monkeypatch.delenv("CATALYST_WEB_MODEL", raising=False)
+    monkeypatch.setenv("CATALYST_MODEL", "claude-opus-5-5")  # 推理模型不影响检索模型
+    assert ws.web_model() == "claude-haiku-5-5"
+    monkeypatch.setenv("CATALYST_WEB_MODEL", "claude-sonnet-5-5")
+    assert ws.web_model() == "claude-sonnet-5-5"
