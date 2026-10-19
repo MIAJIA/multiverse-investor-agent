@@ -86,6 +86,7 @@ export default function App() {
         <span className="spacer" />
         {s.busy && <span className="muted">处理中…</span>}
         {base && <span className="muted small">run {s.runId} · {base.graph.version}{scen ? ` → ${scen.graph.version}` : ''}</span>}
+        <a href="#playground" className="small" style={{ color: '#aab4c8' }}>节点视觉 playground</a>
         {api.MOCK && <span className="badge mock">MOCK · fixture c1</span>}
       </header>
       <nav className="tabs">
