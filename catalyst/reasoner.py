@@ -127,7 +127,13 @@ class RecordingReasoner:
         return out
 
     def single_prompt(self, prompt: str) -> str:
-        return self.inner.single_prompt(prompt)
+        """baseline 组也录音（stage=baseline，schema 为空），否则对照组无法回放。"""
+        text = self.inner.single_prompt(prompt)
+        entry = {"stage": "baseline", "request_hash": request_hash("baseline", "", prompt, {}), "text": text, "meta": {}}
+        self.cassette.parent.mkdir(parents=True, exist_ok=True)
+        with self.cassette.open("a") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        return text
 
 
 class CassetteMiss(Exception):
@@ -150,6 +156,9 @@ class ReplayReasoner:
             raise CassetteMiss(f"{stage}: 录音里没有这个请求（{h}）——prompt、资料包或 schema 变了，需要重新录制")
         e = queue.pop(0)
         return Completion(e["text"], {**e.get("meta", {}), "replayed": True})
+
+    def single_prompt(self, prompt: str) -> str:
+        return self.complete(stage="baseline", system="", user=prompt, schema={}).text
 
 
 def default_reasoner() -> AnthropicReasoner:

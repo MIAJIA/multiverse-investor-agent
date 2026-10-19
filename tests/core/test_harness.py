@@ -144,3 +144,17 @@ def test_strict_schema_closes_every_object():
 
     objs = list(objects(s))
     assert objs and all(o["additionalProperties"] is False and set(o["required"]) == set(o["properties"]) for o in objs)
+
+
+def test_baseline_single_prompt_is_recorded_and_replayed(tmp_path):
+    class Plain:
+        name = "plain"
+
+        def single_prompt(self, prompt):
+            return "baseline answer for " + prompt
+
+    rec = RecordingReasoner(Plain(), tmp_path / "cassette.jsonl")
+    assert rec.single_prompt("q1") == "baseline answer for q1"
+    assert ReplayReasoner(tmp_path / "cassette.jsonl").single_prompt("q1") == "baseline answer for q1"
+    with pytest.raises(CassetteMiss):
+        ReplayReasoner(tmp_path / "cassette.jsonl").single_prompt("q2")
