@@ -29,6 +29,9 @@ export const T = {
     onlyRecorded: (targets: string[], kind: string) => `MOCK：fixture 只录了 ${targets.join('、')} 的 ${kind}`,
     noProposal: (v: string) => `MOCK：版本 ${v} 没有提案`,
     gateNotRecomputed: 'MOCK：gate 未重算（真实后端会产出新版本并重新判定条件）',
+    recordedApproval: 'MOCK：用的是 fixture 里录好的批准版本，你填的备注、阈值和改写没有写进去',
+    noRecordedFork: (base: string) => `MOCK：fixture 里没有从 ${base} 出发的这个分叉`,
+    web: 'MOCK：不联网',
   },
   graph: {
     danglingEdge: (id: string, from: string, to: string) => `[${id}] 边的端点不在图里：${from} → ${to}`,
@@ -63,30 +66,6 @@ export const T = {
     undo: '撤销',
   },
 
-  // ---- 旧 B2（签字），方案 B 实现后由「批准计划」取代 ----
-  sign: {
-    title: '签字',
-    clarified: '可检验的判断',
-    original: (s: string) => `原话：${s}`,
-    criteria: '判定条件（怎样算对、怎样算错）',
-    criteriaPlaceholder: '例如：季度出货报告达到上面确认的阈值',
-    deadline: '期限',
-    cancel: '取消',
-    submit: 'Sign',
-    note: '签的是研究判断，不是下单。',
-  },
-  signoff: {
-    heading: '我签哪几条？',
-    progress: (n: number, total: number, v: string) => `${n} / ${total} confirmed · ${v}`,
-    cols: ['假设', '失效条件', '证据状态', '用户状态'],
-    ruleWithDeadline: (rule: string, d: string) => `${rule}（截止 ${d}）`,
-    signed: '已签',
-    sign: 'Sign',
-    note: '签的是研究判断，不是下单。这里没有执行按钮。',
-    noProposal: '这个版本没有提案。',
-    confirmed: 'Confirmed',
-    notStarted: 'Not started',
-  },
   workspace: {
     hint: '点一个节点，看它的证据和「什么会证明我错」。',
     legend: '圆环：绿格 = 正方引用，红格 = 反方，空环 = 没有引用。虚线 = 仅模型推断。橙框加靶心的是关键依赖。',
@@ -146,10 +125,12 @@ export const T = {
     runInfo: (run: string | null, v: string, scen?: string) => `run ${run} · ${v}${scen ? ` → ${scen}` : ''}`,
     linkPlayground: '节点视觉 playground',
     linkScenarios: '多情景 playground',
+    online: '联网',
+    webStatus: (s: string) => s,
     linkPlanB: '方案 B 预览',
     mock: 'MOCK · ',
     mockAria: 'MOCK 数据',
-    tabs: { workspace: 'B1 Research Workspace', signoff: 'B2 Sign-off', scenario: 'B3 Scenario Diff' },
+    tabs: { workspace: 'B1 Research Workspace', signoff: 'B2 批准计划', scenario: 'B3 Scenario Diff' },
     empty: '输入一个事件，点 Analyze。',
     abstainTitle: '没有找到有依据的因果链',
     abstainNote: '所以没有画图，也没有生成提案。找不到依据时系统选择弃权，不会为了出结果硬连一个标的。',
@@ -252,6 +233,7 @@ export const T = {
   // ---- 节点视觉 playground ----
   pgNode: {
     title: '节点视觉 playground',
+    linkScenarios: '多情景（实验）',
     note: (scenario: boolean) =>
       `每次只变这一项，其余用你已选的（没选的用 A）。短标题是演示用的，正式版需要后端给 label 字段。数据：fixture c1${scenario ? '，情景 c1-v2' : ''}。`,
     supportContra: (s: number, c: number) => `正方 ${s} · 反方 ${c}`,
@@ -274,7 +256,7 @@ export const T = {
 
   // ---- 多情景 playground ----
   pgScen: {
-    title: '多情景 playground',
+    title: '多情景 playground（实验）',
     linkNode: '节点视觉 playground',
     note: (layers: number) => `数据：fixtures/c1_multi.json（${layers} 层）。情景名是演示用的，后端还没有 name 字段。这一页不调后端。`,
     treeHint: '数字 = 这一层新增的受挑战前提',
@@ -368,5 +350,30 @@ export const T = {
   liteCard: {
     headline: (side: 'long' | 'short', instrument: string) => `${side === 'long' ? '看多' : '看空'} ${instrument}`,
     horizon: (days: number | null) => (days ? `${days} 天` : ''),
+  },
+
+  panelPlan: { whyFirstFor: (instrument: string, why: string) => `${instrument} 计划先查这一步：${why}` },
+
+  // ---- 方案 B：B1 ----
+  b1: {
+    side: (side: 'long' | 'short') => (side === 'long' ? '看多' : '看空'),
+    approved: '✓ 已批准',
+    approvalReset: '前提已改动，请重新批准',
+    youNeedToBelieve: (items: string[]) => (items.length ? `你需要相信：${items.join('、')}` : '你需要相信：和其他结论共用全部前提'),
+    checkFirst: (s: string) => `先查：${s}`,
+    goApprove: '去批准这份计划 →',
+    intro: (n: number) => `${n} 个结论，点一个看它的整条分支：`,
+    legend: '实线 = 有资料支持；虚线、减淡 = 仅模型推断；灰紫斜线、点线 = 建立在尚未发生的假设上。圆环：绿格 = 正方引用，红格 = 反方。橙框加靶心 = 关键依赖。',
+    highlightHint: '点一个结论（最下面一行）高亮它的整条分支',
+  },
+
+  // ---- 方案 B：B3 计划对比 ----
+  b3: {
+    plans: (a: string, b: string) => `计划 ${a} → ${b}`,
+    approved: '✓ 已批准',
+    approvalReset: '前提已改动，请重新批准',
+    rivalChanged: '同一版本里另一份计划受了影响，值得再看一眼',
+    reapproveHere: '在这个版本上重新批准 →',
+    support: (s: string) => `支持度 ${s}`,
   },
 } as const;

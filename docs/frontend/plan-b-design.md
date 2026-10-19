@@ -252,15 +252,15 @@ type AppState = {
 
 数据结构以后端 commit 为准，第 1 步要等它。
 
-- [ ] **1. 合并后端 schema，改 `types.ts`、mock `api.ts`，重新生成 5 份 fixture，改 `check_fixtures.py`**（30 分钟）
-- [ ] **2. 现有组件跟上 `proposals`，先保证 typecheck 和现有测试能过**（20 分钟）
-- [ ] **3. B1：三类样式 + 高亮整条分支 + `BRANCH_KIND` 映射 + 单测**（35 分钟）
-- [ ] **4. B2：理解确认、结论列表、计划区、批准 / 撤销、确认小框 + 单测**（50 分钟）
-- [ ] **5. B3：计划对比、失效标记、对手提示、「在这个版本上重新批准」**（25 分钟）
-- [ ] **6. #scenarios 标实验、入口挪走**（10 分钟）
-- [ ] **7. 可选：联网开关和状态行**（15 分钟）
+- [x] **1. 合并后端 schema，改 `types.ts`、mock `api.ts`，重新生成 5 份 fixture，改 `check_fixtures.py`**（30 分钟）
+- [x] **2. 现有组件跟上 `proposals`，先保证 typecheck 和现有测试能过**（20 分钟）
+- [x] **3. B1：三类样式 + 高亮整条分支 + `BRANCH_KIND` 映射 + 单测**（35 分钟）
+- [x] **4. B2：理解确认、结论列表、计划区、批准 / 撤销、确认小框 + 单测**（50 分钟）
+- [x] **5. B3：计划对比、失效标记、对手提示、「在这个版本上重新批准」**（25 分钟）
+- [x] **6. #scenarios 标实验、入口挪走**（10 分钟）
+- [x] **7. 可选：联网开关和状态行**（15 分钟）
 - [ ] **8. 可选：第 8 节的两组 playground**（40 分钟）
-- [ ] **9. typecheck / test / build / check_fixtures，手动演示 P1–P10，截图，更新 `docs/frontend/`，commit**（30 分钟）
+- [x] **9. typecheck / test / build / check_fixtures，手动演示 P1–P10，截图，更新 `docs/frontend/`，commit**（30 分钟）
 
 必做（1–6、9）约 **3 小时 20 分钟**；加上两项可选约 4 小时 15 分钟。第 2 步之后每一步都能单独验收。
 
@@ -310,3 +310,34 @@ type AppState = {
 - A 列表展开（Robinhood）：一个大标题（「3 个结论，还没批准」/「已批准：X」）+ 一行一个结论（名字、标的 · 方向、一个状态），点一行原地展开；假设分支整行带斜线底纹。
 - B 答案卡（OpenEvidence）：顶部一排胶囊切换结论，下面只有一张卡：大字「看多 TSM」、一句衬线体的论点、前提和信号。
 - 截图：`screenshots/pb-b2-lite-*`。原版（`ApprovePlans`）先保留做对比，定了之后删掉没选中的。
+
+## 正式实现记录（core-schema@ffbd2a3 之后）
+
+- 合并 core-schema（含 plan-b@ffbd2a3）。`types.ts` 的 `VersionBundle` 一次切到 `proposals` / `branches` / `node_kinds` / `edge_kinds`，`TradeProposal.terminal_id`、`approval_reset`、`rival_changed`、`UserJudgment.note` 改为必填；旧的 `SignBody`、`Signoff`、`SignDialog` 删除。
+- fixture：`make_fixtures.py` 把版本写进临时 `RunStore`，用 `store.bundle(v)` 读出（和 `GET /versions/{v}` 同一段代码）；批准走 `ep.sign`，分叉走 `ep.fork`。五份：`c1`、`c1_blocked`、`c1_multi`、`c1_approved`（v2 批准 LITE → v3 改假设；v4 批准 TSM → v5 改同一处）、`c4_abstain`。内容随 golden 图变成英文。`check_fixtures.py`：没有旧字段 `proposal`；计划的 terminal 集合 = 图上的 terminal；同一版本最多一份已批准；几份计划的理解确认相同；`branches` / `node_kinds` / `edge_kinds` 用 `catalyst.branches.dump_views` 复算一致；diff 相对父版本复算一致。
+- B1：`Workspace` 用后端的类别表（`GraphCanvas` 的 `branchView`），点结论高亮独有部分 + 祖先，右侧 `PlanSummary`；三份计划的关键依赖都标出来（`toFlow` 的 `keyClaimIds`）。
+- B2：用精简版 A（`components/approve/ApproveList`）——Mia 说原版太满，A 的结构就是设计 4.1 的「列表在上、计划在下」，只是计划在选中的行里原地展开。批准 = `sign`（带这份的草稿、改过的理解、备注），撤销 = `sign` 发 `terminal_id: null`；改批另一份时底部胶囊写明会撤销哪一份。预览页仍可切 A / B / 原版。
+- B3：「计划 vN → vM」列出情景版本的每份计划（gate、支持度、是否已批准），`approval_reset` → 「前提已改动，请重新批准」，`rival_changed` → 「同一版本里另一份计划受了影响，值得再看一眼」；加「在这个版本上重新批准 →」。
+- #scenarios：从主导航拿掉，只从节点视觉 playground 的页头进入，标题带「（实验）」。
+- 联网：顶栏一个开关，`createRun` 带 `online`，状态行原样显示 `web.message`（MOCK 下是「MOCK：不联网」）。
+- 英文内容的短标题：没有 label 时英文截前 4 个词（中文仍截 10 个字）。
+- MOCK：批准优先用 fixture 里录好的批准版本（后端算的 approval_reset 等都是真的），没录到才在内存里改并提示「gate 未重算」；分叉按「从哪个版本出发 + 这一层的操作」找录好的版本。
+
+### MOCK 下的 P1–P10（2026-10-19，内置浏览器）
+
+| # | 结果 |
+| --- | --- |
+| P1 | 3 个结论；fixture 用占位资料包，分支都是「仅推断」，带「资料为占位」的显示出来 |
+| P2 | 点 LITE：独有部分 + 共用主干高亮，其余退后；右侧计划摘要 +「去批准这份计划 →」 |
+| P3 | B2 里 LITE 这行原地展开；没确认「你的想法」时批准胶囊是灰的，提示「先确认上面「你的想法」」 |
+| P4 | 确认、设阈值、批准：LITE「✓ 已批准」，大标题变成「已批准：…」（c1 没录批准版本，提示 gate 未重算） |
+| P5 | 选 TSM：胶囊写「改批这份 · 会撤销「…」」，确认后只有 TSM 已批准 |
+| P6 | 撤销：三行都没批准，大标题回到「3 个结论，还没批准」 |
+| P7 | c1_approved：批准 LITE（录好的 c1-v2）→ B3 改外置光源 → c1-v3：LITE「前提已改动，请重新批准」，其余「另一份计划受了影响」 |
+| P8 | 批准 TSM（c1-v4）→ 改同一处 → c1-v5：TSM 保留「✓ 已批准」并有「另一份计划受了影响」 |
+| P9 | 「在这个版本上重新批准」→ B2、当前版本 c1-v3，LITE 显示「前提已改动，请重新批准」；B1 上 LITE 分支是假设样式 |
+| P10 | 节点视觉 playground 页头「多情景（实验）」→ #scenarios，标题带「（实验）」，正常显示；主导航不再有它 |
+
+另外顺带检查：c1_blocked 的 LITE 是 BLOCKED；c4_abstain 显示弃权；联网开关打开后状态行显示；预览页（#plan-b）B1 / B2 正常；控制台无报错。截图：`screenshots/planb-b1-highlight.jpg`、`planb-b3-reset.jpg`。
+
+**还没做**：用 `VITE_MOCK=0` 接本地真实后端走 B1 → B2 → B3，等主 session 给录制目录。

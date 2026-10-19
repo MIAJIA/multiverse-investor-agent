@@ -39,12 +39,12 @@ describe('toFlow', () => {
   });
 
   it('关键依赖：claim_id 形式和 condition_id 形式都能解析', () => {
-    const k = keyClaimId(v1.proposal, v1.graph);
+    const k = keyClaimId(v1.proposals.find((p) => p.terminal_id === 'c1.term.laser_vendor'), v1.graph);
     expect(k).toBe('c1.assume.external_laser');
     const { nodes } = toFlow(v1.graph, { keyClaimId: k });
     expect(nodes.filter((n) => n.data.isKey).map((n) => n.id)).toEqual(['c1.assume.external_laser']);
     const viaCondition = {
-      ...v1.proposal!,
+      ...v1.proposals[0],
       key_dependency: { claim_id: null, condition_id: 'cond.c1.cpo_shipments', why: 'x' },
     } as TradeProposal;
     expect(keyClaimId(viaCondition, v1.graph)).toBe('c1.cpo_ramp');

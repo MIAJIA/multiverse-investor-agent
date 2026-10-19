@@ -11,7 +11,7 @@ import NodePanel from '../components/NodePanel';
 import { ancestors, keyClaimId } from '../lookup';
 import { demoLabel } from '../playground/demoLabels';
 import { BRANCH_KIND, GATE } from '../status';
-import type { Fixture, PlanBBundle, VersionBundle } from '../types';
+import type { Fixture, PlanBBundle } from '../types';
 import { DEMO_NOTE, DEMO_SUBTITLE, demoBundle } from './demoPlanB';
 import { T } from '../strings';
 
@@ -132,7 +132,7 @@ export default function PlanBPreview() {
                 <button className="primary" onClick={() => setTab('b2')}>{T.preview.goApprove}</button>
               </aside>
             ) : nodeId ? (
-              <NodePanel bundle={{ ...(bundle as unknown as VersionBundle), proposal: bundle.proposals[0] }} nodeId={nodeId} />
+              <NodePanel bundle={bundle} nodeId={nodeId} />
             ) : (
               <aside className="panel">
                 <p className="muted">{T.preview.intro}</p>

@@ -18,6 +18,7 @@ export interface MechanismEdgeData extends Record<string, unknown> {
 
 export interface FlowOpts {
   keyClaimId?: string | null;
+  keyClaimIds?: string[]; // 方案 B：几份计划各有关键依赖
   assessment?: Record<string, AssessmentStatus>;
   changedTargets?: string[];
 }
@@ -73,7 +74,7 @@ export function toFlow(graph: Graph, opts: FlowOpts = {}) {
       data: {
         claim,
         evidenceCount: evidenceCount.get(claim.id) ?? 0,
-        isKey: opts.keyClaimId === claim.id,
+        isKey: opts.keyClaimId === claim.id || (opts.keyClaimIds ?? []).includes(claim.id),
         isChangedTarget: (opts.changedTargets ?? []).includes(claim.id),
         assessment: opts.assessment?.[claim.id],
       },

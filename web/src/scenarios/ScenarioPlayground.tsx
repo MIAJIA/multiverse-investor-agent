@@ -132,7 +132,7 @@ function BigNumber({ versions }: { versions: Versions }) {
   return (
     <div className="sc-cards">
       {scenarioIds(versions).map((v) => {
-        const b = versions[v], p = b.proposal!, base = versions[b.scenario!.base_version].proposal!;
+        const b = versions[v], p = b.proposals[0], base = versions[b.scenario!.base_version].proposals[0]; // 实验页：看第一份计划
         const n = cumulativeChallenged(b).length, added = newChallenged(versions, v).length;
         return (
           <div key={v} className="sc-card">
@@ -152,7 +152,7 @@ function BigNumber({ versions }: { versions: Versions }) {
       <div className="sc-card sc-base">
         <div className="sc-card-name">{T.pgScen.baseline}</div>
         <div className="sc-big">{root.graph.nodes.length}</div>
-        <div className="sc-sub">{T.pgScen.baseSub(root.proposal!.gate)}</div>
+        <div className="sc-sub">{T.pgScen.baseSub(root.proposals[0]?.gate ?? '')}</div>
       </div>
     </div>
   );

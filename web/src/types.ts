@@ -139,7 +139,7 @@ export interface UserJudgment {
   requires_user_confirmation: boolean;
   confirmed: boolean;
   confirmed_claim_ids: string[];
-  note?: string | null; // 方案 B：批准时的可选备注
+  note: string | null; // 方案 B：批准时的可选备注
 }
 
 export interface ScenarioRef {
@@ -169,10 +169,10 @@ export interface TradeProposal {
   support_status: SupportStatus;
   graph_version: string;
   critic: CriticReport; // 本期一律 disabled
-  // 方案 B（后端 d105c45 起）：每份计划对应一个 terminal；改假设后由后端标出受影响的批准
-  terminal_id?: string;
-  approval_reset?: boolean; // true：前提已改动，请重新批准
-  rival_changed?: boolean; // true：同一版本里另一份计划受了影响
+  // 方案 B：每份计划对应一个 terminal；改假设后由后端标出受影响的批准
+  terminal_id: string;
+  approval_reset: boolean; // true：前提已改动，请重新批准
+  rival_changed: boolean; // true：同一版本里另一份计划受了影响
   meta: { proposal_version: string; prompt_version: string; model: string; approval_required: true };
 }
 
@@ -199,10 +199,13 @@ export interface GraphDiff {
   changed_claim_ids: string[];
 }
 
-/** GET /api/runs/{id}/versions/{v} 的返回值，也是 fixture 里 versions[v] 的形状。 */
+/** GET /api/runs/{id}/versions/{v} 的返回值，也是 fixture 里 versions[v] 的形状（方案 B）。 */
 export interface VersionBundle {
   graph: Graph;
-  proposal: TradeProposal | null;
+  proposals: TradeProposal[]; // 每个 terminal 一份，按 terminal_id 关联，不依赖顺序
+  branches: Branch[];
+  node_kinds: Record<string, BranchKind>; // 后端给的节点类别，前端只查表
+  edge_kinds: Record<string, BranchKind>;
   scenario: Scenario | null;
   diff: GraphDiff | null;
   excerpts: Excerpt[];
@@ -230,8 +233,15 @@ export interface WriteResult {
   version: string | null;
 }
 
+export interface WebStatus {
+  online: boolean;
+  status?: string;
+  message?: string | null;
+}
+
 export interface RunCreated extends WriteResult {
   run_id: string | null;
+  web?: WebStatus | null; // 联网开关的结果：开 / 关、拿到几段或失败原因
   discover?: DiscoverResult | null;
   inspect?: { no_chain?: boolean | null; no_chain_reason?: string | null } | null;
 }
@@ -241,17 +251,8 @@ export interface ConditionOverride {
   deadline?: string;
 }
 
-export interface SignBody {
-  version: string;
-  clarified_statement: string;
-  criteria: string | null;
-  deadline: string | null;
-  confirmed_claim_ids: string[];
-  condition_overrides: Record<string, ConditionOverride>;
-}
 
 // ---- 方案 B（B-最小）--------------------------------------------------------
-// 第 1 步切换 fixture 时，PlanBBundle 取代 VersionBundle（proposal → proposals），这里先定义好。
 
 export interface Branch {
   terminal_id: string;
@@ -263,16 +264,8 @@ export interface Branch {
   synthetic_evidence: boolean; // true：支撑它的是占位资料包，所以降级成 model_only
 }
 
-export interface PlanBBundle {
-  graph: Graph;
-  proposals: TradeProposal[]; // 每个 terminal 一份，按 terminal_id 关联，不依赖顺序
-  branches: Branch[];
-  node_kinds: Record<string, BranchKind>; // 后端给的节点类别，前端只查表
-  edge_kinds: Record<string, BranchKind>;
-  scenario: Scenario | null;
-  diff: GraphDiff | null;
-  excerpts: Excerpt[];
-}
+/** 方案 B 的版本包就是 VersionBundle；保留这个名字给早先写的组件用。 */
+export type PlanBBundle = VersionBundle;
 
 /** sign 的新语义是「批准」：terminal_id 为 null 表示本版本一份都不批准（撤销批准）。 */
 export interface ApproveBody {

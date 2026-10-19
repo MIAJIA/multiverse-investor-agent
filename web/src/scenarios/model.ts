@@ -79,7 +79,7 @@ export function layerColoring(versions: Versions, v: string): Coloring {
 
 /** 相对基线（累计）：直接用后端给的 scenario_ref.challenged_claim_ids（叠加后的全部结果）。 */
 export function cumulativeChallenged(b: VersionBundle): string[] {
-  return b.proposal?.scenario_ref?.challenged_claim_ids ?? challenged(b);
+  return b.proposals[0]?.scenario_ref?.challenged_claim_ids ?? challenged(b); // 同一版本几份计划的 scenario_ref 相同
 }
 
 export function cumulativeColoring(versions: Versions, v: string): Coloring {

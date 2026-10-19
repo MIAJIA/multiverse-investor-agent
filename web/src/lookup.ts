@@ -1,5 +1,5 @@
 // 只读查找：不做判断，只把快照里已有的东西按 id 找出来。
-import type { Condition, EvidenceRef, Excerpt, Graph, Mechanism, Scenario, TradeProposal } from './types';
+import type { Branch, Condition, EvidenceRef, Excerpt, Graph, Mechanism, Scenario, TradeProposal, VersionBundle } from './types';
 
 export interface NodeEvidence {
   inEdges: Mechanism[];
@@ -55,4 +55,23 @@ export function ancestors(graph: Graph, id: string): Set<string> {
     }
   }
   return seen;
+}
+
+/** 方案 B：按 terminal 找这一版本的计划和分支（按 terminal_id 关联，不依赖数组顺序）。 */
+export function planOf(bundle: Pick<VersionBundle, 'proposals'>, terminalId: string | null | undefined): TradeProposal | null {
+  return bundle.proposals.find((p) => p.terminal_id === terminalId) ?? null;
+}
+
+export function branchOf(bundle: Pick<VersionBundle, 'branches'>, terminalId: string | null | undefined): Branch | null {
+  return bundle.branches.find((b) => b.terminal_id === terminalId) ?? null;
+}
+
+/** 几份计划各自的关键依赖落在哪个 claim 上（去重）。 */
+export function keyClaimIds(bundle: Pick<VersionBundle, 'proposals' | 'graph'>): string[] {
+  return [...new Set(bundle.proposals.map((p) => keyClaimId(p, bundle.graph)).filter((x): x is string => !!x))];
+}
+
+/** 这一版本已批准的那份计划（同一版本最多一份）。 */
+export function approvedPlan(bundle: Pick<VersionBundle, 'proposals'>): TradeProposal | null {
+  return bundle.proposals.find((p) => p.user_judgment.confirmed) ?? null;
 }

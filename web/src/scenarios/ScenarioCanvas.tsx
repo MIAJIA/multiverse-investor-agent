@@ -18,7 +18,7 @@ export default function ScenarioCanvas({ bundle, coloring, tints, compact }: {
   const { nodes, edges } = useMemo(() => {
     const { graph, excerpts } = bundle;
     const flow = toFlow(graph);
-    const key = keyClaimId(bundle.proposal, graph);
+    const key = keyClaimId(bundle.proposals[0], graph); // 实验页：只标第一份计划的关键依赖
     const changed = coloring?.changed ?? [];
     const lit = (id: string) => !!tints?.[id] || coloring?.assessment[id] === 'challenged' || changed.includes(id);
     const anyColor = !!coloring || !!tints;

@@ -63,7 +63,7 @@ function Pane({ bundle, look, scenario, initial }: {
   const [selected, setSelected] = useState<string | null>(initial ?? null);
   const sc = scenario ? bundle.scenario : null;
   const changed = changedTargets(sc);
-  const key = keyClaimId(bundle.proposal, bundle.graph);
+  const key = keyClaimId(bundle.proposals[0], bundle.graph); // 演示页：只标第一份计划的关键依赖
 
   const { nodes, edges } = useMemo(() => {
     const flow = toFlow(bundle.graph);
@@ -148,6 +148,7 @@ export default function Playground() {
     <div className="pg">
       <header className="pg-head">
         <a href="#" className="pg-back">{T.pg.back}</a>
+        <a href="#scenarios" className="pg-back">{T.pgNode.linkScenarios}</a>
         <strong>{T.pgNode.title}</strong>
         <nav className="pg-nav">
           {GROUNDS.map((x, i) => (

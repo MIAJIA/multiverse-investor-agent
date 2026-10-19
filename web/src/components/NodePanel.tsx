@@ -1,5 +1,5 @@
 // 右侧面板：详情 · 证据 · 条件。证据 = 入边的 evidence，按 excerpt_id 找片段原文。
-import { nodeConditions, nodeEvidence } from '../lookup';
+import { keyClaimId, nodeConditions, nodeEvidence } from '../lookup';
 import { ASSESSMENT, EVIDENCE, ROLE } from '../status';
 import type { AssessmentStatus, VersionBundle } from '../types';
 import Badge from './Badge';
@@ -33,8 +33,8 @@ export default function NodePanel({ bundle, nodeId, assessment, reason }: {
   if (!claim) return null;
   const ev = nodeEvidence(graph, nodeId, excerpts);
   const conds = nodeConditions(graph, nodeId);
-  const kd = bundle.proposal?.key_dependency;
-  const isKey = kd?.claim_id === nodeId || conds.some((c) => c.id === kd?.condition_id);
+  // 方案 B：几份计划各有关键依赖；列出把这个节点当关键依赖的那几份
+  const keyPlans = bundle.proposals.filter((p) => keyClaimId(p, graph) === nodeId);
   const outEdges = graph.edges.filter((e) => e.from === nodeId);
   const name = (id: string) => graph.nodes.find((n) => n.id === id)?.statement ?? id;
 
@@ -51,7 +51,7 @@ export default function NodePanel({ bundle, nodeId, assessment, reason }: {
           {claim.time_bucket && <span className="small muted">{claim.time_bucket}</span>}
         </div>
         {reason && <p className="small">{T.panel.reason(reason)}</p>}
-        {isKey && <p className="small key-why">{T.panel.whyFirst(kd!.why)}</p>}
+        {keyPlans.map((p) => <p key={p.terminal_id} className="small key-why">{T.panelPlan.whyFirstFor(p.direction.instrument, p.key_dependency!.why)}</p>)}
         {ev.inEdges.map((e) => (
           <p key={e.id} className="small">{T.panel.inEdge(name(e.from), e.mechanism, e.model_only)}</p>
         ))}

@@ -144,3 +144,7 @@ table.assumptions th { font-size: 12px; color: var(--muted); font-weight: 600; }
 .variant-switch { display: inline-flex; align-items: center; gap: 4px; margin-right: 16px; }
 .variant-switch button { border: 0; background: none; border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--muted); cursor: pointer; }
 .variant-switch button.on { background: #1c1f24; color: #fff; }
+.plan-row { border-top: 1px solid var(--line); padding: 8px 0; display: flex; flex-direction: column; gap: 4px; }
+.plan-row-title { font-weight: 600; font-size: 13px; }
+.online-toggle { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #d6dbe6; }
+.web-status { color: #aab4c8; }

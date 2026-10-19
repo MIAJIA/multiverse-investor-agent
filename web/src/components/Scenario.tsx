@@ -1,8 +1,9 @@
 // B3 Scenario Diff：改一个假设 → fork；基线 / 情景切换；画布按 assessment 三态着色；右侧三块。
-// assessment、diff、提案 v2 全部来自后端；「提案 v1 → v2」只把两份提案并排显示，不在前端比较。
+// assessment、diff、新版本的计划全部来自后端；失效标记读 approval_reset / rival_changed，不在前端比较。
 import { useMemo, useState } from 'react';
-import { changedTargets, keyClaimId } from '../lookup';
-import { ASSESSMENT, GATE, PROPOSAL_STATUS, ROLE, SUPPORT } from '../status';
+import { changedTargets, keyClaimIds, planOf } from '../lookup';
+import { nodeLabel } from '../node/labels';
+import { ASSESSMENT, GATE, ROLE, SUPPORT } from '../status';
 import type { TradeProposal, VersionBundle } from '../types';
 import Badge from './Badge';
 import GraphCanvas from './GraphCanvas';
@@ -27,29 +28,27 @@ function ForkForm({ bundle, busy, onFork }: { bundle: VersionBundle; busy: boole
   );
 }
 
-function ProposalCompare({ a, b, av, bv }: { a: TradeProposal; b: TradeProposal; av: string; bv: string }) {
-  const row = (label: string, x: React.ReactNode, y: React.ReactNode) => (
-    <tr><th>{label}</th><td>{x}</td><td>{y}</td></tr>
-  );
-  const conds = (p: TradeProposal) => p.entry_conditions.map((c) => <div key={c.id} className="small">{c.rule}</div>);
+/** 一份计划在基线和情景两个版本里的样子：gate、支持度并排；批准状态只读后端字段。 */
+function PlanRow({ title, a, b }: { title: string; a: TradeProposal | null; b: TradeProposal }) {
   return (
-    <table className="compare">
-      <thead><tr><th /><th>{av}</th><th>{bv}</th></tr></thead>
-      <tbody>
-        {row(T.scenario.rows.gate, <Badge look={GATE[a.gate]} />, <Badge look={GATE[b.gate]} />)}
-        {row(T.scenario.rows.status, <Badge look={PROPOSAL_STATUS[a.status]} />, <Badge look={PROPOSAL_STATUS[b.status]} />)}
-        {row(T.scenario.rows.support, <Badge look={SUPPORT[a.support_status]} />, <Badge look={SUPPORT[b.support_status]} />)}
-        {row(T.scenario.rows.instrument, `${a.direction.side} ${a.direction.instrument}`, `${b.direction.side} ${b.direction.instrument}`)}
-        {row(T.scenario.rows.entry, conds(a), conds(b))}
-      </tbody>
-    </table>
+    <div className="plan-row">
+      <div className="plan-row-title">{title} <span className="mono">{b.direction.instrument}</span>
+        {b.user_judgment.confirmed && <span className="ok small"> {T.b3.approved}</span>}</div>
+      <div className="row small">
+        {a && <><Badge look={GATE[a.gate]} />→</>}<Badge look={GATE[b.gate]} />
+        <span style={{ color: SUPPORT[b.support_status].color }}>{T.b3.support(b.support_status)}</span>
+      </div>
+      {b.approval_reset && <div className="warn small">{T.b3.approvalReset}</div>}
+      {b.rival_changed && !b.approval_reset && <div className="small muted">{T.b3.rivalChanged}</div>}
+    </div>
   );
 }
 
-export default function Scenario({ versions, base, scenario, viewing, busy, selectedNodeId, onSelect, onToggle, onFork }: {
+export default function Scenario({ versions, base, scenario, viewing, busy, selectedNodeId, onSelect, onToggle, onFork, onReapproveHere }: {
   versions: Record<string, VersionBundle>; base: VersionBundle; scenario: VersionBundle | null;
   viewing: 'base' | 'scenario'; busy: boolean; selectedNodeId: string | null;
   onSelect: (id: string | null) => void; onToggle: (v: 'base' | 'scenario') => void; onFork: (t: string, v: string) => void;
+  onReapproveHere: () => void; // 把情景版本设为 B2 的当前版本，去重新批准
 }) {
   // 对比的基线是情景自己声明的 base_version，不一定是当前 B1 / B2 的版本
   const baseB = (scenario?.scenario && versions[scenario.scenario.base_version]) || base;
@@ -57,8 +56,8 @@ export default function Scenario({ versions, base, scenario, viewing, busy, sele
   const shown = showScenario ? scenario! : baseB;
   const sc = scenario?.scenario ?? null;
   const opts = useMemo(() => (showScenario
-    ? { assessment: sc!.assessment, changedTargets: changedTargets(sc), keyClaimId: keyClaimId(scenario!.proposal, scenario!.graph) }
-    : { keyClaimId: keyClaimId(baseB.proposal, baseB.graph) }), [showScenario, sc, scenario, baseB]);
+    ? { assessment: sc!.assessment, changedTargets: changedTargets(sc), keyClaimIds: keyClaimIds(scenario!) }
+    : { keyClaimIds: keyClaimIds(baseB) }), [showScenario, sc, scenario, baseB]);
   const name = (id: string) => shown.graph.nodes.find((n) => n.id === id)?.statement ?? id;
   const challenged = sc ? Object.entries(sc.assessment).filter(([, s]) => s === 'challenged').map(([id]) => id) : [];
 
@@ -100,14 +99,17 @@ export default function Scenario({ versions, base, scenario, viewing, busy, sele
                 </div>
                 <div className="diff-block">
                   <h3>{T.scenario.nextChecks}</h3>
-                  {(scenario!.proposal?.scenario_ref?.next_checks ?? []).map((c) => <p key={c}>{c}</p>)}
-                  {!scenario!.proposal?.scenario_ref?.next_checks.length && <p className="small muted">{T.scenario.noNextChecks}</p>}
+                  {(scenario!.proposals[0]?.scenario_ref?.next_checks ?? []).map((c) => <p key={c}>{c}</p>)}
+                  {!scenario!.proposals[0]?.scenario_ref?.next_checks.length && <p className="small muted">{T.scenario.noNextChecks}</p>}
                 </div>
                 <div className="diff-block">
-                  <h3>{T.scenario.proposalDiff(sc.base_version, sc.version)}</h3>
-                  {baseB.proposal && scenario!.proposal
-                    ? <ProposalCompare a={baseB.proposal} b={scenario!.proposal} av={sc.base_version} bv={sc.version} />
-                    : <p className="small muted">{T.scenario.noProposal}</p>}
+                  <h3>{T.b3.plans(sc.base_version, sc.version)}</h3>
+                  {scenario!.proposals.length === 0 && <p className="small muted">{T.scenario.noProposal}</p>}
+                  {scenario!.proposals.map((p) => (
+                    <PlanRow key={p.terminal_id} title={nodeLabel(scenario!.graph.nodes.find((n) => n.id === p.terminal_id)!)}
+                      a={planOf(baseB, p.terminal_id)} b={p} />
+                  ))}
+                  {scenario!.proposals.length > 0 && <button className="secondary" onClick={onReapproveHere}>{T.b3.reapproveHere}</button>}
                   <p className="small">
                     {T.scenario.trace(changedTargets(sc).map(name), (scenario!.diff?.changed_claim_ids ?? []).map(name))}
                   </p>
