@@ -1,0 +1,78 @@
+{
+  "id": "T3",
+  "type": "causalt5k",
+  "title": "CausalT5k D3 L2 NO",
+  "entry": "inspect",
+  "input": {
+    "event": "Purchasing high-yield bonds leads to increased bond yields.",
+    "target": null,
+    "material": "A bond market analyst implemented a strategy to buy high-yield bonds (X) during a period of increased inflation expectations. They observed an increase in bond yields (Y) and concluded that purchasing high-yield bonds leads to higher yields. However, a major economic stimulus (Z) drove bond prices lower.",
+    "judgment_only": true
+  },
+  "probe": null,
+  "expected": {
+    "label": "NO",
+    "behavior": "判 NO：经济刺激 Z 同时影响买入决定与收益率（未阻断的后门路径），断言在当前材料下不成立",
+    "trap": "CONFOUNDER",
+    "trap_canonical": "Confounding",
+    "produce_proposal": false,
+    "key_excerpts": []
+  },
+  "evals": [
+    "E1",
+    "E4"
+  ],
+  "auto_checks": [
+    "label_matches_gold",
+    "no_proposal"
+  ],
+  "human_review": [
+    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
+    "E4: 弃权 / 判断理由是否成立"
+  ],
+  "source": {
+    "dataset": "CausalT5k",
+    "repo": "https://github.com/genglongling/CausalT5kBench",
+    "commit": "fd358e958586f3305e464924d6687ba2c4df2265",
+    "file": "final_dataset/clean/CausalT5K_L2_clean.json",
+    "shard": "final_dataset/D3/D3_L2.json",
+    "url": "https://github.com/genglongling/CausalT5kBench/blob/fd358e958586f3305e464924d6687ba2c4df2265/final_dataset/clean/CausalT5K_L2_clean.json",
+    "license": "MIT",
+    "clean_id": "L2-2730",
+    "original_id": "T3-BucketLarge-G.30",
+    "record": {
+      "id": "L2-2730",
+      "case_id": "G.30",
+      "original_id": "T3-BucketLarge-G.30",
+      "original_case_id": "G.30",
+      "pearl_level": "L2",
+      "domain": "Markets",
+      "subdomain": null,
+      "scenario": "A bond market analyst implemented a strategy to buy high-yield bonds (X) during a period of increased inflation expectations. They observed an increase in bond yields (Y) and concluded that purchasing high-yield bonds leads to higher yields. However, a major economic stimulus (Z) drove bond prices lower.",
+      "claim": "Purchasing high-yield bonds leads to increased bond yields.",
+      "label": "NO",
+      "variables": {
+        "X": "Purchasing high-yield bonds",
+        "Y": "Increased bond yields",
+        "Z": [
+          "Economic stimulus (Common Cause)"
+        ]
+      },
+      "trap": {
+        "canonical": "Confounding",
+        "raw_type_name": "CONFOUNDER",
+        "raw_type": "T7",
+        "raw_subtype": ""
+      },
+      "gold_rationale": "The claim that purchasing high-yield bonds leads to increased bond yields is flawed due to the presence of a confounding variable, the economic stimulus (Z). The economic stimulus affects both the decision to purchase high-yield bonds and the bond yields themselves. This creates an unblocked backdoor path between X and Y, making it impossible to establish a direct causal relationship between them without controlling for Z. Therefore, the observed increase in bond yields could be entirely attributed to the economic stimulus rather than the purchase of high-yield bonds. The case is ambiguous because it does not account for the economic stimulus (Z), which affects both X and Y. Without knowing whether Z independently caused Y, we cannot confirm the causal link. If Z is the primary cause of Y, the claim is invalid. Alternatively, if Z did not influence Y, the claim might be valid. Due to this ambiguity, we decline to endorse the claim.",
+      "key_insight": "The presence of an economic stimulus confounds the relationship between high-yield bond purchases and increased yields, highlighting the need to control for external factors.",
+      "conditional_answers": {
+        "answer_if_condition_1": "If the economic stimulus (Z) is the primary cause of increased bond yields (Y), then purchasing high-yield bonds (X) does not lead to increased yields.",
+        "answer_if_condition_2": "If the economic stimulus (Z) did not significantly affect bond yields (Y), then purchasing high-yield bonds (X) might lead to increased yields."
+      },
+      "hidden_timestamp": "Is there an unmeasured common cause?",
+      "wise_refusal": null,
+      "causal_structure": "Economic stimulus (Z) influences both purchasing high-yield bonds (X) and bond yields (Y)."
+    }
+  }
+}

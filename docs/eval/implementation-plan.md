@@ -20,6 +20,7 @@ eval/
   scoring.py            自动判定：标签比对、E3 Expected Impact 集合比对、检索命中、失败类型、失败判据
   runner.py             两个组：pipeline / baseline；Reasoner、Evidence、入口函数全部可注入
   report.py             逐例 markdown 报告（不报百分比）
+  fakes.py              fake reasoner / evidence / 核心入口（测试与 sample_results 用）
   review_sheet.md       E1 / E2 / E4 人工复核表模板
   sample_results.json   假结果，只用来验证报告生成器
   cases/
@@ -35,8 +36,10 @@ eval/
     gate_truth_table.json         进场 AND 真值表
     condition_cases.json          条件时间语义与 Condition 校验用例
     reference_cases.json          Reference Validator 用例
+  cases/causalt5k/extract.py      从固定 commit 的 CausalT5k 下载里原样摘出 T1–T6
 tests/
-  conftest.py           把仓库根加进 sys.path，提供 fixture 读取
+  conftest.py           把仓库根加进 sys.path
+  _graph.py             测试侧图工具：规范化哈希、写范围参考实现（不 import catalyst）
   _adapter.py           唯一 import catalyst 的地方；catalyst 不存在时 importorskip
   test_gate.py          进场真值表、verifiable ≠ met（依赖核心）
   test_conditions.py    not_observed_by 时间语义、null 阈值、deadline ≥ anchor（依赖核心）

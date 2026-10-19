@@ -1,0 +1,79 @@
+{
+  "id": "T5",
+  "type": "causalt5k",
+  "title": "CausalT5k D3 L1 AMBIGUOUS",
+  "entry": "inspect",
+  "input": {
+    "event": "Increasing dividend payouts causes an increase in the company's stock price.",
+    "target": null,
+    "material": "A large transportation company announced it would increase its dividend payouts (X). Following this announcement, the company's stock price rose significantly (Y) amidst a backdrop of improving economic outlooks and consumer confidence (Z). Other companies in the same sector, without similar announcements, also experienced stock price increases during the same period.",
+    "judgment_only": true
+  },
+  "probe": null,
+  "expected": {
+    "label": "AMBIGUOUS",
+    "behavior": "判 AMBIGUOUS：同业未宣布分红也上涨、宏观改善与公告的先后未知，证据不足以确定",
+    "trap": null,
+    "trap_canonical": null,
+    "produce_proposal": false,
+    "key_excerpts": []
+  },
+  "evals": [
+    "E1",
+    "E4"
+  ],
+  "auto_checks": [
+    "label_matches_gold",
+    "no_proposal"
+  ],
+  "human_review": [
+    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
+    "E4: 弃权 / 判断理由是否成立"
+  ],
+  "source": {
+    "dataset": "CausalT5k",
+    "repo": "https://github.com/genglongling/CausalT5kBench",
+    "commit": "fd358e958586f3305e464924d6687ba2c4df2265",
+    "file": "final_dataset/clean/CausalT5K_L1_clean.json",
+    "shard": "final_dataset/D3/D3_L1.json",
+    "url": "https://github.com/genglongling/CausalT5kBench/blob/fd358e958586f3305e464924d6687ba2c4df2265/final_dataset/clean/CausalT5K_L1_clean.json",
+    "license": "MIT",
+    "clean_id": "L1-0586",
+    "original_id": "T3-BucketLarge-G.24",
+    "record": {
+      "id": "L1-0586",
+      "case_id": "G.24",
+      "original_id": "T3-BucketLarge-G.24",
+      "original_case_id": "G.24",
+      "pearl_level": "L1",
+      "domain": "Markets",
+      "subdomain": "Equities",
+      "scenario": "A large transportation company announced it would increase its dividend payouts (X). Following this announcement, the company's stock price rose significantly (Y) amidst a backdrop of improving economic outlooks and consumer confidence (Z). Other companies in the same sector, without similar announcements, also experienced stock price increases during the same period.",
+      "claim": "Increasing dividend payouts causes an increase in the company's stock price.",
+      "label": "AMBIGUOUS",
+      "variables": {
+        "X": "dividend payouts",
+        "Y": "company's stock price",
+        "Z": [
+          "improving economic outlooks",
+          "consumer confidence"
+        ]
+      },
+      "trap": {
+        "canonical": null,
+        "raw_type_name": null,
+        "raw_type": null,
+        "raw_subtype": ""
+      },
+      "gold_rationale": "The claim that increasing dividend payouts causes a company's stock price to rise is ambiguous due to potential confounding factors. While the announcement was followed by a stock price increase, other companies also saw similar stock price movements due to broader economic improvements. The causal link between dividends and stock price cannot be established without ruling out these macroeconomic influences, which could affect both variables. Thus, without additional information on the timing and impact of these factors, the claim remains ambiguous. The case lacks information on the timing of economic improvements relative to the dividend announcement, which is crucial to establish causality. Additionally, the influence of broader market trends on stock prices is not accounted for.",
+      "key_insight": "Correlation does not imply causation; broader market trends can obscure specific causal claims.",
+      "conditional_answers": {
+        "answer_if_condition_1": "If the economic outlook and consumer confidence improved before the announcement, they might be the true cause of both increased dividends and stock prices.",
+        "answer_if_condition_2": "If they improved after the announcement, the dividend increase could be more directly responsible for the stock price rise."
+      },
+      "hidden_timestamp": "Did the economic outlook and consumer confidence improve before or after the dividend announcement?",
+      "wise_refusal": null,
+      "causal_structure": "The structure is ambiguous because it's unclear whether the increase in dividend payouts directly causes an increase in the stock price or if other factors like improving economic outlooks and consumer confidence influence both."
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "_note": "C3-a：对 C1 基线图做一次 ChangeAssumption。expected_scope 按设计文档「写范围 = 被改的目标本身 + 依赖它的下游节点和边」人工算出，test_fixtures.py 会用独立实现复核。expected_challenged 是人工指定的应受挑战 Claim 集合（Expected Impact golden）。",
+  "base_graph": "c1_graph_v1.json",
+  "op": {"kind": "change_assumption", "target": "c1.assume.external_laser", "value": "主流 CPO 方案改用集成激光，不再需要外置光源"},
+  "expected_scope": {
+    "nodes": ["c1.assume.external_laser", "c1.laser_demand", "c1.term.laser_vendor"],
+    "edges": ["c1.e4", "c1.e7"],
+    "conditions": ["cond.c1.els_design_wins"]
+  },
+  "expected_challenged": ["c1.laser_demand", "c1.term.laser_vendor"],
+  "expected_unaffected": ["c1.event", "c1.assume.capex", "c1.cpo_ramp", "c1.siph_foundry", "c1.pluggable_dsp", "c1.term.foundry", "c1.term.dsp_vendor"],
+  "expected_next_checks_hint": "下一步查证：主要厂商 2027 年量产 CPO 是否确实采用集成激光（正式披露），而不是在研路线",
+  "patch_in_scope": {
+    "base_version": "c1-v1",
+    "node_updates": [
+      {"id": "c1.assume.external_laser", "fields": {"statement": "情景假设：主流 CPO 方案改用集成激光，不再需要外置光源"}}
+    ],
+    "edge_updates": [
+      {"id": "c1.e4", "fields": {"mechanism": "情景下外置光源架构不成立，CPO 出货不再转化为独立的外置光源需求"}},
+      {"id": "c1.e7", "fields": {"mechanism": "情景下光源需求上升这一前提受挑战，激光器供应商营收超预期失去主要来源"}}
+    ],
+    "condition_updates": [
+      {"id": "cond.c1.els_design_wins", "fields": {"rule": "情景下改为：确认主流 CPO 量产方案采用集成激光（正式披露）即 met"}}
+    ],
+    "node_adds": [],
+    "edge_adds": [],
+    "assessment": {"c1.laser_demand": "challenged", "c1.term.laser_vendor": "challenged"}
+  },
+  "patches_out_of_scope": [
+    {
+      "name": "edge_mechanism_only",
+      "why": "只改范围外一条边的 mechanism，节点文字不动（设计文档风险表：偷改依赖边）",
+      "touches": {"edges": ["c1.e5"]},
+      "patch": {"base_version": "c1-v1", "node_updates": [], "edge_updates": [{"id": "c1.e5", "fields": {"mechanism": "被偷改：代码不应接受"}}], "condition_updates": [], "node_adds": [], "edge_adds": []}
+    },
+    {
+      "name": "node_statement",
+      "why": "改范围外终点的陈述",
+      "touches": {"nodes": ["c1.term.foundry"]},
+      "patch": {"base_version": "c1-v1", "node_updates": [{"id": "c1.term.foundry", "fields": {"statement": "被偷改：代码不应接受"}}], "edge_updates": [], "condition_updates": [], "node_adds": [], "edge_adds": []}
+    },
+    {
+      "name": "condition_threshold",
+      "why": "改范围外 Condition 的阈值",
+      "touches": {"conditions": ["cond.c1.foundry_utilization"]},
+      "patch": {"base_version": "c1-v1", "node_updates": [], "edge_updates": [], "condition_updates": [{"id": "cond.c1.foundry_utilization", "fields": {"threshold": 0.9}}], "node_adds": [], "edge_adds": []}
+    }
+  ]
+}

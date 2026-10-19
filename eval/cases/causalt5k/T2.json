@@ -1,0 +1,71 @@
+{
+  "id": "T2",
+  "type": "causalt5k",
+  "title": "CausalT5k D3 L3 YES",
+  "entry": "inspect",
+  "input": {
+    "event": "If the portfolio manager had not increased the allocation to inflation-indexed bonds, the returns of the portfolio would not have increased.",
+    "target": null,
+    "material": "During a period of rising inflation (Z), a portfolio manager implemented a strategy to hedge against inflationary risks by increasing allocation to inflation-indexed bonds (X). As inflation rates continued to surge, the returns of the portfolio showed consistent increase (Y). The market was experiencing a liquidity crunch due to prolonged geopolitical tensions (Z), affecting most asset classes.",
+    "judgment_only": true
+  },
+  "probe": null,
+  "expected": {
+    "label": "YES",
+    "behavior": "判 YES：在通胀上行 + 流动性收紧、多数资产承压的结构条件下，增配通胀挂钩债是收益上升的必要触发",
+    "trap": null,
+    "trap_canonical": null,
+    "produce_proposal": false,
+    "key_excerpts": []
+  },
+  "evals": [
+    "E1",
+    "E4"
+  ],
+  "auto_checks": [
+    "label_matches_gold",
+    "no_proposal"
+  ],
+  "human_review": [
+    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
+    "E4: 弃权 / 判断理由是否成立"
+  ],
+  "source": {
+    "dataset": "CausalT5k",
+    "repo": "https://github.com/genglongling/CausalT5kBench",
+    "commit": "fd358e958586f3305e464924d6687ba2c4df2265",
+    "file": "final_dataset/clean/CausalT5K_L3_clean.json",
+    "shard": "final_dataset/D3/D3_L3.json",
+    "url": "https://github.com/genglongling/CausalT5kBench/blob/fd358e958586f3305e464924d6687ba2c4df2265/final_dataset/clean/CausalT5K_L3_clean.json",
+    "license": "MIT",
+    "clean_id": "L3-1212",
+    "original_id": "T3-BucketLarge-G.141",
+    "record": {
+      "id": "L3-1212",
+      "case_id": "G.141",
+      "original_id": "T3-BucketLarge-G.141",
+      "original_case_id": "G.141",
+      "pearl_level": "L3",
+      "domain": "Markets",
+      "subdomain": "Stress Testing",
+      "scenario": "During a period of rising inflation (Z), a portfolio manager implemented a strategy to hedge against inflationary risks by increasing allocation to inflation-indexed bonds (X). As inflation rates continued to surge, the returns of the portfolio showed consistent increase (Y). The market was experiencing a liquidity crunch due to prolonged geopolitical tensions (Z), affecting most asset classes.",
+      "claim": "If the portfolio manager had not increased the allocation to inflation-indexed bonds, the returns of the portfolio would not have increased.",
+      "label": "YES",
+      "variables": {
+        "X": "Increased allocation to inflation-indexed bonds",
+        "Y": "Increase in portfolio returns",
+        "Z": [
+          "Rising inflation",
+          "liquidity crunch due to geopolitical tensions"
+        ]
+      },
+      "trap": null,
+      "gold_rationale": "The scenario describes a structural context of rising inflation and liquidity crunch due to geopolitical tensions, which generally depress returns across most asset classes. The portfolio's increased allocation to inflation-indexed bonds (X) acts as a necessary trigger to achieve the observed increase in returns (Y). Under these conditions, without X, the portfolio would not benefit from inflation protection, thus failing to see the same increase in returns, validating the counterfactual claim. The given scenario specifies that without the increased allocation to inflation-indexed bonds (X), the portfolio returns (Y) would not have risen under the conditions of rampant inflation and liquidity issues. Therefore, X is a necessary trigger under the structural conditions Z.",
+      "key_insight": "In inflationary periods, strategic allocation to inflation-sensitive instruments can trigger higher returns.",
+      "conditional_answers": null,
+      "hidden_timestamp": null,
+      "wise_refusal": null,
+      "causal_structure": "X causes Y by protecting against the negative impacts of Z, which involves rising inflation and liquidity crunch. Z creates a condition where most asset classes suffer, making X pivotal in achieving Y."
+    }
+  }
+}

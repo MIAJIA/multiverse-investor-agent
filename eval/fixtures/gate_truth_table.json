@@ -1,0 +1,13 @@
+{
+  "_note": "进场条件 AND 真值表（设计文档「核心数据模型」）。conditions 只给判定需要的字段；adapter 负责补成核心要求的完整 Condition。G6 的期望是本线提议，见 INTERFACE.md 决定 D3。",
+  "allowed_results": ["WAIT", "BLOCKED", "READY_FOR_REVIEW"],
+  "rows": [
+    {"id": "G1", "conditions": [{"id": "a", "verification_status": "verifiable", "evaluation_status": "met"}, {"id": "b", "verification_status": "verifiable", "evaluation_status": "met"}], "expected": "READY_FOR_REVIEW", "why": "全部满足也只进 Ready for Review，不是 Ready to Execute"},
+    {"id": "G2", "conditions": [{"id": "a", "verification_status": "verifiable", "evaluation_status": "met"}, {"id": "b", "verification_status": "unverified", "evaluation_status": "unknown"}], "expected": "WAIT", "why": "任何一条 unknown → WAIT"},
+    {"id": "G3", "conditions": [{"id": "a", "verification_status": "verifiable", "evaluation_status": "met"}, {"id": "b", "verification_status": "verifiable", "evaluation_status": "not_met"}], "expected": "BLOCKED", "why": "任何一条 not_met → BLOCKED"},
+    {"id": "G4", "conditions": [{"id": "a", "verification_status": "unverified", "evaluation_status": "unknown"}, {"id": "b", "verification_status": "unverified", "evaluation_status": "unknown"}], "expected": "WAIT", "why": "全部 unknown → WAIT"},
+    {"id": "G5", "conditions": [], "expected": "WAIT", "why": "空集不因空集的逻辑特性自动通过"},
+    {"id": "G6", "conditions": [{"id": "a", "verification_status": "unverified", "evaluation_status": "unknown"}, {"id": "b", "verification_status": "verifiable", "evaluation_status": "not_met"}], "expected": "BLOCKED", "why": "提议：已证实未满足优先于无法判断（设计文档真值表未列此行）", "proposal": true},
+    {"id": "G7", "conditions": [{"id": "a", "verification_status": "verifiable", "evaluation_status": "unknown"}, {"id": "b", "verification_status": "verifiable", "evaluation_status": "unknown"}], "expected": "WAIT", "why": "verifiable ≠ met"}
+  ]
+}

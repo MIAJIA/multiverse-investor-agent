@@ -1,0 +1,57 @@
+{
+  "id": "C1",
+  "type": "custom",
+  "title": "光子芯片采用快于预期：Discovery → 提案",
+  "entry": "discover",
+  "then": "inspect",
+  "input": {
+    "event": "光子芯片采用快于预期",
+    "target": null,
+    "evidence_packs": [
+      "semiconductor"
+    ],
+    "online_search": false
+  },
+  "expected": {
+    "candidates_min": 1,
+    "candidates_max": 3,
+    "candidate_labels_allowed": [
+      "grounded",
+      "hypothesis",
+      "not_recommended"
+    ],
+    "abstain": false,
+    "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（集成激光替代外置光源）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
+    "gate": "WAIT",
+    "proposal_status": "draft",
+    "approval_required": true,
+    "condition_kinds_required": [
+      "numeric"
+    ],
+    "key_excerpts": [
+      "sc-001",
+      "sc-003",
+      "sc-005"
+    ],
+    "key_excerpts_note": "以 fixture 的 excerpt_id 占位；真实 Semiconductor Pack 落地后由证据线替换成真实片段 id（采用提前、光源需求、反方的集成激光）"
+  },
+  "evals": [
+    "Discovery",
+    "E1",
+    "E2"
+  ],
+  "auto_checks": [
+    "candidate_count",
+    "candidate_labels",
+    "proposal_present",
+    "gate",
+    "numeric_condition_present",
+    "null_threshold_has_note",
+    "retrieval_hit"
+  ],
+  "human_review": [
+    "E1: 每条边的引用原文是否支持机制",
+    "E1: 反方片段是否被回应",
+    "E2: 数值条件换掉之后论点还成立吗"
+  ]
+}

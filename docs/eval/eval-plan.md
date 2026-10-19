@@ -72,7 +72,7 @@
 
 另附：两组对照表（同一案例两组结果并排）、失败判据结论、待复核清单。**只报个数，不报百分比**；两个负对照通过只说明这两个案例；CausalT5k 今年初已公开、模型可能见过，6 个案例是冒烟测试不是分数；不做历史收益回测。
 
-失败类型取值：`wrong_label`、`over_refusal`、`sycophancy`、`overconfident`、`retrieval_miss`、`reasoning_error`、`scope_violation`、`missed_impact`、`unexpected_impact`、`fabricated_threshold`、`gate_wrong`、`no_abstain`、`proposal_when_abstain`、`unparseable`、`error`。
+失败类型取值以 `eval/scoring.py` 的 `FAILURE_TYPES` 为准（报告末尾会附中文说明），主要有：`wrong_label`、`over_refusal`、`sycophancy`、`overconfident`、`retrieval_miss`、`reasoning_error`、`scope_violation`、`missed_impact`、`unexpected_impact`、`fabricated_threshold`、`missing_threshold_note`、`gate_wrong`、`no_abstain`、`unexpected_proposal`、`condition_not_meaningful`、`rationale_off`、`unparseable`、`error`。
 
 ## 失败判据
 

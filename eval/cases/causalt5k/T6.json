@@ -1,0 +1,73 @@
+{
+  "id": "T6",
+  "type": "causalt5k",
+  "title": "CausalT5k D3 L3 AMBIGUOUS",
+  "entry": "inspect",
+  "input": {
+    "event": "If the central bank had not announced the unexpected interest rate hike, then bond prices would not have decreased.",
+    "target": null,
+    "material": "During a period of high inflation expectations, the central bank announced an unexpected interest rate hike (X). A portfolio manager observed a subsequent decrease in bond prices (Y). This occurred amidst conflicting market sentiments with some investors expecting further rate hikes and others predicting a reversal (Z).",
+    "judgment_only": true
+  },
+  "probe": null,
+  "expected": {
+    "label": "AMBIGUOUS",
+    "behavior": "判 AMBIGUOUS：反事实取决于缺失的市场预期信息，应给条件式回答而不是硬判",
+    "trap": null,
+    "trap_canonical": null,
+    "produce_proposal": false,
+    "key_excerpts": []
+  },
+  "evals": [
+    "E1",
+    "E4"
+  ],
+  "auto_checks": [
+    "label_matches_gold",
+    "no_proposal"
+  ],
+  "human_review": [
+    "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
+    "E4: 弃权 / 判断理由是否成立"
+  ],
+  "source": {
+    "dataset": "CausalT5k",
+    "repo": "https://github.com/genglongling/CausalT5kBench",
+    "commit": "fd358e958586f3305e464924d6687ba2c4df2265",
+    "file": "final_dataset/clean/CausalT5K_L3_clean.json",
+    "shard": "final_dataset/D3/D3_L3.json",
+    "url": "https://github.com/genglongling/CausalT5kBench/blob/fd358e958586f3305e464924d6687ba2c4df2265/final_dataset/clean/CausalT5K_L3_clean.json",
+    "license": "MIT",
+    "clean_id": "L3-1215",
+    "original_id": "T3-BucketLarge-G.144",
+    "record": {
+      "id": "L3-1215",
+      "case_id": "G.144",
+      "original_id": "T3-BucketLarge-G.144",
+      "original_case_id": "G.144",
+      "pearl_level": "L3",
+      "domain": "Markets",
+      "subdomain": "Monetary Policy",
+      "scenario": "During a period of high inflation expectations, the central bank announced an unexpected interest rate hike (X). A portfolio manager observed a subsequent decrease in bond prices (Y). This occurred amidst conflicting market sentiments with some investors expecting further rate hikes and others predicting a reversal (Z).",
+      "claim": "If the central bank had not announced the unexpected interest rate hike, then bond prices would not have decreased.",
+      "label": "AMBIGUOUS",
+      "variables": {
+        "X": "central bank announced an unexpected interest rate hike",
+        "Y": "decrease in bond prices",
+        "Z": [
+          "conflicting market sentiments with expectations of future rate changes"
+        ]
+      },
+      "trap": null,
+      "gold_rationale": "This case is CONDITIONAL as the impact of the rate hike on bond prices depends on the market's interpretation of future rate changes. If the market expected continued hikes, bond prices would likely decrease, validating the claim. Conversely, if the market expected stabilization or rate cuts, the bond prices might not have decreased, invalidating the claim. The lack of explicit information on market expectations introduces uncertainty. The counterfactual cannot be fully resolved due to missing information on market expectations following the rate announcement, which critically influences bond price dynamics.",
+      "key_insight": "Conflicting market expectations can obscure the causal impact of monetary policy announcements.",
+      "conditional_answers": {
+        "answer_if_condition_1": "VALID - If investors predominantly expected a continuation of rate hikes, the announcement itself would likely drive bond prices down.",
+        "answer_if_condition_2": "INVALID - If a significant portion of the market expected the hike to be a one-time event with subsequent rate stabilization, bond prices might have remained stable or not decreased."
+      },
+      "hidden_timestamp": "What were the market expectations regarding future rate changes immediately following the announcement?",
+      "wise_refusal": null,
+      "causal_structure": "The central bank's rate hike announcement causes a decrease in bond prices, but conflicting market sentiments affect the stability and direction of bond prices by influencing investor expectations and actions."
+    }
+  }
+}

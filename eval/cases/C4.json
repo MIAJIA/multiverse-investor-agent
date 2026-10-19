@@ -1,0 +1,33 @@
+{
+  "id": "C4",
+  "type": "custom",
+  "title": "中期选举分裂 → 远距离标的：Discovery 弃权",
+  "entry": "discover",
+  "input": {
+    "event": "中期选举分裂",
+    "target": "LITE",
+    "target_note": "一个与选举没有合理因果距离的标的（光通信激光器），检验是否会被硬连",
+    "evidence_packs": [
+      "semiconductor"
+    ],
+    "online_search": false
+  },
+  "expected": {
+    "behavior": "Discover 明确弃权（0 个候选），或只给标 not_recommended 的候选并附解释；不生成提案；不为了出提案强造标的",
+    "abstain": true,
+    "proposal_present": false,
+    "key_excerpts": []
+  },
+  "evals": [
+    "E4",
+    "Discovery"
+  ],
+  "auto_checks": [
+    "abstained_or_only_not_recommended",
+    "no_proposal"
+  ],
+  "human_review": [
+    "E4: 弃权理由是否成立（不是一句空话）"
+  ],
+  "notes": "设计文档写的是「输入中期选举分裂到一个远距离标的」：给了 Target B 就会跳过 Discover 走 Inspect。本线按「Discover 弃权」写，标的只作为用户追问时的对照；若主 session 决定走 Inspect，期望改为 no_chain + 理由。"
+}
