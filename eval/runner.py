@@ -632,8 +632,9 @@ def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需�
         out_dir = Path(args.replay)
         reasoner = reasoner_mod.ReplayReasoner(out_dir / "cassette.jsonl")
         prev = out_dir / "results.json"
-        model = (json.loads(prev.read_text(encoding="utf-8"))[0].get("model", "unknown") + " (replay)") \
-            if prev.exists() else reasoner.name
+        recorded = json.loads(prev.read_text(encoding="utf-8"))[0].get("model", "unknown") if prev.exists() else None
+        # Strip earlier replay labels so that replaying a replayed result does not stack "(replay)" suffixes.
+        model = recorded.replace(" (replay)", "") + " (replay)" if recorded else reasoner.name
     else:
         reasoner = reasoner_mod.default_reasoner()
         model = getattr(reasoner, "name", "unknown")

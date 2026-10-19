@@ -1,4 +1,4 @@
-# Catalyst eval per-case report (anthropic:claude-haiku-5-5 (replay) (replay))
+# Catalyst eval per-case report (anthropic:claude-haiku-5-5 (replay))
 
 Counts only, no percentages. Each scenario has 1-3 cases, so results speak only for those cases. CausalT5k was published early this year and models may have seen it; T1-T6 are a smoke test, not a score. Control-group results come from actual runs, nothing is assumed.
 
