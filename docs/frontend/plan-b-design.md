@@ -366,3 +366,12 @@ Also checked along the way: c1_blocked's LITE is BLOCKED; c4_abstain shows the a
 - Not verified live: two branches with different kinds in one graph. Both live runs produced a single branch. The differing-kind rendering is covered by the plan B preview (demo data) and by unit tests on the fixtures, not by a live run.
 - Backend observation: after a fork, every own node of a hypothetical branch is marked hypothetical in `node_kinds`, including the node that restates the user's event, because own nodes take the branch's kind.
 - Screenshots: `screenshots/live-analyze-wait.jpg`, `live-b2-card.jpg`, `live-b3-fork.jpg`, `live-b1-after-fork.jpg`.
+
+## B1 canvas cut off under the side panel (fixed after core-schema@724c975)
+
+- Symptom (main session, run 20261019-101248 "Google just launched a new AI model…"): the right part of a wide graph sat under the right-hand panel, and "fit view" did not help.
+- Cause, confirmed in headless Chrome (which renders frames): React Flow fits the graph only once, when it mounts. When the canvas later gets narrower (window or pane resized), the graph keeps its old fit. With the fix disabled, the canvas ended at 500px while the nodes ended at 1030px. In a normally rendered page the fit-view button does fix it. In the hidden Claude browser pane it does nothing, because a hidden pane is a background page with no rendering frames, so ResizeObserver, requestAnimationFrame and React Flow's own measuring and fitView do not run. That is why the button seemed broken in both our tests.
+- Fix (`components/GraphCanvas.tsx`): `FitOnResize` refits whenever React Flow's stored canvas size changes. As a fallback for pages that are not being rendered, it compares the real container size with the stored size once per second and dispatches a `resize` event when they differ, so React Flow re-measures. Node measurements are also kept between renders (`onNodesChange` for dimension changes), and the fit-view button uses the same padding.
+- Verified in headless Chrome for both runs (13-node Google run and 6-node TSMC control): after narrowing from 1600 to 900px wide, the graph refits inside the canvas; after zooming in, the fit-view button brings it back. B3 and the plan B preview use the same component.
+- Dev aid: in real mode, `?run=<run_id>&v=<version>` opens a stored run without calling the model.
+- The B2 plan-switcher fix from 724c975 (`.ap-page > * { flex-shrink: 0; }`) is unchanged.
