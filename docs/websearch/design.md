@@ -278,3 +278,44 @@ w4 的改动：加 blog.google（T1 正式公告）；abc.xyz 进排除列表（
 - **问不到股价。** 白名单里没有行情数据源，产品也还没有接市场参照（`market_reference` 一律为 null），所以「发布后股价怎么动」只能变成一个要用户自己算的条件（相对 Nasdaq-100 的超额收益）。w3 那次唯一的股价数字（「下跌约 4.4%」）来自律所广告转述，说的是 7 月 Gemini 3.5 Pro 延期，不是 Gemini 4。
 - **日期仍然全是 unknown**（`page_age` 都是相对时间）。blog.google 的片段原文里其实带了日期（「Sep 30, 2026」）。
 - **标注质量**：有一段是作者署名加分享按钮的页面文字，也被标成了 supports（web-003）。代码只能保证原文是真的，判断不了一段文字算不算证据。
+
+## 11. 白名单的缺口（待主 session 和 Mia 决定）
+
+按主 session 的要求，下面这些先记录，不再改白名单。说明：w4（加 blog.google、排除 abc.xyz、代码丢弃 PR Newswire 上的律所广告）是 Mia 在本 session 里直接要求的，已经在 e3b0b73 提交；之后没有再改。
+
+| 缺口 | 现状 | 可选做法 |
+| --- | --- | --- |
+| 通讯社 | AP、Reuters、韩联社、共同社对 Claude 关闭；T2 只有中央社英文版 | 接受；或补主流媒体作 T3（已补 Al Jazeera，BBC 被 API 拒绝） |
+| 公司官方来源 | 只有 NVIDIA 与 Google（blog.google）；TSMC、Alphabet IR（abc.xyz）靠 JS 加载抓不到 | 按需逐家加；财报一律以 sec.gov 的 8-K / 10-Q 为准 |
+| 股价 / 行情数据 | 白名单没有行情源，`market_reference` 一律为 null，「发布后股价怎么动」只能变成要用户自己算的条件 | 加一个行情数据源，或接市场参照（新功能） |
+| PR Newswire 混进律所广告 | w4 起按 URL 路径（class-action、shareholder-alert 等）由代码丢弃，丢弃原因 `excluded_path` | 继续观察漏网的；或整体降为 T3 |
+| 日期 | `page_age` 实测全是相对时间（「11 days ago」），片段日期全部是 unknown | 按检索日期换算并注明 ±1 天；或从片段原文里取日期 |
+
+## 12. 研究 loop（按 `docs/changes/2026-10-18-agent-loop.md` 实现）
+
+**做法**
+- 第 1 轮就是入口之前的联网检索。然后照常跑一遍 Inspect（建图 + 出计划），这一遍写进 `runs/<id>/research/r1/`，只用来找缺口。
+- 缺口由代码找（`research.find_gaps`，接口 `GapDetector`，方案 B 合并后换成 `branches.py` 的 kind）：model_only 的边；numeric 条件阈值为空，且 threshold_note 写的是缺数据（或没有 series）。只等用户拍板的阈值不算缺口。
+- 有缺口就补查一轮（研究最多 2 轮）。补查的输入只有事件、缺口所在的 claim / 边 / 条件（不给 mechanism、不给计划）、已有片段的 id 和 url；提示词 `WEB_FOLLOWUP`（版本 `f1`，进检索键）要求优先补缺口，并至少有一次查询专门找反方。第 1 轮已收的片段不再收（`seen_in_prior_round`）。
+- 立场仍由 `web.label` 标注。每轮冻结一份资料包，第 2 轮片段 id 是 `web-r2-001…`；检索键含轮次和缺口，回放逐轮按键读取。
+- 定稿：带上全部资料包从头重跑 Inspect，写进运行目录。没有补查时，重跑的请求与第 1 遍逐字相同，由 `Memo` 返回同一份输出，不多调模型。
+- 挂钩：`entrypoints.inspect` 只多一个 `research` 参数和三行转发；联网关闭时 CLI / API 不传它，行为不变。
+- 对外契约不变。新增信息只在 `case.json` 与 API 返回体的 `web` 字段：`rounds`（每轮 status、片段数、搜索 / 抓取次数、查询词）、`followup`（是否触发、触发原因、缺口 id）、`pack_ids`、`message`。
+
+**离线验证**：全套 226 passed（新增 `tests/research/` 10 个）。联网关闭时，eval 10 个案例的 42 个请求哈希与 core-schema da2d097 逐个相同。
+
+**真实实测**（2026-10-18，`CATALYST_MODEL=claude-haiku-5-5`，检索也是 Haiku，三个案例都开联网）
+
+| 案例 | 运行目录 | 第 1 遍图 | 定稿图 | 第 1 轮片段 | 第 2 轮新增片段 | 花费 |
+| --- | --- | --- | --- | --- | --- | --- |
+| W1 美联储 10 月降息 → TLT | `runs/W1/20261018-232546` | model_only 5/7，空阈值 2 | model_only 2/6，空阈值 4 | 18：federalreserve.gov 14、bls.gov 3、treasury.gov 1 | 19：federalreserve.gov 11、bls.gov 4、sec.gov 3、treasury.gov 1 | ≈ $0.20 |
+| C2 出口限制 → NVDA | `runs/C2/20261018-232548` | model_only 8/11，空阈值 4 | model_only 2/4，空阈值 2 | 20：aljazeera.com 11、sec.gov 2、nvidia.com 2、trendforce.com 2、ecb.europa.eu 2、bis.gov 1 | 15：sec.gov 6、trendforce.com 5、aljazeera.com 3、prnewswire.com 1 | ≈ $0.20 |
+| D1 霍尔木兹重开（discover → inspect） | `runs/D1/20261018-232550` | model_only 1/9，空阈值 4 | model_only 1/9，空阈值 2 | 20：aljazeera.com 17、eia.gov 3 | 20：eia.gov 10、aljazeera.com 10 | ≈ $0.26 |
+
+「空阈值」= numeric 条件里 threshold 为 null 的个数。三个案例补查都触发了。
+
+- 回放：不加载 API key，三个案例逐轮读冻结资料包，快照、提案、observations、两份资料包逐字节相同。
+- 花费里大头是检索：每轮 $0.075–0.105（搜索费 $0.05 + 16 万–43 万输入 token）；模型推理（含两次 web.label）每个案例 $0.05–0.07。
+- **定稿图是从头重建的**，节点和边与第 1 遍不是一一对应，上表比的是数量，不是「同一条边被补上了证据」。W1 的空阈值反而从 2 个变成 4 个，就是因为重建后条件换了一套。
+- **找反方只能靠提示词**（D-A7）。W1 第 2 轮有专门找反方的查询（「bear steepening … rose after Fed cut」），C2 第 2 轮的 4 个查询里看不出哪个是专门找反方的。代码做不到语义检查，这一项要进人工复核表。
+- D1 第 2 轮抓了 `portwatch.imf.org` 的数据页，那是 JS 应用，抓不到数据（见白名单说明）。
