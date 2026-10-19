@@ -2,6 +2,8 @@
 // 数据是演示的（见 demoPlanB.ts），不调后端；批准 / 撤销只改这一页的内存。后端交付后，正式 B1 / B2 复用这里的组件。
 import { useEffect, useMemo, useState } from 'react';
 import ApprovePlans, { EMPTY_DRAFT, type PlanDraft, type Understood } from '../components/ApprovePlans';
+import ApproveCard from '../components/approve/ApproveCard';
+import ApproveList from '../components/approve/ApproveList';
 import Badge from '../components/Badge';
 import { BranchTag } from '../components/BranchSwatch';
 import GraphCanvas, { type BranchView } from '../components/GraphCanvas';
@@ -23,6 +25,7 @@ export default function PlanBPreview() {
   const [drafts, setDrafts] = useState<Record<string, PlanDraft>>({});
   const [understood, setUnderstood] = useState<Understood>({ confirmed: false, text: null });
   const [afterFork, setAfterFork] = useState(false);
+  const [variant, setVariant] = useState<'A' | 'B' | 'old'>('A');
   useEffect(() => {
     import('../../fixtures/c1_multi.json').then((m) => setBundle(demoBundle(m.default as unknown as Fixture)));
   }, []);
@@ -84,6 +87,14 @@ export default function PlanBPreview() {
         <button className={tab === 'b1' ? 'tab active' : 'tab'} onClick={() => setTab('b1')}>{T.preview.tabB1}</button>
         <button className={tab === 'b2' ? 'tab active' : 'tab'} onClick={() => setTab('b2')}>{T.preview.tabB2}</button>
         <span className="spacer" />
+        {tab === 'b2' && (
+          <span className="variant-switch">
+            <span className="small muted">{T.lite.variant}</span>
+            {([['A', T.lite.variantA], ['B', T.lite.variantB], ['old', T.lite.variantOld]] as const).map(([v, label]) => (
+              <button key={v} className={variant === v ? 'on' : ''} onClick={() => setVariant(v)}>{label}</button>
+            ))}
+          </span>
+        )}
         <label className="small muted" style={{ alignSelf: 'center' }}>
           <input type="checkbox" checked={afterFork} onChange={(e) => setAfterFork(e.target.checked)} /> {T.preview.afterFork}
         </label>
@@ -137,10 +148,15 @@ export default function PlanBPreview() {
           </div>
         )}
         {tab === 'b2' && (
-          <ApprovePlans bundle={shown} selected={terminal} onSelect={setTerminal} labelOf={demoLabel}
-            drafts={drafts} onDraft={(tid, d) => setDrafts({ ...drafts, [tid]: d })}
-            understood={understood} onUnderstood={setUnderstood}
-            onApprove={(tid) => setApproved(tid)} onRevoke={() => setApproved(null)} busy={false} />
+          (() => {
+            const p = {
+              bundle: shown, selected: terminal, onSelect: (id: string) => setTerminal(id || null), labelOf: demoLabel,
+              drafts, onDraft: (tid: string, d: PlanDraft) => setDrafts({ ...drafts, [tid]: d }),
+              understood, onUnderstood: setUnderstood,
+              onApprove: (tid: string) => setApproved(tid), onRevoke: () => setApproved(null), busy: false,
+            };
+            return variant === 'A' ? <ApproveList {...p} /> : variant === 'B' ? <ApproveCard {...p} /> : <ApprovePlans {...p} />;
+          })()
         )}
       </main>
     </div>
