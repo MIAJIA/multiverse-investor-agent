@@ -1,0 +1,40 @@
+{
+  "id": "B1",
+  "type": "custom",
+  "layer": "B",
+  "title": "该给 no_chain：CPO 放量 → 存储厂商",
+  "entry": "inspect",
+  "input": {
+    "event": "CPO 共封装光学放量会带动存储芯片厂商的需求",
+    "target": "MU",
+    "evidence_packs": [
+      "semiconductor"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "资料包里与存储有关的只有 sc-013（NVIDIA 列出 SK hynix、Micron、Samsung 为存储供应商，立场 neutral），没有任何片段说 CPO 会带动存储需求。期望 no_chain + 理由；或者给出路径，但「CPO → 存储需求」这一跳标 model_only，分支类别是 model_only，不能拿 sc-013 当支持证据。",
+    "no_chain_preferred": true,
+    "must_not_cite_as_support": [
+      "sc-013"
+    ],
+    "key_excerpts": [
+      "sc-013"
+    ]
+  },
+  "evals": [
+    "E1",
+    "E4"
+  ],
+  "auto_checks": [
+    "no_chain_or_model_only_branch",
+    "no_support_citation_of:sc-013"
+  ],
+  "human_review": [
+    "E4: no_chain 的理由是否成立（指出缺的是哪一环的证据）",
+    "E1: 如果成链，有没有把供应商名单当成需求证据"
+  ],
+  "notes": "B 层：真实调用 Haiku 判模型行为。auto_checks 里的名字是给 runner 的约定，runner 还没实现的检查在 notes 里注明。 「no_support_citation_of」要读图里边上的 evidence 引用，runner 待实现。"
+}

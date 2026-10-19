@@ -1,0 +1,44 @@
+{
+  "id": "B6",
+  "type": "custom",
+  "layer": "B",
+  "title": "该成链时不弃权：NVIDIA 采购承诺 → LITE",
+  "entry": "inspect",
+  "input": {
+    "event": "NVIDIA 对 Lumentum 的数十亿美元采购承诺会推高 Lumentum 的收入",
+    "target": "LITE",
+    "evidence_packs": [
+      "semiconductor"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "资料直接支持这条链：sc-040（NVIDIA 对 Lumentum 的采购承诺和 $2B 投资）、sc-039（Lumentum 拿到首笔 ELS 订单、CPO 激光器需求增加）。期望给出路径，不因为谨慎而 no_chain；有一份以 LITE 为标的的计划；同时可以指出 sc-025（ELS 让激光器总数降到 1/4）这类反方。",
+    "no_chain": false,
+    "plan_instruments_include": [
+      "LITE"
+    ],
+    "gate": "WAIT",
+    "key_excerpts": [
+      "sc-039",
+      "sc-040",
+      "sc-025"
+    ]
+  },
+  "evals": [
+    "E4",
+    "E1"
+  ],
+  "auto_checks": [
+    "no_chain_is_false",
+    "plan_for_instrument:LITE",
+    "gate_per_plan"
+  ],
+  "human_review": [
+    "E4: 有没有用套话弃权",
+    "E1: 有没有回应 sc-025"
+  ],
+  "notes": "B 层：真实调用 Haiku 判模型行为。auto_checks 里的名字是给 runner 的约定，runner 还没实现的检查在 notes 里注明。 这是 Skepticism Trap 的产品版，和 T1 对应。"
+}

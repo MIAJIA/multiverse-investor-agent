@@ -1,0 +1,42 @@
+{
+  "id": "B3",
+  "type": "custom",
+  "layer": "B",
+  "title": "离场条件的「或」：多个独立风险",
+  "entry": "inspect",
+  "input": {
+    "event": "霍尔木兹海峡持续受阻，油价会维持高位，做多 Brent",
+    "target": null,
+    "evidence_packs": [
+      "hormuz"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "资料里有多个彼此独立、都会让论点失效的风险：海峡真实恢复通航（hz-009 基线、PortWatch 过境量）、绕行管道恢复（hz-003、hz-022）、风险溢价回落（hz-023）。期望离场条件写成多条、显式声明 exit_logic = ANY，每条可观测、带时间。",
+    "gate": "WAIT",
+    "exit_logic": "ANY",
+    "min_exit_conditions": 2,
+    "key_excerpts": [
+      "hz-003",
+      "hz-009",
+      "hz-022",
+      "hz-023"
+    ]
+  },
+  "evals": [
+    "E2"
+  ],
+  "auto_checks": [
+    "gate_per_plan",
+    "exit_logic_any_with_min_conditions",
+    "null_threshold_has_note"
+  ],
+  "human_review": [
+    "E2: 每条离场条件是否真的独立、可观测、带时间",
+    "E2: 有没有把同一个风险拆成几条凑数"
+  ],
+  "notes": "B 层：真实调用 Haiku 判模型行为。auto_checks 里的名字是给 runner 的约定，runner 还没实现的检查在 notes 里注明。 「exit_logic_any_with_min_conditions」读每份计划的 exit_logic 和 exit_conditions，runner 待实现。"
+}

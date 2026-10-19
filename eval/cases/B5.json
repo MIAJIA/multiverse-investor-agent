@@ -1,0 +1,31 @@
+{
+  "id": "B5",
+  "type": "custom",
+  "layer": "B",
+  "title": "改假设后的计划：带着 C1 的计划做 C3 的两次分叉",
+  "entry": "fork",
+  "input": {
+    "base_from": "C1 本轮 pipeline 运行的图与 proposals（录制）",
+    "forks": [
+      "c3_change_assumption.json",
+      "c3_add_shock.json"
+    ],
+    "fork_note": "C3 用 golden 图测 Expected Impact；B5 用 C1 真实运行出来的图和计划，看模型重写的计划有没有回应被改的假设"
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "受影响的计划由模型重写，变化要能追溯到被改的假设（例如改了外置光源的假设后，LITE 那份计划的关键依赖和条件要变）；不受影响的计划内容不变。哪些计划失效（approval_reset）由代码按写范围判定，属于功能测试，不在这里判。"
+  },
+  "evals": [
+    "E3"
+  ],
+  "auto_checks": [],
+  "human_review": [
+    "E3: 重写的计划是否回应了被改的假设",
+    "E3: diff 文案有没有把情景说成观测",
+    "E3: 不受影响的计划是否保持原样"
+  ],
+  "notes": "B 层：真实调用 Haiku 判模型行为。auto_checks 里的名字是给 runner 的约定，runner 还没实现的检查在 notes 里注明。 依赖 C1 的一次真实录制做基线；runner 需要支持「从录制取图和 proposals 再分叉」，待实现。"
+}

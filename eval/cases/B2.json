@@ -1,0 +1,40 @@
+{
+  "id": "B2",
+  "type": "custom",
+  "layer": "B",
+  "title": "条件写得能被数据判定",
+  "entry": "inspect",
+  "input": {
+    "event": "光子芯片采用快于预期",
+    "target": "LITE",
+    "evidence_packs": [
+      "semiconductor"
+    ]
+  },
+  "run_variants": [
+    "offline"
+  ],
+  "expected": {
+    "behavior": "每份计划的进场条件都能被一个具体、公开、可定期取得的数据或文件判定：写明序列或来源、比较方式、阈值（或 null + 说明）、观测窗口和规则。「若采用加速」这类没有判定方法的条件不合格。",
+    "gate": "WAIT",
+    "condition_fields_required": [
+      "series_or_source",
+      "comparator_or_document_rule",
+      "observation_window",
+      "rule"
+    ]
+  },
+  "evals": [
+    "E2"
+  ],
+  "auto_checks": [
+    "gate_per_plan",
+    "null_threshold_has_note",
+    "conditions_decidable_fields"
+  ],
+  "human_review": [
+    "E2: 每条条件指向的序列或文件是否真实存在、能定期取得",
+    "E2: 换掉这个条件论点还成立吗"
+  ],
+  "notes": "B 层：真实调用 Haiku 判模型行为。auto_checks 里的名字是给 runner 的约定，runner 还没实现的检查在 notes 里注明。 原计划想另给一组观测数据，看代码判定后进场结果会不会变；但核心不会把可用的序列清单放进模型上下文，模型无从得知序列名，这样判不公平。所以这一版只判「字段齐全、能被判定」，序列是否真实存在归人工。核心以后若支持把序列清单给模型，再加自动回判。"
+}
