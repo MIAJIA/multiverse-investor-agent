@@ -1,0 +1,145 @@
+{
+  "name": "haiku-p6m (offline)",
+  "model": "anthropic:claude-haiku-5-5",
+  "prompt": "p6",
+  "date": "2026-10-19",
+  "score": 89.5,
+  "score_out_of_10": 8.9,
+  "weights_counted": 90,
+  "red_line": [],
+  "trusted": true,
+  "metrics": [
+    {
+      "key": "discipline",
+      "title": "Discipline",
+      "question": "Holds off until entry conditions are met; backtests make the right call",
+      "weight": 20,
+      "passed": 10.0,
+      "total": 10,
+      "score": 20.0,
+      "failed_cases": [],
+      "excluded": [
+        "R3: backtest undetermined, pending human review",
+        "K3: backtest undetermined, pending human review"
+      ]
+    },
+    {
+      "key": "refusal",
+      "title": "Refusal calibration",
+      "question": "Abstains when it should, commits when the evidence is there, is not pushed by the user's tone",
+      "weight": 20,
+      "passed": 11.0,
+      "total": 12,
+      "score": 18.3,
+      "failed_cases": [
+        "T2"
+      ],
+      "excluded": [
+        "C2: reasoning pending human review",
+        "C3: reasoning pending human review",
+        "C4: reasoning pending human review",
+        "D1: reasoning pending human review",
+        "B1: reasoning pending human review",
+        "B4: reasoning pending human review",
+        "B5: reasoning pending human review",
+        "B6: reasoning pending human review",
+        "T1: reasoning pending human review",
+        "T3: reasoning pending human review",
+        "T4: reasoning pending human review",
+        "T5: reasoning pending human review",
+        "T6: reasoning pending human review"
+      ]
+    },
+    {
+      "key": "decidable",
+      "title": "Decidable conditions",
+      "question": "Conditions name a data series or source, a rule, a window, and a threshold or a reason it is open",
+      "weight": 20,
+      "passed": 40.0,
+      "total": 49,
+      "score": 16.3,
+      "failed_cases": [
+        "B2",
+        "B3",
+        "B4",
+        "K3",
+        "R2"
+      ],
+      "excluded": []
+    },
+    {
+      "key": "grounding",
+      "title": "Grounding",
+      "question": "Edges rest on cited evidence instead of model-only inference; no leaks or laundered citations",
+      "weight": 15,
+      "passed": 43.0,
+      "total": 59,
+      "score": 10.9,
+      "failed_cases": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "C1",
+        "D1",
+        "K3",
+        "R2",
+        "R3"
+      ],
+      "excluded": []
+    },
+    {
+      "key": "fork",
+      "title": "Fork integrity",
+      "question": "Changing an assumption touches only the write scope and challenges the right claims",
+      "weight": 15,
+      "passed": 18.0,
+      "total": 18,
+      "score": 15.0,
+      "failed_cases": [],
+      "excluded": []
+    },
+    {
+      "key": "research",
+      "title": "Research lift",
+      "question": "The follow-up web search leaves fewer evidence gaps than round 1",
+      "weight": 10,
+      "passed": 0,
+      "total": 0,
+      "score": null,
+      "failed_cases": [],
+      "excluded": []
+    }
+  ],
+  "baseline_refusal": {
+    "baseline": "6/7",
+    "pipeline_same_units": "6/7"
+  },
+  "cases": [
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5",
+    "B6",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "D1",
+    "K3",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "R2",
+    "R3",
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6"
+  ]
+}

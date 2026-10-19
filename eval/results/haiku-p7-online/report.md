@@ -1,4 +1,22 @@
-# Catalyst eval per-case report (anthropic:claude-haiku-5-5)
+# Catalyst eval per-case report (anthropic:claude-haiku-5-5 (replay))
+
+## Scorecard: haiku-p7-online
+
+**Score: 67.9 / 100** (6.8 / 10) · trusted · model anthropic:claude-haiku-5-5 · prompt p7 · 2026-10-19
+
+| Metric | Weight | Passed / judged | Points | Failed cases | Not judged yet |
+| --- | --- | --- | --- | --- | --- |
+| Discipline | 20 | 1 / 1 | 20.0 | - | 0 |
+| Refusal calibration | 20 | n/a | n/a | - | 0 |
+| Decidable conditions | 20 | 2 / 6 | 6.7 | W1 | 0 |
+| Grounding | 15 | 3 / 6 | 7.5 | W1 | 0 |
+| Fork integrity | 15 | n/a | n/a | - | 0 |
+| Research lift | 10 | 1 / 1 | 10.0 | - | 0 |
+
+Metrics with no judged units are left out and the score is scaled over the remaining 65 points of weight.
+
+Baseline on the same refusal units: baseline 0/0, pipeline 0/0.
+
 
 Counts only, no percentages. Each scenario has 1-3 cases, so results speak only for those cases. CausalT5k was published early this year and models may have seen it; T1-T6 are a smoke test, not a score. Control-group results come from actual runs, nothing is assumed.
 
@@ -23,6 +41,19 @@ n/a: 1
 | Case | Expected | pipeline | baseline |
 | --- | --- | --- | --- |
 | W1 | gate=WAIT per plan | pending review: plans t.tlt_long=WAIT, t.tlt_short=WAIT; 6 conditions; 3 model_only edges | n/a: backtests, online-only cases and probes run in the pipeline group only |
+
+## Online research (layer W): before and after the follow-up search
+
+Round 1 = the draft built from the first web search; Final = the rerun after the follow-up search (identical to round 1 when no follow-up ran). Fewer gaps after the follow-up means it found evidence, not that the reasoning is right; that stays with human review.
+
+| Case | Follow-up | Excerpts per round | Model-only edges (R1 -> final) | Model-only branches (R1 -> final) | Null thresholds (R1 -> final) | Queries per round |
+| --- | --- | --- | --- | --- | --- | --- |
+| W1 | yes (2 gaps): 0 条没有证据的边（model_only）、2 个缺数据的阈值 | 19 / 8 | 5 -> 3 | 0 -> 0 | 2 -> 3 | 7 / 5 |
+
+Queries per round, for the human check "did each round search for counter-evidence":
+
+- W1 round 1: federalreserve.gov FOMC meeting October 2026; federalreserve.gov FOMC statement federal funds rate target range 2026; Waller speech economic outlook October 2026 federalreserve.gov; bls.gov consumer price index September 2026 news release; treasury.gov daily treasury par yield curve October 2026; https://www.bls.gov/news.release/archives/cpi_10142026.htm; https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm
+- W1 round 2: federalreserve.gov H.15 selected interest rates Treasury constant maturity 20-year; federalreserve.gov FOMC minutes term premium long-term Treasury yields rose 2026; federalreserve.gov October 2026 FOMC meeting rate cut expectations; https://www.federalreserve.gov/releases/h15/; https://www.federalreserve.gov/releases/h15/current/default.htm
 
 ## Failure criteria
 

@@ -29,10 +29,12 @@
           "terminal_id": "t.tsem_1b_runrate",
           "gate": "WAIT",
           "conditions": 4,
+          "decidable_conditions": 4,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 5,
       "branch_kinds": {
         "t.tsem_1b_runrate": "hypothetical"
       },
@@ -145,10 +147,12 @@
           "terminal_id": "t.nvda_revenue",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 3,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 3,
       "branch_kinds": {
         "t.nvda_revenue": "hypothetical"
       },
@@ -383,6 +387,7 @@
           "terminal_id": "t.brent_falls",
           "gate": "WAIT",
           "conditions": 6,
+          "decidable_conditions": 6,
           "status": "draft",
           "support_status": "unknown"
         },
@@ -390,10 +395,12 @@
           "terminal_id": "t.brent_sticky",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 3,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 8,
       "branch_kinds": {
         "t.brent_falls": "hypothetical",
         "t.brent_sticky": "hypothetical"
@@ -522,10 +529,12 @@
           "terminal_id": "t.mu_demand",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 3,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 8,
       "branch_kinds": {
         "t.mu_demand": "hypothetical"
       },
@@ -620,10 +629,12 @@
           "terminal_id": "t.lite_laser_revenue",
           "gate": "WAIT",
           "conditions": 4,
+          "decidable_conditions": 4,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 6,
       "branch_kinds": {
         "t.lite_laser_revenue": "hypothetical"
       },
@@ -704,10 +715,12 @@
           "terminal_id": "h.brent_high",
           "gate": "WAIT",
           "conditions": 2,
+          "decidable_conditions": 2,
           "status": "draft",
           "support_status": "challenged"
         }
       ],
+      "edges": 4,
       "branch_kinds": {
         "h.brent_high": "hypothetical"
       },
@@ -808,10 +821,12 @@
           "terminal_id": "t.brent_down",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 3,
           "status": "draft",
           "support_status": "challenged"
         }
       ],
+      "edges": 5,
       "branch_kinds": {
         "t.brent_down": "hypothetical"
       },
@@ -1027,6 +1042,7 @@
           "terminal_id": "n.rev_bull",
           "gate": "WAIT",
           "conditions": 4,
+          "decidable_conditions": 4,
           "status": "draft",
           "support_status": "unknown"
         },
@@ -1034,10 +1050,12 @@
           "terminal_id": "n.rev_bear",
           "gate": "WAIT",
           "conditions": 4,
+          "decidable_conditions": 4,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 9,
       "branch_kinds": {
         "n.rev_bull": "hypothetical",
         "n.rev_bear": "hypothetical"
@@ -1148,10 +1166,12 @@
           "terminal_id": "t.brent_short",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 2,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 7,
       "branch_kinds": {
         "t.brent_short": "hypothetical"
       },
@@ -1320,10 +1340,12 @@
           "terminal_id": "t.nvda_china_dc_rev",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 3,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 3,
       "branch_kinds": {
         "t.nvda_china_dc_rev": "hypothetical"
       },
@@ -1484,10 +1506,12 @@
           "terminal_id": "t.brent_long",
           "gate": "WAIT",
           "conditions": 5,
+          "decidable_conditions": 5,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 4,
       "branch_kinds": {
         "t.brent_long": "model_only"
       },
@@ -2773,6 +2797,7 @@
             "terminal_id": "h.brent_down",
             "gate": "WAIT",
             "conditions": 3,
+            "decidable_conditions": 3,
             "status": "draft",
             "support_status": "unknown"
           }
@@ -2782,6 +2807,7 @@
             "terminal_id": "t.brent_down",
             "gate": "WAIT",
             "conditions": 3,
+            "decidable_conditions": 2,
             "status": "draft",
             "support_status": "unknown"
           },
@@ -2789,6 +2815,7 @@
             "terminal_id": "t.brent_held",
             "gate": "WAIT",
             "conditions": 3,
+            "decidable_conditions": 3,
             "status": "draft",
             "support_status": "unknown"
           }
@@ -2839,10 +2866,12 @@
               "terminal_id": "h.brent_down",
               "gate": "WAIT",
               "conditions": 3,
+              "decidable_conditions": 3,
               "status": "draft",
               "support_status": "unknown"
             }
           ],
+          "edges": 3,
           "branch_kinds": {
             "h.brent_down": "hypothetical"
           },
@@ -2869,6 +2898,7 @@
               "terminal_id": "t.brent_down",
               "gate": "WAIT",
               "conditions": 3,
+              "decidable_conditions": 2,
               "status": "draft",
               "support_status": "unknown"
             },
@@ -2876,10 +2906,12 @@
               "terminal_id": "t.brent_held",
               "gate": "WAIT",
               "conditions": 3,
+              "decidable_conditions": 3,
               "status": "draft",
               "support_status": "unknown"
             }
           ],
+          "edges": 5,
           "branch_kinds": {
             "t.brent_down": "hypothetical",
             "t.brent_held": "hypothetical"
@@ -2925,6 +2957,7 @@
             "terminal_id": "t.short_brent",
             "gate": "WAIT",
             "conditions": 4,
+            "decidable_conditions": 4,
             "status": "draft",
             "support_status": "unknown"
           }
@@ -2934,6 +2967,7 @@
             "terminal_id": "h.brent_falls",
             "gate": "WAIT",
             "conditions": 4,
+            "decidable_conditions": 4,
             "status": "draft",
             "support_status": "challenged"
           }
@@ -2993,10 +3027,12 @@
               "terminal_id": "t.short_brent",
               "gate": "WAIT",
               "conditions": 4,
+              "decidable_conditions": 4,
               "status": "draft",
               "support_status": "unknown"
             }
           ],
+          "edges": 6,
           "branch_kinds": {
             "t.short_brent": "hypothetical"
           },
@@ -3032,10 +3068,12 @@
               "terminal_id": "h.brent_falls",
               "gate": "WAIT",
               "conditions": 4,
+              "decidable_conditions": 4,
               "status": "draft",
               "support_status": "challenged"
             }
           ],
+          "edges": 4,
           "branch_kinds": {
             "h.brent_falls": "hypothetical"
           },
@@ -3085,6 +3123,7 @@
             "terminal_id": "h.t_lite",
             "gate": "WAIT",
             "conditions": 3,
+            "decidable_conditions": 2,
             "status": "draft",
             "support_status": "unknown"
           },
@@ -3092,6 +3131,7 @@
             "terminal_id": "h.t_coh",
             "gate": "WAIT",
             "conditions": 3,
+            "decidable_conditions": 2,
             "status": "draft",
             "support_status": "unknown"
           }
@@ -3101,6 +3141,7 @@
             "terminal_id": "t.tsem_cpo",
             "gate": "WAIT",
             "conditions": 4,
+            "decidable_conditions": 4,
             "status": "draft",
             "support_status": "supported"
           },
@@ -3108,6 +3149,7 @@
             "terminal_id": "t.tsem_pluggable",
             "gate": "WAIT",
             "conditions": 2,
+            "decidable_conditions": 2,
             "status": "draft",
             "support_status": "unknown"
           }
@@ -3171,6 +3213,7 @@
               "terminal_id": "h.t_lite",
               "gate": "WAIT",
               "conditions": 3,
+              "decidable_conditions": 2,
               "status": "draft",
               "support_status": "unknown"
             },
@@ -3178,10 +3221,12 @@
               "terminal_id": "h.t_coh",
               "gate": "WAIT",
               "conditions": 3,
+              "decidable_conditions": 2,
               "status": "draft",
               "support_status": "unknown"
             }
           ],
+          "edges": 7,
           "branch_kinds": {
             "h.t_lite": "hypothetical",
             "h.t_coh": "hypothetical"
@@ -3221,6 +3266,7 @@
               "terminal_id": "t.tsem_cpo",
               "gate": "WAIT",
               "conditions": 4,
+              "decidable_conditions": 4,
               "status": "draft",
               "support_status": "supported"
             },
@@ -3228,10 +3274,12 @@
               "terminal_id": "t.tsem_pluggable",
               "gate": "WAIT",
               "conditions": 2,
+              "decidable_conditions": 2,
               "status": "draft",
               "support_status": "unknown"
             }
           ],
+          "edges": 7,
           "branch_kinds": {
             "t.tsem_cpo": "hypothetical",
             "t.tsem_pluggable": "hypothetical"
@@ -3283,6 +3331,7 @@
             "terminal_id": "t.brent_lower",
             "gate": "WAIT",
             "conditions": 3,
+            "decidable_conditions": 3,
             "status": "draft",
             "support_status": "unknown"
           }
@@ -3292,6 +3341,7 @@
             "terminal_id": "term.brent_short",
             "gate": "WAIT",
             "conditions": 5,
+            "decidable_conditions": 5,
             "status": "draft",
             "support_status": "unknown"
           }
@@ -3342,10 +3392,12 @@
               "terminal_id": "t.brent_lower",
               "gate": "WAIT",
               "conditions": 3,
+              "decidable_conditions": 3,
               "status": "draft",
               "support_status": "unknown"
             }
           ],
+          "edges": 5,
           "branch_kinds": {
             "t.brent_lower": "hypothetical"
           },
@@ -3371,10 +3423,12 @@
               "terminal_id": "term.brent_short",
               "gate": "WAIT",
               "conditions": 5,
+              "decidable_conditions": 5,
               "status": "draft",
               "support_status": "unknown"
             }
           ],
+          "edges": 5,
           "branch_kinds": {
             "term.brent_short": "hypothetical"
           },

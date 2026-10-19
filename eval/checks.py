@@ -60,6 +60,11 @@ def _decidable(c: dict) -> list[str]:
     return missing
 
 
+def decidable_missing(c: dict) -> list[str]:
+    """公开版本：一条条件缺了哪些「能被数据判定」所需的字段（空列表 = 字段齐全）。"""
+    return _decidable(c)
+
+
 def scenario_checks(case: dict, out: Any, plans: list, no_chain: bool) -> list[dict]:
     exp = case.get("expected", {})
     checks: list[dict] = []

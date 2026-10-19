@@ -21,6 +21,7 @@
           "terminal_id": "t.tlt_long",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 1,
           "status": "draft",
           "support_status": "unknown"
         },
@@ -28,10 +29,12 @@
           "terminal_id": "t.tlt_short",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 1,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 6,
       "branch_kinds": {
         "t.tlt_long": "hypothetical",
         "t.tlt_short": "hypothetical"
@@ -99,7 +102,7 @@
       "fetches": 2,
       "dropped": 5,
       "reason": null,
-      "replayed": false,
+      "replayed": true,
       "round": 1,
       "queries": [
         {
@@ -124,7 +127,7 @@
           "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
         }
       ],
-      "message": "联网：开，拿到 19 段（搜索 5 次、抓取 2 次，资料包 web:5fd842a424cb）；补查：第 2 轮拿到 8 段（触发原因：0 条没有证据的边（model_only）、2 个缺数据的阈值），图和计划已带上全部片段重跑",
+      "message": "联网：开，拿到 19 段（回放冻结的联网资料包，资料包 web:5fd842a424cb）；补查：第 2 轮拿到 8 段（触发原因：0 条没有证据的边（model_only）、2 个缺数据的阈值），图和计划已带上全部片段重跑",
       "pack_ids": [
         "web:5fd842a424cb",
         "web:2caae0a33a5d"
@@ -139,7 +142,7 @@
           "fetches": 2,
           "dropped": 5,
           "reason": null,
-          "replayed": false,
+          "replayed": true,
           "round": 1,
           "queries": [
             {
@@ -164,7 +167,7 @@
               "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
             }
           ],
-          "message": "联网：开，拿到 19 段（搜索 5 次、抓取 2 次，资料包 web:5fd842a424cb）"
+          "message": "联网：开，拿到 19 段（回放冻结的联网资料包，资料包 web:5fd842a424cb）"
         },
         {
           "online": true,
@@ -175,7 +178,7 @@
           "fetches": 2,
           "dropped": 4,
           "reason": null,
-          "replayed": false,
+          "replayed": true,
           "round": 2,
           "queries": [
             {
@@ -194,7 +197,7 @@
               "url": "https://www.federalreserve.gov/releases/h15/current/default.htm"
             }
           ],
-          "message": "联网：开，拿到 8 段（搜索 3 次、抓取 2 次，资料包 web:2caae0a33a5d）"
+          "message": "联网：开，拿到 8 段（回放冻结的联网资料包，资料包 web:2caae0a33a5d）"
         }
       ],
       "followup": {
@@ -212,7 +215,70 @@
         ]
       }
     },
-    "model": "anthropic:claude-haiku-5-5"
+    "research": {
+      "round1": {
+        "model_only_edges": 5,
+        "model_only_branches": 0,
+        "null_threshold_conditions": 2,
+        "no_chain": false
+      },
+      "final": {
+        "model_only_edges": 3,
+        "model_only_branches": 0,
+        "null_threshold_conditions": 3,
+        "no_chain": false
+      },
+      "excerpts_by_round": [
+        19,
+        8
+      ],
+      "queries_by_round": [
+        [
+          {
+            "query": "federalreserve.gov FOMC meeting October 2026"
+          },
+          {
+            "query": "federalreserve.gov FOMC statement federal funds rate target range 2026"
+          },
+          {
+            "query": "Waller speech economic outlook October 2026 federalreserve.gov"
+          },
+          {
+            "query": "bls.gov consumer price index September 2026 news release"
+          },
+          {
+            "query": "treasury.gov daily treasury par yield curve October 2026"
+          },
+          {
+            "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+          },
+          {
+            "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+          }
+        ],
+        [
+          {
+            "query": "federalreserve.gov H.15 selected interest rates Treasury constant maturity 20-year"
+          },
+          {
+            "query": "federalreserve.gov FOMC minutes term premium long-term Treasury yields rose 2026"
+          },
+          {
+            "query": "federalreserve.gov October 2026 FOMC meeting rate cut expectations"
+          },
+          {
+            "url": "https://www.federalreserve.gov/releases/h15/"
+          },
+          {
+            "url": "https://www.federalreserve.gov/releases/h15/current/default.htm"
+          }
+        ]
+      ],
+      "followup_triggered": true,
+      "followup_reason": "0 条没有证据的边（model_only）、2 个缺数据的阈值",
+      "gaps": 2
+    },
+    "model": "anthropic:claude-haiku-5-5 (replay)"
   },
   {
     "case_id": "W1",
@@ -240,6 +306,6 @@
     "layer": "W",
     "human_review": [],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5"
+    "model": "anthropic:claude-haiku-5-5 (replay)"
   }
 ]

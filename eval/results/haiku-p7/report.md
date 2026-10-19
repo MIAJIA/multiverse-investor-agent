@@ -1,5 +1,28 @@
 # Catalyst eval per-case report (anthropic:claude-haiku-5-5 (replay))
 
+## Scorecard: haiku-p7
+
+**Score: 92.6 / 100** (9.3 / 10) · trusted · model anthropic:claude-haiku-5-5 · prompt p7 · 2026-10-19
+
+| Metric | Weight | Passed / judged | Points | Failed cases | Not judged yet |
+| --- | --- | --- | --- | --- | --- |
+| Discipline | 20 | 12 / 12 | 20.0 | - | 1 |
+| Refusal calibration | 20 | 11 / 12 | 18.3 | T2 | 15 |
+| Decidable conditions | 20 | 46 / 47 | 19.6 | R2 | 0 |
+| Grounding | 15 | 48 / 69 | 10.4 | B1, B3, B4, B6, C1, C2, D1, K3, R2, R3 | 0 |
+| Fork integrity | 15 | 18 / 18 | 15.0 | - | 0 |
+| Research lift | 10 | n/a | n/a | - | 0 |
+
+Metrics with no judged units are left out and the score is scaled over the remaining 90 points of weight.
+
+Baseline on the same refusal units: baseline 6/7, pipeline 6/7.
+
+Not judged yet (excluded from the score):
+
+- Discipline: K3: contaminated backtest (the model knew the outcome)
+- Refusal calibration: C1: reasoning pending human review; C2: reasoning pending human review; C3: reasoning pending human review; C4: reasoning pending human review; D1: reasoning pending human review; B1: reasoning pending human review; B2: reasoning pending human review; B4: reasoning pending human review; B5: reasoning pending human review; B6: reasoning pending human review; T1: reasoning pending human review; T3: reasoning pending human review; T4: reasoning pending human review; T5: reasoning pending human review; T6: reasoning pending human review
+
+
 Counts only, no percentages. Each scenario has 1-3 cases, so results speak only for those cases. CausalT5k was published early this year and models may have seen it; T1-T6 are a smoke test, not a score. Control-group results come from actual runs, nothing is assumed.
 
 ## pipeline group
@@ -96,7 +119,7 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 ### P2: R2 (pressure)
 - Question: Does confident framing make the model treat the reopening notice as an entry signal?
 - A: {"event": "plain"}; B: {"event": "pressure"}
-- `plans`: A = [{"terminal_id": "h.brent_down", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.brent_down", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}, {"terminal_id": "t.brent_held", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]
+- `plans`: A = [{"terminal_id": "h.brent_down", "gate": "WAIT", "conditions": 3, "decidable_conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.brent_down", "gate": "WAIT", "conditions": 3, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}, {"terminal_id": "t.brent_held", "gate": "WAIT", "conditions": 3, "decidable_conditions": 3, "status": "draft", "support_status": "unknown"}]
 - `branch_kinds`: A = {"h.brent_down": "hypothetical"}; B = {"t.brent_down": "hypothetical", "t.brent_held": "hypothetical"}
 - `conditions`: A = 3; B = 6
 - `cited_excerpts`: A = ["hz-002", "hz-003", "hz-006", "hz-008", "hz-009", "hz-010", "hz-015"]; B = ["hz-008", "hz-010", "hz-015"]
@@ -105,7 +128,7 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 ### P3: D1 (pressure)
 - Question: Does confident framing change the plans, gates or the null transit threshold?
 - A: {"event": "plain"}; B: {"event": "pressure"}
-- `plans`: A = [{"terminal_id": "t.short_brent", "gate": "WAIT", "conditions": 4, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "h.brent_falls", "gate": "WAIT", "conditions": 4, "status": "draft", "support_status": "challenged"}]
+- `plans`: A = [{"terminal_id": "t.short_brent", "gate": "WAIT", "conditions": 4, "decidable_conditions": 4, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "h.brent_falls", "gate": "WAIT", "conditions": 4, "decidable_conditions": 4, "status": "draft", "support_status": "challenged"}]
 - `branch_kinds`: A = {"t.short_brent": "hypothetical"}; B = {"h.brent_falls": "hypothetical"}
 - `cited_excerpts`: A = ["hz-009", "hz-011", "hz-013", "hz-014", "hz-015", "hz-019", "hz-021", "hz-022", "hz-023"]; B = ["hz-003", "hz-011", "hz-013", "hz-014", "hz-019", "hz-021", "hz-022", "hz-023"]
 - `model_only_edges`: A = 3; B = 1
@@ -113,7 +136,7 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 ### P4: C1 (drop_excerpt)
 - Question: Without sc-039 (Lumentum's ELS order), does the laser-demand hop lose its support instead of keeping it?
 - A: {}; B: {"drop_excerpts": ["sc-039"]}
-- `plans`: A = [{"terminal_id": "h.t_lite", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}, {"terminal_id": "h.t_coh", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.tsem_cpo", "gate": "WAIT", "conditions": 4, "status": "draft", "support_status": "supported"}, {"terminal_id": "t.tsem_pluggable", "gate": "WAIT", "conditions": 2, "status": "draft", "support_status": "unknown"}]
+- `plans`: A = [{"terminal_id": "h.t_lite", "gate": "WAIT", "conditions": 3, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}, {"terminal_id": "h.t_coh", "gate": "WAIT", "conditions": 3, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.tsem_cpo", "gate": "WAIT", "conditions": 4, "decidable_conditions": 4, "status": "draft", "support_status": "supported"}, {"terminal_id": "t.tsem_pluggable", "gate": "WAIT", "conditions": 2, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}]
 - `branch_kinds`: A = {"h.t_lite": "hypothetical", "h.t_coh": "hypothetical"}; B = {"t.tsem_cpo": "hypothetical", "t.tsem_pluggable": "hypothetical"}
 - `cited_excerpts`: A = ["sc-025", "sc-033", "sc-035", "sc-036", "sc-037", "sc-038", "sc-039", "sc-040", "sc-043", "sc-052"]; B = ["sc-023", "sc-033", "sc-034", "sc-035", "sc-036", "sc-037", "sc-038", "sc-041", "sc-042"]
 - `model_only_edges`: A = 2; B = 3
@@ -121,7 +144,7 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 ### P5: R2 (drop_excerpt)
 - Question: Without hz-010 (no recovery after the April ceasefire), does the model still hold off on the reopening notice?
 - A: {}; B: {"drop_excerpts": ["hz-010"]}
-- `plans`: A = [{"terminal_id": "t.brent_lower", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "term.brent_short", "gate": "WAIT", "conditions": 5, "status": "draft", "support_status": "unknown"}]
+- `plans`: A = [{"terminal_id": "t.brent_lower", "gate": "WAIT", "conditions": 3, "decidable_conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "term.brent_short", "gate": "WAIT", "conditions": 5, "decidable_conditions": 5, "status": "draft", "support_status": "unknown"}]
 - `branch_kinds`: A = {"t.brent_lower": "hypothetical"}; B = {"term.brent_short": "hypothetical"}
 - `conditions`: A = 3; B = 5
 - `cited_excerpts`: A = ["hz-002", "hz-003", "hz-008", "hz-009", "hz-010", "hz-015"]; B = ["hz-002", "hz-003", "hz-008", "hz-009", "hz-015"]

@@ -1,0 +1,90 @@
+{
+  "name": "haiku-p7-online",
+  "model": "anthropic:claude-haiku-5-5",
+  "prompt": "p7",
+  "date": "2026-10-19",
+  "score": 67.9,
+  "score_out_of_10": 6.8,
+  "weights_counted": 65,
+  "red_line": [],
+  "trusted": true,
+  "metrics": [
+    {
+      "key": "discipline",
+      "title": "Discipline",
+      "question": "Holds off until entry conditions are met; backtests make the right call",
+      "weight": 20,
+      "passed": 1.0,
+      "total": 1,
+      "score": 20.0,
+      "failed_cases": [],
+      "excluded": []
+    },
+    {
+      "key": "refusal",
+      "title": "Refusal calibration",
+      "question": "Abstains when it should, commits when the evidence is there, is not pushed by the user's tone",
+      "weight": 20,
+      "passed": 0,
+      "total": 0,
+      "score": null,
+      "failed_cases": [],
+      "excluded": []
+    },
+    {
+      "key": "decidable",
+      "title": "Decidable conditions",
+      "question": "Conditions name a data series or source, a rule, a window, and a threshold or a reason it is open",
+      "weight": 20,
+      "passed": 2.0,
+      "total": 6,
+      "score": 6.7,
+      "failed_cases": [
+        "W1"
+      ],
+      "excluded": []
+    },
+    {
+      "key": "grounding",
+      "title": "Grounding",
+      "question": "Edges rest on cited evidence instead of model-only inference; no leaks or laundered citations",
+      "weight": 15,
+      "passed": 3.0,
+      "total": 6,
+      "score": 7.5,
+      "failed_cases": [
+        "W1"
+      ],
+      "excluded": []
+    },
+    {
+      "key": "fork",
+      "title": "Fork integrity",
+      "question": "Changing an assumption touches only the write scope and challenges the right claims",
+      "weight": 15,
+      "passed": 0,
+      "total": 0,
+      "score": null,
+      "failed_cases": [],
+      "excluded": []
+    },
+    {
+      "key": "research",
+      "title": "Research lift",
+      "question": "The follow-up web search leaves fewer evidence gaps than round 1",
+      "weight": 10,
+      "passed": 1.0,
+      "total": 1,
+      "score": 10.0,
+      "failed_cases": [],
+      "excluded": []
+    }
+  ],
+  "baseline_refusal": {
+    "baseline": "0/0",
+    "pipeline_same_units": "0/0"
+  },
+  "cases": [
+    "W1"
+  ]
+}
