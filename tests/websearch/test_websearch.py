@@ -30,7 +30,7 @@ def responses():
             {"type": "web_search_tool_result", "tool_use_id": "s1", "content": [
                 {"type": "web_search_result", "url": "https://www.eia.gov/steo", "title": "EIA STEO",
                  "page_age": "October 6, 2026", "encrypted_content": "x"},
-                {"type": "web_search_result", "url": "https://www.bbc.com/news/x", "title": "BBC",
+                {"type": "web_search_result", "url": "https://www.aljazeera.com/news/x", "title": "Al Jazeera",
                  "page_age": "3 days ago", "encrypted_content": "x"},
                 {"type": "web_search_result", "url": "https://evil.example.com/x", "title": "Evil",
                  "page_age": None, "encrypted_content": "y"}]},
@@ -46,8 +46,8 @@ def responses():
             {"type": "text", "text": "白名单外。", "citations": [
                 {"type": "web_search_result_location", "url": "https://evil.example.com/x", "title": "Evil",
                  "cited_text": "Shipping fully recovered last week.", "encrypted_index": "z"}]},
-            {"type": "text", "text": "BBC 报道。", "citations": [
-                {"type": "web_search_result_location", "url": "https://www.bbc.com/news/x", "title": "BBC",
+            {"type": "text", "text": "Al Jazeera 报道。", "citations": [
+                {"type": "web_search_result_location", "url": "https://www.aljazeera.com/news/x", "title": "Al Jazeera",
                  "cited_text": "Tanker operators said insurance costs remain high...", "encrypted_index": "q"}]},
             {"type": "text", "text": "模型自己的话，没有引用：海峡已经完全恢复。"},
         ],
