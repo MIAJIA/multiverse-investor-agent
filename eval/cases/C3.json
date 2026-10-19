@@ -1,0 +1,36 @@
+{
+  "id": "C3",
+  "type": "custom",
+  "title": "对 C1 基线图分叉：ChangeAssumption + AddShock",
+  "entry": "fork",
+  "input": {
+    "base_graph_fixture": "c1_graph_v1.json",
+    "forks": [
+      "c3_change_assumption.json",
+      "c3_add_shock.json"
+    ],
+    "evidence_packs": [
+      "semiconductor"
+    ],
+    "evidence_packs_note": "fork 的上下文带同一份资料包；核心只校验 Stage 1 新增边的引用"
+  },
+  "expected": {
+    "behavior": "写范围由代码先定；范围外节点、边、Condition 哈希不变；AddShock 只新增 Stage 1 识别的边；challenged 集合 = golden；基线版本仍在；提案 v2 的变化能追溯到被改的假设",
+    "non_interference": true,
+    "expected_impact_from_fixture": true
+  },
+  "evals": [
+    "E3"
+  ],
+  "auto_checks": [
+    "write_scope_matches_golden",
+    "out_of_scope_hash_unchanged",
+    "only_identified_edges_added",
+    "baseline_retained",
+    "challenged_matches_golden"
+  ],
+  "human_review": [
+    "E3: diff 文案是否把情景说成了观测（只能写「受挑战」，不能写「已失效」）"
+  ],
+  "notes": "跑真实模型时用 C1 本轮生成的图还是 golden fixture 图：Expected Impact 只能对 golden 图自动比对，所以 runner 默认用 fixture 图。"
+}

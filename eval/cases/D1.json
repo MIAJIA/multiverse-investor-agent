@@ -1,0 +1,46 @@
+{
+  "id": "D1",
+  "type": "custom",
+  "title": "霍尔木兹海峡下周重开：跨领域不编数",
+  "entry": "discover",
+  "then": "inspect",
+  "input": {
+    "event": "霍尔木兹海峡下周重开",
+    "target": null,
+    "evidence_packs": [
+      "hormuz"
+    ],
+    "online_search": false
+  },
+  "expected": {
+    "behavior": "跑通全流程；过境量条件的阈值为 null + threshold_note，不编数字；「下周开放」被澄清成带绝对日期的判断并要求用户确认签的是哪一个；资料包反方片段（上次宣布开放后过境未恢复）被回应；进场 WAIT",
+    "gate": "WAIT",
+    "proposal_status": "draft",
+    "approval_required": true,
+    "null_threshold_series": [
+      "portwatch.hormuz.daily_transits"
+    ],
+    "user_judgment_requires_confirmation": true,
+    "golden_fixture": "d1_hormuz.json",
+    "key_excerpts": [
+      "hz-001",
+      "hz-003"
+    ],
+    "key_excerpts_note": "fixture 占位 id；真实 Hormuz 小包落地后替换"
+  },
+  "evals": [
+    "E1",
+    "E2"
+  ],
+  "auto_checks": [
+    "gate",
+    "null_threshold_has_note",
+    "no_fabricated_threshold",
+    "user_judgment_confirmation",
+    "retrieval_hit"
+  ],
+  "human_review": [
+    "E1: 反方片段是否被回应",
+    "E2: 进出场条件是否具体可判断"
+  ]
+}

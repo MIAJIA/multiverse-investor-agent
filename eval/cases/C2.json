@@ -1,0 +1,45 @@
+{
+  "id": "C2",
+  "type": "custom",
+  "title": "高于 Fable 的模型被出口限制 → 用户给的标的：Inspect",
+  "entry": "inspect",
+  "input": {
+    "event": "高于 Fable 的模型被出口限制",
+    "target": "NVDA",
+    "target_note": "Target B 由用户在 demo 时给出；这里先用 NVDA 占位，主 session 可改",
+    "evidence_packs": [
+      "semiconductor",
+      "web"
+    ],
+    "online_search": true
+  },
+  "expected": {
+    "behavior": "给出一条 A → B 的因果路径（允许分支与汇聚）或 no_chain + 理由；至少一条 document 或 event 型 Condition（出口管制正式文件、生效日期、许可证要求），anchor 与 deadline 是绝对日期或用户指定的情景起点；不编数值阈值；进场判定 WAIT",
+    "chain_or_no_chain": true,
+    "condition_kinds_required_any": [
+      "document",
+      "event"
+    ],
+    "gate": "WAIT",
+    "proposal_status": "draft",
+    "approval_required": true,
+    "key_excerpts": [],
+    "key_excerpts_note": "出口管制相关片段由证据线在 Semiconductor Pack / 在线搜索 pack 里提供后填入"
+  },
+  "evals": [
+    "Inspect",
+    "E1",
+    "E2"
+  ],
+  "auto_checks": [
+    "chain_or_no_chain",
+    "document_or_event_condition_present",
+    "gate",
+    "no_numeric_threshold_without_source"
+  ],
+  "human_review": [
+    "E1: 路径每一跳是否有资料依据",
+    "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"
+  ],
+  "notes": "本线默认把在线搜索 pack 开在这个案例上演示（INTERFACE.md 决定 D9）；成败不依赖实时搜索结果。"
+}

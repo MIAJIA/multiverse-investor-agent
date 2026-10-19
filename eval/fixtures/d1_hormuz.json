@@ -1,0 +1,30 @@
+{
+  "_note": "D1 golden：创始人原例「霍尔木兹海峡下周重开」。期望过境阈值为 null + threshold_note（跨领域不编数），进场判定 WAIT。片段是手写占位，真实 Hormuz 小包由证据线交付。",
+  "evidence_pack": {
+    "pack_id": "hormuz",
+    "synthetic": true,
+    "excerpts": [
+      {"source_id": "fixture-hz-a", "excerpt_id": "hz-001", "source": "fixture（占位，模拟通讯社报道）", "date": "2026-10-16", "stance": "supports", "text": "占位：官方表示海峡将于下周对商船重新开放。"},
+      {"source_id": "fixture-hz-b", "excerpt_id": "hz-002", "source": "fixture（占位，模拟港口过境数据说明）", "date": "2026-10-17", "stance": "supports", "text": "占位：过境数据按日更新，通常滞后数日。"},
+      {"source_id": "fixture-hz-c", "excerpt_id": "hz-003", "source": "fixture（占位，模拟通讯社报道）", "date": "2026-04-20", "stance": "contradicts", "text": "占位（反方）：上一次「宣布开放」之后，实际过境量并未恢复。"}
+    ]
+  },
+  "input": {"event": "霍尔木兹海峡下周重开", "target": null},
+  "user_judgment": {
+    "original_statement": "霍尔木兹海峡下周重开",
+    "clarified_statement": "2026-11-30 前，霍尔木兹海峡日过境量恢复到用户确认的水平",
+    "requires_user_confirmation": true,
+    "note": "「下周开放」≠「11 月 30 日前通航」：时间与事件定义都变了，必须由用户确认签的是哪一个"
+  },
+  "entry_conditions": [
+    {"id": "cond.d1.transits", "claim_id": "d1.transits_recover", "kind": "numeric", "predicate": "observed_by", "series": "portwatch.hormuz.daily_transits", "source": null, "comparator": ">=", "threshold": null, "threshold_note": "资料包没有可依据的过境恢复基准；阈值由用户或数据确认，系统不填数字", "anchor": "2026-10-18", "deadline": "2026-11-30", "observation_window": {"start": "2026-10-18", "end": "2026-11-30"}, "rule": "窗口内日过境量达到用户确认的阈值即 met；阈值未确认前为 unknown", "verification_status": "unverified", "evaluation_status": "unknown"},
+    {"id": "cond.d1.blockade_lifted", "claim_id": "d1.blockade_lifted", "kind": "document", "predicate": "observed_by", "series": null, "source": "official_government_notice", "comparator": null, "threshold": null, "threshold_note": "文件型条件，无数值阈值", "anchor": "2026-10-18", "deadline": "2026-11-30", "observation_window": {"start": "2026-10-18", "end": "2026-11-30"}, "rule": "正式文件宣布解除港口封锁即 met", "verification_status": "verifiable", "evaluation_status": "unknown"}
+  ],
+  "expected": {
+    "gate": "WAIT",
+    "null_threshold_condition_ids": ["cond.d1.transits"],
+    "proposal_status": "draft",
+    "approval_required": true,
+    "must_not_contain_numeric_threshold_for": ["portwatch.hormuz.daily_transits"]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "_note": "Reference Validator 用例。每个用例在 c1_graph_v1.json 上做一次测试侧的修改（不是 fork 补丁，不经核心 apply_patch），再交给 validate_references(graph, c1_evidence_pack)。error_mentions 是错误文本里应出现的 id。",
+  "cases": [
+    {"id": "R1", "why": "基线图引用全部合法", "edge_updates": [], "node_updates": [], "expect_error": false},
+    {"id": "R2", "why": "引用不存在的 excerpt_id", "edge_updates": [{"id": "c1.e3", "fields": {"evidence": [{"tier": "T3", "source_id": "fixture-sc-b", "excerpt_id": "sc-999", "stance": "supports", "supports": "不存在的片段"}]}}], "node_updates": [], "expect_error": true, "error_mentions": "sc-999"},
+    {"id": "R3", "why": "引用其他资料包的片段（hz-001 属于 hormuz pack，不属于当前 semiconductor pack）", "edge_updates": [{"id": "c1.e3", "fields": {"evidence": [{"tier": "T2", "source_id": "fixture-hz-a", "excerpt_id": "hz-001", "stance": "supports", "supports": "跨包引用"}]}}], "node_updates": [], "expect_error": true, "error_mentions": "hz-001"},
+    {"id": "R4", "why": "边同时标 model_only 又带 supports 证据：model_only 不能标成有证据支持", "edge_updates": [{"id": "c1.e6", "fields": {"model_only": true, "evidence": [{"tier": "T3", "source_id": "fixture-sc-a", "excerpt_id": "sc-001", "stance": "supports", "supports": "借来的引用"}]}}], "node_updates": [], "expect_error": true, "error_mentions": "c1.e6"},
+    {"id": "R5", "why": "Claim 标 supported，但指向它的边全是 model_only，也没有证据引用它", "edge_updates": [], "node_updates": [{"id": "c1.pluggable_dsp", "fields": {"evidence_status": "supported"}}], "expect_error": true, "error_mentions": "c1.pluggable_dsp"}
+  ]
+}
