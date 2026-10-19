@@ -2,9 +2,9 @@
 
 runs/<case>/<run_id>/
   snapshots/<version>.json    图快照（写入后不可覆盖）
-  proposals/<version>.json    该图版本派生的提案
+  proposals/<version>.json    该图版本派生的提案：每个 terminal 一份的列表（方案 B 之前的旧文件是单个 dict）
   scenarios/<version>.json    分叉的情景与 assessment
-  observations/<version>.json 该版本推理时进入上下文的全部片段
+  observations/<version>.json 该版本推理时进入上下文的全部片段，synthetic = 资料里有合成占位资料包（旧文件缺失按 false）
   oplog.jsonl                 每次操作一行：谁做的、输入版本、输出版本、prompt 版本
   trace.jsonl                 每次模型尝试一行：原始输出、校验错误（失败的输出只进这里）
   cassette.jsonl              Reasoner 录音，用于确定性回放
@@ -16,7 +16,9 @@ import datetime as _dt
 import json
 from pathlib import Path
 
+from catalyst.branches import derive_branches
 from catalyst.diff import content_hash, diff as graph_diff
+from catalyst.schema import parse_proposals
 
 
 class SnapshotExists(Exception):
@@ -51,33 +53,45 @@ class RunStore:
     def put_snapshot(self, graph: dict) -> Path:
         return self._put("snapshots", graph["version"], graph)
 
-    def put_proposal(self, version: str, proposal: dict) -> Path:
-        return self._put("proposals", version, proposal)
+    def put_proposals(self, version: str, proposals: list[dict]) -> Path:
+        return self._put("proposals", version, list(proposals))
 
     def put_scenario(self, scenario: dict) -> Path:
         return self._put("scenarios", scenario["version"], scenario)
 
-    def put_observations(self, version: str, excerpts: list[dict]) -> Path:
-        return self._put("observations", version, {"version": version, "excerpts": excerpts})
+    def put_observations(self, version: str, excerpts: list[dict], *, synthetic: bool = False) -> Path:
+        return self._put("observations", version, {"version": version, "excerpts": excerpts, "synthetic": synthetic})
 
     def get_snapshot(self, version: str) -> dict:
         return json.loads((self.root / "snapshots" / f"{version}.json").read_text())
 
-    def get_proposal(self, version: str) -> dict | None:
+    def get_proposals(self, version: str) -> list[dict]:
+        """该版本的全部计划（规范形式）。旧文件是单个 dict 时包成只有一项的列表，terminal_id 按标的从图里找。"""
         path = self.root / "proposals" / f"{version}.json"
-        return json.loads(path.read_text()) if path.exists() else None
+        if not path.exists():
+            return []
+        return [p.dump() for p in parse_proposals(json.loads(path.read_text()), self.get_snapshot(version))]
+
+    def get_observations(self, version: str) -> dict:
+        """{version, excerpts, synthetic}；没有文件时 excerpts 为空。"""
+        path = self.root / "observations" / f"{version}.json"
+        data = json.loads(path.read_text()) if path.exists() else {"version": version, "excerpts": []}
+        return {**data, "synthetic": bool(data.get("synthetic", False))}
 
     def bundle(self, version: str) -> dict:
-        """一个版本的完整视图：GET /versions/{v} 与 promote 的 fixture 用同一个形状。"""
+        """一个版本的完整视图（schema.VersionBundle）：GET /versions/{v} 与 promote 的 fixture 用同一个形状。"""
         graph = self.get_snapshot(version)
         sc = self.root / "scenarios" / f"{version}.json"
-        obs = self.root / "observations" / f"{version}.json"
+        obs = self.get_observations(version)
+        scenario = json.loads(sc.read_text()) if sc.exists() else None
         parent = graph.get("parent_version")
         has_parent = parent and (self.root / "snapshots" / f"{parent}.json").exists()
-        return {"graph": graph, "proposal": self.get_proposal(version),
-                "scenario": json.loads(sc.read_text()) if sc.exists() else None,
+        synthetic = {x["excerpt_id"] for x in obs["excerpts"]} if obs["synthetic"] else set()
+        return {"graph": graph, "proposals": self.get_proposals(version),
+                "branches": [b.dump() for b in derive_branches(graph, scenario, synthetic_excerpt_ids=synthetic)],
+                "scenario": scenario,
                 "diff": graph_diff(self.get_snapshot(parent), graph) if has_parent else None,
-                "excerpts": json.loads(obs.read_text())["excerpts"] if obs.exists() else []}
+                "excerpts": obs["excerpts"]}
 
     def latest_version(self) -> str | None:
         ops = self.oplog()

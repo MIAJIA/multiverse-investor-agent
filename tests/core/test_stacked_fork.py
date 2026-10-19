@@ -39,9 +39,9 @@ def ev():
 
 def _two_layers(ev, store=None):
     v1 = ep.inspect("x", reasoner=Scripted([_base()]), evidence=ev, config=CFG, store=store)
-    v2 = ep.fork(v1["graph"], LAYER1, reasoner=Scripted([P1]), evidence=ev, config=CFG, proposal=v1["proposal"],
+    v2 = ep.fork(v1["graph"], LAYER1, reasoner=Scripted([P1]), evidence=ev, config=CFG, proposals=v1["proposals"],
                  store=store)
-    v3 = ep.fork(v2["graph"], LAYER2, reasoner=Scripted([P2]), evidence=ev, config=CFG, proposal=v2["proposal"],
+    v3 = ep.fork(v2["graph"], LAYER2, reasoner=Scripted([P2]), evidence=ev, config=CFG, proposals=v2["proposals"],
                  scenario=None if store else v2["scenario"], store=store)
     return v1, v2, v3
 
@@ -62,25 +62,28 @@ def test_second_layer_keeps_first_layer_challenges(ev):
     assert s["assessment"]["h.open"] == "unaffected"
     assert s["assessment_reason"]["h.transits"] == "h.transits:challenged"  # 理由跟着继承
 
-    ref = v3["proposal"]["scenario_ref"]
+    ref = v3["proposals"][0]["scenario_ref"]
     assert ref["base_version"] == "d1-v2" and ref["root_version"] == "d1-v1"
     assert ref["challenged_claim_ids"] == ["h.brent", "h.transits"]
     # 进场条件挂在 h.transits 上：它是第一层挑战的，第二层没碰，提案仍然是 challenged
-    assert v3["proposal"]["support_status"] == "challenged"
+    assert v3["proposals"][0]["support_status"] == "challenged"
 
 
 def test_without_stacking_the_entry_claim_would_look_unchallenged(ev):
-    """对照：直接在 v1 上做第二层操作，h.transits 不受挑战，support_status 不是 challenged。"""
+    """对照：直接在 v1 上做第二层操作，h.transits 不受挑战，scenario_ref 里只有 h.brent。
+    （方案 B 4.4 之后 support_status 也看分支独有的 claim，terminal h.brent 受挑战就已经是 challenged，
+    所以这里改成比 challenged_claim_ids。）"""
     v1 = ep.inspect("x", reasoner=Scripted([_base()]), evidence=ev, config=CFG)
-    alone = ep.fork(v1["graph"], LAYER2, reasoner=Scripted([P2]), evidence=ev, config=CFG, proposal=v1["proposal"])
-    assert _challenged(alone) == ["h.brent"] and alone["proposal"]["support_status"] == "unknown"
+    alone = ep.fork(v1["graph"], LAYER2, reasoner=Scripted([P2]), evidence=ev, config=CFG, proposals=v1["proposals"])
+    assert _challenged(alone) == ["h.brent"]
+    assert alone["proposals"][0]["scenario_ref"]["challenged_claim_ids"] == ["h.brent"]
     assert alone["scenario"]["root_version"] == "d1-v1" and len(alone["scenario"]["ops"]) == 1
 
 
 def test_parent_scenario_is_read_from_the_store(ev, tmp_path):
     _, _, v3 = _two_layers(ev, store=RunStore(tmp_path))
     assert _challenged(v3) == ["h.brent", "h.transits"]
-    assert v3["proposal"]["support_status"] == "challenged"
+    assert v3["proposals"][0]["support_status"] == "challenged"
 
 
 def test_stacked_prompt_shows_the_inherited_assessment(ev):
@@ -110,13 +113,13 @@ def test_scenario_of_another_version_is_rejected(ev):
 def test_sign_carries_the_scenario_so_forking_after_sign_still_stacks(ev, tmp_path):
     store = RunStore(tmp_path)
     v1 = ep.inspect("x", reasoner=Scripted([_base()]), evidence=ev, config=CFG, store=store)
-    v2 = ep.fork(v1["graph"], LAYER1, reasoner=Scripted([P1]), evidence=ev, config=CFG, proposal=v1["proposal"],
+    v2 = ep.fork(v1["graph"], LAYER1, reasoner=Scripted([P1]), evidence=ev, config=CFG, proposals=v1["proposals"],
                  store=store)
-    signed = ep.sign(v2["graph"], v2["proposal"], clarified_statement="12 月前过境恢复", criteria=None,
+    signed = ep.sign(v2["graph"], v2["proposals"], terminal_id="h.brent", clarified_statement="12 月前过境恢复", criteria=None,
                      deadline="2026-11-30", confirmed_claim_ids=["h.transits"], config=CFG, store=store)
     assert signed["ok"] and store.bundle(signed["version"])["scenario"]["base_version"] == "d1-v2"
     v4 = ep.fork(signed["graph"], LAYER2, reasoner=Scripted([P2]), evidence=ev, config=CFG,
-                 proposal=signed["proposal"], store=store)
+                 proposals=signed["proposals"], store=store)
     assert _challenged(v4) == ["h.brent", "h.transits"] and v4["scenario"]["root_version"] == "d1-v1"
     assert [o["kind"] for o in v4["scenario"]["ops"]] == ["change_assumption", "change_assumption"]
 
@@ -147,5 +150,5 @@ def test_api_fork_on_a_fork_stacks(tmp_path, monkeypatch):
     assert v3["ok"], v3["errors"]
     b3 = api._store(run).bundle(v3["version"])
     assert b3["scenario"]["root_version"] == "r-v1" and len(b3["scenario"]["ops"]) == 2
-    assert b3["proposal"]["scenario_ref"]["challenged_claim_ids"] == ["h.brent", "h.transits"]
-    assert b3["proposal"]["support_status"] == "challenged"
+    assert b3["proposals"][0]["scenario_ref"]["challenged_claim_ids"] == ["h.brent", "h.transits"]
+    assert b3["proposals"][0]["support_status"] == "challenged"

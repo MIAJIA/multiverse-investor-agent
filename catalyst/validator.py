@@ -197,5 +197,55 @@ def unanswered_contradictions(graph: Graph | dict, evidence_pack: EvidencePack |
             for x in pack.excerpts if x.stance == "contradicts" and x.excerpt_id not in cited]
 
 
+# ---- 计划（每个 terminal 一份）-------------------------------------------
+
+def validate_plans(graph: Graph | dict, drafts: list) -> list[Issue]:
+    """计划草稿（ProposalDraft，或带同名字段的 TradeProposal）对图的引用：
+    - terminal 集合必须恰好等于图上全部 terminal：每个一份，不多不少（阻断）；
+    - direction.instrument 必须属于该 terminal 的 instruments（阻断）；
+    - 引用的条件和 claim 必须存在，至少一条进场条件（阻断）；
+    - 引用的条件所在的 claim 应该是该 terminal 的祖先或它自己，否则非阻断提示（条件可以被多份计划共用）。"""
+    from catalyst.branches import ancestors  # branches 只依赖 schema；放在函数里免得 import 顺序绕圈
+
+    g = parse_graph(graph)
+    out: list[Issue] = []
+    nodes = {n.id: n for n in g.nodes}
+    conds = {c.id: c for c in g.conditions}
+    terminals = [n.id for n in g.nodes if n.role == "terminal"]
+    seen: list[str] = [d.terminal_id for d in drafts]
+    for t in sorted({t for t in seen if seen.count(t) > 1}):
+        out.append(Issue(t, f"terminal {t} 有 {seen.count(t)} 份计划：每个 terminal 恰好一份"))
+    for t in sorted(set(seen) - set(terminals)):
+        what = "不是 terminal 节点" if t in nodes else "不在图里"
+        out.append(Issue(t, f"计划的 terminal_id {t} {what}；计划只能挂在这些 terminal 上：{terminals}"))
+    for t in terminals:
+        if t not in seen:
+            out.append(Issue(t, f"terminal {t} 没有计划：图上每个 terminal 都要有一份计划，方向和标的都要写"))
+    for d in drafts:
+        t = d.terminal_id
+        if hasattr(d, "entry_condition_ids"):
+            entry, exit_ = list(d.entry_condition_ids), list(d.exit_condition_ids)
+        else:
+            entry, exit_ = [c.id for c in d.entry_conditions], [c.id for c in d.exit_conditions]
+        out += [Issue(i, f"计划 {t} 引用了不存在的条件 {i}") for i in entry + exit_ if i not in conds]
+        if not entry:
+            out.append(Issue(t, f"计划 {t} 至少要有一条进场条件（空集不会自动通过，但也说明不了还需要什么）"))
+        kd = d.key_dependency
+        if kd and kd.condition_id and kd.condition_id not in conds:
+            out.append(Issue(kd.condition_id, f"计划 {t} 的 key_dependency 引用了不存在的条件"))
+        if kd and kd.claim_id and kd.claim_id not in nodes:
+            out.append(Issue(kd.claim_id, f"计划 {t} 的 key_dependency 引用了不存在的 claim"))
+        if t in nodes and nodes[t].role == "terminal":
+            if d.direction.instrument not in nodes[t].instruments:
+                out.append(Issue(t, f"计划 {t} 的标的 {d.direction.instrument} 不是这个 terminal 的 instrument："
+                                    f"{nodes[t].instruments}"))
+            upstream = ancestors(g, t) | {t}
+            for i in dict.fromkeys(entry + exit_):
+                if i in conds and conds[i].claim_id not in upstream:
+                    out.append(Issue(i, f"计划 {t} 引用的条件 {i} 挂在 {conds[i].claim_id} 上，它不是 {t} 的上游",
+                                     blocking=False))
+    return out
+
+
 def blocking(issues: list[Issue]) -> list[Issue]:
     return [i for i in issues if i.blocking]

@@ -100,7 +100,7 @@ def test_plan_stage_sees_the_validated_graph_and_graph_errors_skip_it(ev):
 def test_no_chain_stops_after_graph_stage(ev):
     r = Scripted([{"no_chain": True, "no_chain_reason": "资料包与事件无关", "nodes": [], "edges": []}])
     res = ep.inspect("x", reasoner=r, evidence=ev, config=CFG)
-    assert res["ok"] and res["no_chain"] and res["proposal"] is None and r.stages == ["inspect"]
+    assert res["ok"] and res["no_chain"] and res["proposals"] == [] and r.stages == ["inspect"]
 
 
 # ---- 2. 条件的 anchor -------------------------------------------------------

@@ -73,7 +73,7 @@ def test_inspect_accepts_a_neutral_citation(ev):
 
 
 def test_prompt_explains_neutral():
-    assert prompts.PROMPT_VERSION == "p4"
+    assert prompts.PROMPT_VERSION == "p5"
     assert "neutral（背景信息" in prompts.BASE and "neutral 片段不是反方，不需要 rebuttal" in prompts.BASE
     assert "neutral 证据不算支持" in prompts.BASE
 
@@ -90,16 +90,16 @@ class NoModel:
 def test_proposal_always_carries_disabled_critic_without_model_calls(ev):
     r = Scripted([_good()])
     res = ep.inspect("x", reasoner=r, evidence=ev, config=CFG)
-    assert res["proposal"]["critic"] == {"status": "disabled", "reason": "未启用：不在本期范围", "items": []}
+    assert res["proposals"][0]["critic"] == {"status": "disabled", "reason": "未启用：不在本期范围", "items": []}
     assert r.stages == ["inspect", "inspect.plan"]  # 没有多出 critic 那一步
 
-    report = ep.critic(res["graph"], res["proposal"], reasoner=NoModel(), config=CFG)
+    report = ep.critic(res["graph"], res["proposals"][0], reasoner=NoModel(), config=CFG)
     assert report.status == "disabled" and report.items == []
 
 
 def test_old_proposal_without_critic_still_parses_and_forks(ev):
     base = ep.inspect("x", reasoner=Scripted([_good()]), evidence=ev, config=CFG)
-    old = copy.deepcopy(base["proposal"])
+    old = copy.deepcopy(base["proposals"][0])
     old.pop("critic")
     assert TradeProposal.model_validate(old).critic.status == "disabled"
 
@@ -107,5 +107,5 @@ def test_old_proposal_without_critic_still_parses_and_forks(ev):
              "assessment": [{"claim_id": "h.transits", "status": "unresolved", "reason": "r"},
                             {"claim_id": "h.brent", "status": "challenged", "reason": "r"}]}
     op = {"kind": "change_assumption", "target": "h.transits", "value": "推迟"}
-    res = ep.fork(base["graph"], op, reasoner=Scripted([patch]), evidence=ev, config=CFG, proposal=old)
-    assert res["ok"] and res["proposal"]["critic"]["status"] == "disabled"
+    res = ep.fork(base["graph"], op, reasoner=Scripted([patch]), evidence=ev, config=CFG, proposals=[old])
+    assert res["ok"] and res["proposals"][0]["critic"]["status"] == "disabled"

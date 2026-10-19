@@ -6,10 +6,11 @@
 接口（所有写操作都返回 {ok, errors, version}，前端再 GET 这个版本）：
   POST /api/runs                          {event, target?, packs?, online?}
                                           → 返回体另有 web: {online, status, excerpts, message…}：联网开 / 关、拿到几段或失败原因
-  GET  /api/runs/{run_id}/versions/{v}    → {graph, proposal, scenario, diff, excerpts}
+  GET  /api/runs/{run_id}/versions/{v}    → {graph, proposals, branches, scenario, diff, excerpts}（schema.VersionBundle）
   POST /api/runs/{run_id}/fork            {base_version, op}
-  POST /api/runs/{run_id}/sign            {version, clarified_statement, criteria, deadline,
-                                           confirmed_claim_ids, condition_overrides}
+  POST /api/runs/{run_id}/sign            {version, terminal_id, clarified_statement?, criteria?, deadline?,
+                                           confirmed_claim_ids?, condition_overrides?}
+                                          sign = 批准 terminal_id 那一份计划；可选字段不给就沿用计划里的值
 """
 from __future__ import annotations
 
@@ -90,21 +91,28 @@ def fork_run(run_id: str, body: dict) -> dict:
     bundle = store.bundle(base_v)
     meta = json.loads((store.root / "case.json").read_text())
     cfg = ep.Config(packs=meta.get("packs", []), today=meta["today"], run_prefix="r")
-    pack = {"pack_id": f"observed:{base_v}", "excerpts": bundle["excerpts"]} if bundle["excerpts"] else None
+    synthetic = store.get_observations(base_v)["synthetic"]
+    pack = {"pack_id": f"observed:{base_v}", "synthetic": synthetic, "excerpts": bundle["excerpts"]} \
+        if bundle["excerpts"] else None
     res = ep.fork(bundle["graph"], body["op"], reasoner=_reasoner(store), evidence=None, config=cfg, pack=pack,
-                  proposal=bundle["proposal"], scenario=bundle["scenario"], store=store)
+                  proposals=bundle["proposals"], scenario=bundle["scenario"], store=store)
     return {**res, "version": res["graph"]["version"] if res.get("graph") else None}
 
 
 def sign_run(run_id: str, body: dict) -> dict:
+    """批准一份计划。请求体缺字段时回 {ok: false, errors}，不抛 KeyError（KeyError 会被当成 404）。"""
     store = _store(run_id)
+    missing = [k for k in ("version", "terminal_id") if not body.get(k)]
+    if missing:
+        return {"ok": False, "errors": [f"[{k}] 必填" for k in missing], "version": None}
     bundle = store.bundle(body["version"])
-    if not bundle["proposal"]:
-        return {"ok": False, "errors": [f"[{body['version']}] 这个版本没有提案，不能签字"], "version": None}
+    if not bundle["proposals"]:
+        return {"ok": False, "errors": [f"[{body['version']}] 这个版本没有计划，不能批准"], "version": None}
     meta = json.loads((store.root / "case.json").read_text())
-    return ep.sign(bundle["graph"], bundle["proposal"], clarified_statement=body["clarified_statement"],
+    return ep.sign(bundle["graph"], bundle["proposals"], terminal_id=body["terminal_id"],
+                   clarified_statement=body.get("clarified_statement"),
                    criteria=body.get("criteria"), deadline=body.get("deadline"),
-                   confirmed_claim_ids=body.get("confirmed_claim_ids", []),
+                   confirmed_claim_ids=body.get("confirmed_claim_ids") or [],
                    condition_overrides=body.get("condition_overrides") or {},
                    config=ep.Config(today=meta["today"]), store=store)
 
