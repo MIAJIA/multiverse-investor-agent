@@ -46,7 +46,7 @@
 - **提案状态拆成两个字段**：`status`（生命周期）和 `gate`（进场判定：WAIT / BLOCKED / READY_FOR_REVIEW），两者都只由代码写。gate 为 READY_FOR_REVIEW 时 status 是 needs_review，否则是 draft。
 - **只由代码写的提案字段**：`support_status` 由关键依赖与进场条件所在 claim 的证据状态和情景 assessment 推导；`user_judgment` 里的 confirmed、confirmed_claim_ids、probability 只能由用户写（模型输出 schema 里根本没有这几个字段）。模型改写过原话时，`requires_user_confirmation` 一定是 true。
 - **条件判定随版本重算**：inspect 和 fork 产出的每个新版本，都按观测和日期重新判定全部条件。`conditions.evaluate` 永不抛异常，日期不合法时给 unknown。
-- **引用立场不能翻转**：引用片段时的 stance 必须与资料包里该片段的 stance 一致。
+- **引用立场不能翻转**：引用片段时的 stance 必须与资料包里该片段的 stance 一致。立场有三种：supports、contradicts、neutral。neutral 是背景信息（如「数据每周才更新」），可以引用，但不让 claim 变成 supported，也不需要 rebuttal，`unanswered_contradictions` 也不管它。三种立场两两都不能互相翻转。
 - **证据只挂在边上**：没有入边的节点不能标 supported（inspect 阶段的检查）。节点级证据留到后续。
 - **fork 的引用校验**：补丁不能改证据引用，所以 fork 只校验 Stage 1 新增的边；基线图已有的引用在生成时已经校验过。Stage 1 的新边必须从新节点连到声明的 impacts。
 - **情景不推进证据**：补丁不能改 `evidence_status`，节点只允许改 statement / time_bucket / instruments。
@@ -59,6 +59,21 @@
 - **Discover 的弃权边界**：只有找不到任何合理机制时才弃权（只能靠「情绪」「政策不确定性」这类泛化渠道硬连，也算没有机制）。下面三种情况都不弃权：没有支持片段（标 hypothesis）；有未驳回的反方片段（这是 Inspect 阶段的校验）；需要用户确认日期或定义。
 - **模型默认值**：`claude-opus-5-5`，effort 设为 high，开启 server-side fallback。可用 `CATALYST_MODEL` / `CATALYST_EFFORT` 覆盖。
 - **重试**：每次重试是一个新的单轮请求，内容是原题、上次输出和错误清单，不改写历史消息。
+
+## Critic（本期不启用）
+
+**要解决什么。** Inspect 的校验器只裁决结构：引用存不存在、立场有没有翻转、阈值有没有说明。它不裁决推理本身。有两类错误结构校验抓不到：
+- 关键依赖选错了。key_dependency 指向一个容易验证、但对结论影响不大的条件，真正会推翻论点的前提反而没被列出来。
+- 谄媚或过度怀疑。用户语气很确定时，模型顺着用户把链补齐了；或者反过来，只因为资料里有反方材料，就把一条站得住的链判弱了。
+
+Critic 是另一个 prompt，只检查用户选中的那一条链。它的输出是「对哪个 claim 提了什么质疑」，即 `CriticReport.items = [{claim_id, challenge}]`。它只提质疑，不改图，也不改 gate。
+
+**为什么本期不做。** 设计文档把 Critic 列为可选项，并且是时间不足时第二个放弃的（排序精细度 → Critic → 市场参照 → UI 动画）。本期优先保证状态一致性、证据标注、拒绝机制和端到端流程。另外，Critic 本身也要有 eval 才能判断它是在帮忙还是在添乱，而目前 eval 里还没有针对 Critic 的案例。
+
+**现在的占位。** 接口先定下来：
+- `TradeProposal.critic` 一律是 `{status: "disabled", reason: "未启用：不在本期范围", items: []}`，老快照没有这个字段时也按这个值解析。
+- `entrypoints.critic()` 直接返回 disabled，不调模型。`derive_proposal` 每次生成提案都会调用它，前端可以按这个字段显示「未启用」。
+- 将来实现时必须走 `run_stage`（解析 → schema → 领域校验 → 带错误重写），用独立的 prompt；claim_id 只能是选中链上的节点。模型失败时给 `status: "failed"`，不阻断提案。
 
 ## 已知限制（POC）
 

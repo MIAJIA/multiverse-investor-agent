@@ -20,7 +20,7 @@ from catalyst.fork import (
 from catalyst.gate import evaluate_entry
 from catalyst.harness import run_stage
 from catalyst.schema import (
-    Claim, Condition, DiscoverOutput, EvidencePack, FieldUpdate, ForkOutput, Graph, InspectGraphOutput,
+    CRITIC_DISABLED_REASON, Claim, Condition, CriticReport, DiscoverOutput, EvidencePack, FieldUpdate, ForkOutput, Graph, InspectGraphOutput,
     InspectPlanOutput, JudgmentOutput,
     Mechanism, ModelUserJudgment, Op, Patch, ProposalDraft, ProposalMeta, ScenarioRef, TradeProposal, UserJudgment,
     parse_graph, parse_pack,
@@ -86,6 +86,17 @@ def _support_status(g: Graph, claim_ids: set[str], challenged: set[str]) -> str:
     return "supported" if relevant and all(s == "supported" for s in relevant) else "unknown"
 
 
+def critic(graph, proposal, *, reasoner=None, config=None) -> CriticReport:
+    """Critic 占位：本期不启用，直接返回 disabled，不调模型。
+
+    将来的形状：只检查用户选中的那一条链（提案的进场条件与 key_dependency 所在的路径），回答「关键依赖选得
+    对不对、有没有被谄媚或过度怀疑」，产出 items=[{claim_id, challenge}]，即对哪个 claim 提了什么质疑。
+    将来的实现必须走 harness.run_stage（解析 → schema 校验 → 领域校验 → 带错误重写），用另一个独立的 prompt，
+    不复用 Inspect 的 prompt；claim_id 必须是这条链上的节点，校验由代码做。模型失败时给 status=failed，不阻断提案。
+    """
+    return CriticReport(status="disabled", reason=CRITIC_DISABLED_REASON, items=[])
+
+
 def derive_proposal(draft: ProposalDraft, g: Graph, *, model: str, user_judgment: UserJudgment | None = None,
                     scenario_ref: ScenarioRef | None = None) -> TradeProposal:
     by_id = {c.id: c for c in g.conditions}
@@ -95,7 +106,7 @@ def derive_proposal(draft: ProposalDraft, g: Graph, *, model: str, user_judgment
     claims = {c.claim_id for c in entry} | ({kd.claim_id} if kd and kd.claim_id else set()) \
         | ({by_id[kd.condition_id].claim_id} if kd and kd.condition_id in by_id else set())
     challenged = set(scenario_ref.challenged_claim_ids) if scenario_ref else set()
-    return TradeProposal(
+    p = TradeProposal(
         status="needs_review" if gate == "READY_FOR_REVIEW" else "draft", gate=gate, direction=draft.direction,
         entry_conditions=entry, exit_conditions=[by_id[i] for i in draft.exit_condition_ids],
         exit_logic=draft.exit_logic, key_dependency=kd,
@@ -103,6 +114,7 @@ def derive_proposal(draft: ProposalDraft, g: Graph, *, model: str, user_judgment
         scenario_ref=scenario_ref, support_status=_support_status(g, claims, challenged), graph_version=g.version,
         meta=ProposalMeta(proposal_version=f"{g.version}.p", prompt_version=prompts.PROMPT_VERSION, model=model),
     )
+    return p.model_copy(update={"critic": critic(g, p)})
 
 
 def _draft_of(p: TradeProposal) -> ProposalDraft:

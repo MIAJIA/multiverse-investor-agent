@@ -153,8 +153,9 @@ def validate_graph(graph: Graph | dict) -> list[Issue]:
 # ---- 引用（Reference Validator）----------------------------------------
 
 def validate_references(graph: Graph | dict, evidence_pack: EvidencePack | dict | None) -> list[Issue]:
-    """引用必须存在于当前资料包；model_only 不能冒充有证据；supported 必须有证据撑；
-    未被驳回（无 rebuttal）的 contradicts 片段不能挂在 supported 的 claim 上。"""
+    """引用必须存在于当前资料包，立场与片段一致（supports / contradicts / neutral 互相不能翻转）；
+    model_only 不能冒充有证据；supported 必须有 supports 证据撑（neutral 是背景，不算）；
+    未被驳回（无 rebuttal）的 contradicts 片段不能挂在 supported 的 claim 上（neutral 不需要 rebuttal）。"""
     g = parse_graph(graph)
     pack = parse_pack(evidence_pack) if evidence_pack is not None else None
     known = {x.excerpt_id: x for x in pack.excerpts} if pack else {}
