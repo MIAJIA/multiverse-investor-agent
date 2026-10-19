@@ -7,7 +7,9 @@
 """
 import pytest
 
-from catalyst.branches import ancestors, derive_branches, divergence_nodes, hypothetical_inputs, own_node_ids
+from catalyst.branches import (
+    ancestors, derive_branches, derive_views, divergence_nodes, hypothetical_inputs, own_node_ids,
+)
 from catalyst.entrypoints import plan_affected
 from catalyst.fork import Scope, compute_write_scope
 from catalyst.schema import Graph, ProposalDraft, Scenario, TradeProposal, parse_proposals
@@ -128,9 +130,9 @@ class TestValidatePlans:
 
     def test_missing_duplicate_and_unknown_terminal(self):
         assert any(r == "ty" for r, _ in self._refs(PX))
-        assert any(r == "tx" and "2 份" in m for r, m in self._refs(PX, PX, PY))
-        assert any(r == "nope" and "不在图里" in m for r, m in self._refs(PX, PY, {**PY, "terminal_id": "nope"}))
-        assert any(r == "x" and "不是 terminal" in m for r, m in self._refs(PX, PY, {**PY, "terminal_id": "x"}))
+        assert any(r == "tx" and "has 2 plans" in m for r, m in self._refs(PX, PX, PY))
+        assert any(r == "nope" and "is not in the graph" in m for r, m in self._refs(PX, PY, {**PY, "terminal_id": "nope"}))
+        assert any(r == "x" and "is not a terminal" in m for r, m in self._refs(PX, PY, {**PY, "terminal_id": "x"}))
 
     def test_instrument_must_belong_to_its_terminal(self):
         assert any(r == "tx" and "CL" in m for r, m in self._refs({**PX, "direction": {**PX["direction"], "instrument": "CL"}}, PY))
@@ -140,7 +142,7 @@ class TestValidatePlans:
                "key_dependency": {"condition_id": "c.gone", "claim_id": "n.gone", "why": "w"}}
         refs = {r for r, _ in self._refs(bad, PY)}
         assert {"c.nope", "c.gone", "n.gone"} <= refs
-        assert any(r == "tx" and "进场条件" in m for r, m in self._refs({**PX, "entry_condition_ids": []}, PY))
+        assert any(r == "tx" and "entry condition" in m for r, m in self._refs({**PX, "entry_condition_ids": []}, PY))
 
     def test_condition_off_branch_is_only_a_warning(self):
         off = {**PX, "entry_condition_ids": ["c.x", "c.y"]}
@@ -155,7 +157,7 @@ class TestValidatePlans:
             "exit_logic": "ANY", "user_judgment": {"original_statement": "o", "clarified_statement": "o"},
             "support_status": "unknown", "graph_version": "u-v1",
             "meta": {"proposal_version": "u-v1.tx", "prompt_version": "p5", "model": "m"}})
-        assert any(i.ref == "tx" and "进场条件" in i.message for i in validate_plans(G, [tp]))
+        assert any(i.ref == "tx" and "entry condition" in i.message for i in validate_plans(G, [tp]))
 
 
 # ---- 3. plan_affected ---------------------------------------------------------------
@@ -209,3 +211,49 @@ def test_parse_proposals_shapes():
     assert parse_proposals([tp.dump()], G) == [tp]
     legacy = {k: v for k, v in tp.dump().items() if k not in ("terminal_id", "approval_reset", "rival_changed")}
     assert parse_proposals(legacy, G)[0].terminal_id == "tx"  # 按 BZ 找到唯一的 terminal
+
+
+# ---- 1b. node_kinds / edge_kinds (derive_views) -----------------------------------------
+
+class TestKindTables:
+    def test_own_parts_take_their_branch_kind_and_edges_follow_targets(self):
+        v = derive_views(G)
+        assert v["node_kinds"] == {"e": "evidenced", "a": "model_only", "x": "evidenced", "y": "model_only",
+                                   "tx": "evidenced", "ty": "model_only"}
+        assert v["edge_kinds"] == {"e1": "evidenced", "e2": "evidenced", "e3": "model_only", "e4": "model_only",
+                                   "e5": "model_only"}
+
+    def test_hypothetical_inputs_and_hypothetical_branches(self):
+        v = derive_views(_graph(_base_nodes("shock"), _base_edges()))
+        assert set(v["node_kinds"].values()) == {"hypothetical"}  # the shock itself + every own part downstream
+        changed = Scenario(version="u-v2", base_version="u-v1", assessment={},
+                           ops=[{"kind": "change_assumption", "target": "a"}])
+        v = derive_views(G, changed)
+        assert v["node_kinds"]["a"] == "hypothetical" and v["node_kinds"]["x"] == "evidenced"
+        assert v["edge_kinds"]["e5"] == "hypothetical"  # target y is in the hypothetical branch
+
+    def test_shared_node_takes_the_weakest_trunk(self):
+        # r feeds t1/t2 through m (one supported and one model_only in-edge on m), and feeds t3 directly.
+        # t3's trunk is just {r} with no edges -> evidenced; t1/t2's trunk {r, q, m} -> model_only.
+        g = _graph([_node("r", "event", "r"), _node("q", "assumption", "q"), _node("m", "intermediate", "m"),
+                    _node("t1", "terminal", "t1", instruments=["A"]), _node("t2", "terminal", "t2", instruments=["B"]),
+                    _node("t3", "terminal", "t3", instruments=["C"])],
+                   [_edge("rm", "r", "m", "r-1", "s"), _edge("qm", "q", "m"), _edge("m1", "m", "t1"),
+                    _edge("m2", "m", "t2"), _edge("r3", "r", "t3")])
+        v = derive_views(g)
+        assert [b.trunk for b in v["branches"]] == ["model_only", "model_only", "evidenced"]
+        assert v["node_kinds"]["r"] == "model_only"  # weakest of model_only, model_only, evidenced
+        assert v["edge_kinds"]["rm"] == v["node_kinds"]["m"] == "model_only"
+
+    def test_derive_branches_is_the_same_derivation(self):
+        assert derive_branches(G) == derive_views(G)["branches"]
+
+
+# ---- 4. one reading of the user's words per version (validate_plans) ---------------------
+
+def test_plans_must_share_original_and_clarified_statement():
+    other = {**PY, "user_judgment": {**PY["user_judgment"], "clarified_statement": "something else"}}
+    issues = [i for i in validate_plans(G, _drafts(PX, other)) if i.ref == "proposals"]
+    assert len(issues) == 1 and issues[0].blocking and "clarified_statement" in issues[0].message
+    other = {**PY, "user_judgment": {**PY["user_judgment"], "original_statement": "different words"}}
+    assert any("original_statement" in i.message for i in validate_plans(G, _drafts(PX, other)))

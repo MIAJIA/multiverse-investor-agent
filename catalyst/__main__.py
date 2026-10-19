@@ -203,7 +203,7 @@ def cmd_promote(a) -> None:
                            "notes": case["notes"], "cassette": "cassette.jsonl"},
                "versions": {}}
     for snap in sorted((store.root / "snapshots").glob("*.json")):
-        # 与 GET /versions/{v} 同形（schema.VersionBundle）：proposals 列表 + branches.py 推导的 branches
+        # same shape as GET /versions/{v} (schema.VersionBundle): proposals list + branches / kind tables
         fixture["versions"][snap.stem] = store.bundle(snap.stem)
     fixture["latest"] = version
     out = Path(a.fixtures_dir) / f"{a.name}.json"

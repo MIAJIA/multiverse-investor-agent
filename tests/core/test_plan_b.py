@@ -51,7 +51,7 @@ def _cond(id_, claim):
             "rule": "窗口内看到即 met", "verification_status": "verifiable"}
 
 
-def _plan(t, inst, side, entry, exit_, kd=None, statement="判断"):
+def _plan(t, inst, side, entry, exit_, kd=None, statement="11 月底前过境恢复"):
     return {"terminal_id": t, "direction": {"instrument": inst, "side": side, "horizon_days": 30, "note": None},
             "entry_condition_ids": entry, "exit_condition_ids": exit_, "exit_logic": "ANY",
             "key_dependency": kd or {"condition_id": None, "claim_id": None, "why": "依据不足"},
@@ -75,7 +75,7 @@ def _out(event_role="event", plans=None):
             _plan("t.up", "CL", "long", ["cond.stall"], ["cond.recover"],  # 镜像：对手分支的进场条件是这里的离场条件
                   {"condition_id": "cond.stall", "claim_id": None, "why": "停滞是否持续"}),
             _plan("t.down", "BZ", "short", ["cond.recover"], [],
-                  {"condition_id": None, "claim_id": "a.hedge", "why": "船东是否观望"}, statement="11 月底前过境恢复")],
+                  {"condition_id": None, "claim_id": "a.hedge", "why": "船东是否观望"})],
     }
 
 
@@ -130,7 +130,7 @@ def test_missing_plan_for_a_terminal_is_fed_back_and_rewritten():
     r = Scripted([one, {k: _out()[k] for k in ("conditions", "proposals")}])
     res = ep.inspect("海峡下周重开", reasoner=r, evidence=_ev(), config=CFG)
     assert res["ok"] and r.stages == ["inspect", "inspect.plan", "inspect.plan"]
-    assert "[t.up]" in r.prompts[2] and "没有计划" in r.prompts[2]
+    assert "[t.up]" in r.prompts[2] and "has no plan" in r.prompts[2]
 
 
 def test_validate_plans_rules():
@@ -138,9 +138,9 @@ def test_validate_plans_rules():
     good = [ep.ProposalDraft.model_validate(p) for p in _out()["proposals"]]
     assert not [i for i in validate_plans(g, good) if i.blocking]
     dup = good + [good[0]]
-    assert any(i.ref == "t.up" and "2 份计划" in i.message for i in validate_plans(g, dup))
+    assert any(i.ref == "t.up" and "has 2 plans" in i.message for i in validate_plans(g, dup))
     stray = [*good, ep.ProposalDraft.model_validate(_plan("b.stall", "CL", "long", ["cond.stall"], []))]
-    assert any(i.ref == "b.stall" and i.blocking and "不是 terminal" in i.message for i in validate_plans(g, stray))
+    assert any(i.ref == "b.stall" and i.blocking and "is not a terminal" in i.message for i in validate_plans(g, stray))
     wrong_inst = [good[0], ep.ProposalDraft.model_validate(_plan("t.down", "CL", "short", ["cond.recover"], []))]
     assert any(i.ref == "t.down" and i.blocking and "CL" in i.message for i in validate_plans(g, wrong_inst))
     # 条件挂在别的分支上：非阻断提示（cond.stall 不在 t.down 上游）
@@ -310,7 +310,7 @@ def test_rewritten_statement_requires_confirmation_per_plan():
     """D-B7：模型改写过原话，这份计划就一定要用户确认，即使模型写了 false。"""
     p = _by_t(_inspect())
     assert p["t.down"]["user_judgment"]["requires_user_confirmation"] is True  # 「海峡下周重开」→「11 月底前过境恢复」
-    assert p["t.up"]["user_judgment"]["requires_user_confirmation"] is True  # 「判断」也是改写
+    assert p["t.up"]["user_judgment"]["requires_user_confirmation"] is True  # model wrote false; code still requires it
 
 
 # ---- API：sign 的请求体、版本包形状 ----------------------------------------------
@@ -328,7 +328,7 @@ def api_run(tmp_path, monkeypatch):
 
 def test_api_sign_requires_terminal_id_without_key_error(api_run):
     res = api.sign_run(api_run, {"version": "r-v1"})
-    assert res == {"ok": False, "errors": ["[terminal_id] 必填"], "version": None}
+    assert not res["ok"] and res["errors"][0].startswith("[terminal_id] required") and res["version"] is None
     ok = api.sign_run(api_run, {"version": "r-v1", "terminal_id": "t.up"})  # 没有 clarified_statement 也不报 KeyError
     assert ok["ok"], ok["errors"]
     b = api._store(api_run).bundle(ok["version"])
@@ -380,7 +380,7 @@ def test_legacy_proposal_with_ambiguous_instrument_is_an_error():
         if n["id"] == "t.up":
             n["instruments"] = ["CL", "BZ"]
     legacy = {k: v for k, v in _by_t(_inspect())["t.down"].items() if k != "terminal_id"}
-    with pytest.raises(LegacyProposalError, match="2 个 terminal"):
+    with pytest.raises(LegacyProposalError, match="matches 2 terminals"):
         parse_proposals(legacy, g)
 
 
@@ -394,3 +394,53 @@ def test_promote_writes_proposals_and_branches(tmp_path):
     v = fx["versions"]["b-v1"]
     VersionBundle.model_validate(v)
     assert [b["kind"] for b in v["branches"]] == ["evidenced", "model_only"] and len(v["proposals"]) == 2
+
+
+# ---- Additions after the frontend design review --------------------------------------------
+
+def test_plan_step_rewrites_when_plans_disagree_on_the_statement():
+    """One reading of the user's words for the whole graph: differing statements are fed back, code never picks."""
+    bad = _out()
+    bad["proposals"][0]["user_judgment"]["clarified_statement"] = "一个不同的理解"
+    r = Scripted([bad, {k: _out()[k] for k in ("conditions", "proposals")}])
+    res = ep.inspect("海峡下周重开", reasoner=r, evidence=_ev(), config=CFG)
+    assert res["ok"] and r.stages == ["inspect", "inspect.plan", "inspect.plan"]
+    assert "[proposals]" in r.prompts[2] and "clarified_statement" in r.prompts[2]
+    assert len({p["user_judgment"]["clarified_statement"] for p in res["proposals"]}) == 1
+
+
+def test_null_terminal_revokes_every_approval():
+    v2 = _approve(_inspect(), "t.down", ["e.ann"])
+    v3 = ep.sign(v2["graph"], v2["proposals"], terminal_id=None, config=CFG)
+    assert v3["ok"], v3["errors"]
+    assert v3["version"] != v2["version"] and v3["graph"]["op"]["value"]["terminal_id"] is None
+    assert not any(p["user_judgment"]["confirmed"] for p in v3["proposals"])
+    assert _by_t(v3)["t.down"]["user_judgment"]["confirmed_claim_ids"] == ["e.ann"]  # ticked premises stay
+    bad = ep.sign(v2["graph"], v2["proposals"], terminal_id=None, note="why", confirmed_claim_ids=["e.ann"], config=CFG)
+    assert not bad["ok"] and {e.split("]")[0] for e in bad["errors"]} == {"[note", "[confirmed_claim_ids"}
+
+
+def test_note_is_user_only_and_survives_unaffected_forks():
+    assert "note" not in ep.ModelUserJudgment.model_fields  # the model cannot write it
+    plan_schema = ep.InspectPlanOutput.model_json_schema()["$defs"]["ModelUserJudgment"]
+    assert "note" not in plan_schema["properties"]
+    v2 = ep.sign(_inspect()["graph"], _inspect()["proposals"], terminal_id="t.down", note="half size", config=CFG)
+    assert _by_t(v2)["t.down"]["user_judgment"]["note"] == "half size"
+    assert _by_t(v2)["t.up"]["user_judgment"]["note"] is None
+    v3 = _approve(v2, "t.down")  # note=None keeps the existing note
+    assert _by_t(v3)["t.down"]["user_judgment"]["note"] == "half size"
+    v4 = _fork(v3, "t.up", ["t.up"])
+    assert _by_t(v4)["t.down"]["user_judgment"]["note"] == "half size"
+
+
+def test_api_sign_null_terminal_and_note(api_run):
+    approved = api.sign_run(api_run, {"version": "r-v1", "terminal_id": "t.down", "note": "watch tankers"})
+    assert approved["ok"], approved["errors"]
+    revoked = api.sign_run(api_run, {"version": approved["version"], "terminal_id": None})
+    assert revoked["ok"], revoked["errors"]
+    b = api._store(api_run).bundle(revoked["version"])
+    VersionBundle.model_validate(b)
+    assert not any(p["user_judgment"]["confirmed"] for p in b["proposals"])
+    assert b["proposals"][0]["user_judgment"]["note"] == "watch tankers"
+    assert set(b["node_kinds"]) == {n["id"] for n in b["graph"]["nodes"]}
+    assert set(b["edge_kinds"]) == {e["id"] for e in b["graph"]["edges"]}

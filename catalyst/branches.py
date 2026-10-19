@@ -1,22 +1,34 @@
-"""分支推导（docs/changes/2026-10-18-branches-and-plans.md 4.2）：纯函数，代码裁决，不由模型标注。
+"""Branch derivation (docs/changes/2026-10-18-branches-and-plans.md, section 4.2). Pure functions, decided by code,
+never labelled by the model.
 
-一个 terminal 一条分支。store.bundle、promote、web/scripts/make_fixtures.py 都调用 derive_branches，不另写一份。
+One branch per terminal. store.bundle, promote, entrypoints and web/scripts/make_fixtures.py all call derive_views;
+nobody keeps a second copy of these rules.
 
-- 独有部分：own_node_ids = (ancestors(t) ∪ {t}) − ⋃ ancestors(其他 terminal)；own_edge_ids 是终点落在
-  own_node_ids 里的边（这样不会漏掉旁路的根节点）。
-- 分叉点：几条出边各自能到达的 terminal 集合不一样的节点。一条分支的 divergence_node_ids 是它祖先里的分叉点。
-- kind，按优先级：
-  1. hypothetical：ancestors(t) ∪ {t}（含共用上游）里有 role=shock 的节点、情景冲击新增的节点，或用户改过的假设
-     （本版本情景 ops 的 target；情景是叠加的，ops 已含祖先版本的）。用户改过的假设会让所有依赖它的分支都变成 hypothetical。
-  2. evidenced：独有部分至少有一条边，每条边都不是 model_only 且带 supports 证据；独有节点里没有 contradicted；
-     独有边没有引用合成占位资料包的片段。
-  3. model_only：其余。合成资料包撑起来的分支也落在这里，并标 synthetic_evidence。
-- trunk：共用上游 = ancestors(t) − own_node_ids，以及终点落在其中的边，按 evidenced 的同一规则算；
-  共用上游没有边时（例如只共用起点事件）算 evidenced。
+- Own part: own_node_ids = (ancestors(t) ∪ {t}) − ⋃ ancestors(other terminals); own_edge_ids are the edges whose
+  target is in own_node_ids (so a side root feeding only this branch is not lost).
+- Divergence node: a node whose out-edges reach different sets of terminals. A branch lists the divergence nodes
+  among its ancestors.
+- kind, by priority:
+  1. hypothetical: ancestors(t) ∪ {t} (shared upstream included) contains a role=shock node, a node added by a
+     scenario shock, or an assumption the user changed (the target of an op in this version's scenario; scenarios
+     stack, so its ops already include the ancestors' ops). A changed assumption makes every branch that depends on
+     it hypothetical.
+  2. evidenced: the own part has at least one edge; every own edge is not model_only and cites supports evidence;
+     no own node is contradicted; no own edge cites an excerpt from a synthetic placeholder pack.
+  3. model_only: everything else. Branches backed by a synthetic pack land here and carry synthetic_evidence.
+- trunk: the shared upstream = ancestors(t) − own_node_ids plus the edges ending in it, scored with the evidenced
+  rule above. A shared upstream with no edges (e.g. only the starting event) counts as evidenced.
+- node_kinds / edge_kinds (lookup tables for the UI):
+  - hypothetical inputs (shock nodes, scenario-added nodes, changed assumptions) → hypothetical;
+  - a node in some branch's own part → that branch's kind;
+  - a node on the shared trunk → the weakest trunk among the branches that contain it (model_only < evidenced);
+  - an edge takes the kind of its target node.
 """
 from __future__ import annotations
 
 from catalyst.schema import Branch, Graph, Mechanism, Scenario, parse_graph
+
+_STRENGTH = {"model_only": 0, "evidenced": 1}
 
 
 def _adjacency(g: Graph) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
@@ -29,7 +41,7 @@ def _adjacency(g: Graph) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
 
 
 def _walk(adj: dict[str, list[str]], start: str) -> set[str]:
-    """从 start 沿 adj 能走到的全部节点（不含 start 自己，除非有环——图已校验无环）。"""
+    """Every node reachable from start along adj, start itself excluded (the graph is validated acyclic)."""
     seen: set[str] = set()
     todo = list(adj.get(start, []))
     while todo:
@@ -70,7 +82,8 @@ def divergence_nodes(graph: Graph | dict) -> set[str]:
 
 
 def hypothetical_inputs(graph: Graph | dict, scenario: Scenario | dict | None) -> set[str]:
-    """会让依赖它的分支变成 hypothetical 的节点：role=shock、情景冲击新增的节点、用户改过的假设。"""
+    """Nodes that make every branch depending on them hypothetical: role=shock, nodes added by a scenario shock,
+    and assumptions the user changed."""
     g = parse_graph(graph)
     out = {n.id for n in g.nodes if n.role == "shock"}
     if scenario is not None:
@@ -89,10 +102,13 @@ def _evidenced(edges: list[Mechanism], node_status: dict[str, str], node_ids: se
             and not any(ev.excerpt_id in synthetic_ids for e in edges for ev in e.evidence))
 
 
-def derive_branches(graph: Graph | dict, scenario: Scenario | dict | None = None, *,
-                    synthetic_excerpt_ids: set[str] | frozenset[str] = frozenset()) -> list[Branch]:
-    """synthetic_excerpt_ids：本版本资料里属于合成占位资料包的片段 id（store 由 observations 的 synthetic 字段给出）。
-    返回按图里 terminal 的顺序排列。"""
+def derive_views(graph: Graph | dict, scenario: Scenario | dict | None = None, *,
+                 synthetic_excerpt_ids: set[str] | frozenset[str] = frozenset()) -> dict:
+    """Everything the version bundle needs from this module, computed in one pass:
+    {"branches": [Branch], "node_kinds": {node_id: kind}, "edge_kinds": {edge_id: kind}}.
+
+    synthetic_excerpt_ids: the excerpts of this version that come from a synthetic placeholder pack (the store
+    derives them from the `synthetic` flag of the observations file). Branches follow the graph's terminal order."""
     g = parse_graph(graph)
     _, in_adj = _adjacency(g)
     terms = terminals(g)
@@ -102,7 +118,9 @@ def derive_branches(graph: Graph | dict, scenario: Scenario | dict | None = None
     status = {n.id: n.evidence_status for n in g.nodes}
     synthetic = set(synthetic_excerpt_ids)
     order = {n.id: i for i, n in enumerate(g.nodes)}
-    out = []
+    branches: list[Branch] = []
+    own_kind: dict[str, str] = {}
+    trunk_kinds: dict[str, list[str]] = {}
     for t in terms:
         others = set().union(*(anc[o] for o in terms if o != t))
         own = (anc[t] | {t}) - others
@@ -117,8 +135,36 @@ def derive_branches(graph: Graph | dict, scenario: Scenario | dict | None = None
         else:
             kind = "model_only"
         trunk = "evidenced" if _evidenced(shared_edges, status, shared, synthetic) else "model_only"
-        out.append(Branch(
+        branches.append(Branch(
             terminal_id=t, divergence_node_ids=sorted(div & anc[t], key=order.get),
             own_node_ids=sorted(own, key=order.get), own_edge_ids=[e.id for e in own_edges],
             kind=kind, trunk=trunk, synthetic_evidence=uses_synthetic))
-    return out
+        own_kind.update({n: kind for n in own})
+        for n in shared:
+            trunk_kinds.setdefault(n, []).append(trunk)
+
+    node_kinds: dict[str, str] = {}
+    for n in g.nodes:
+        if n.id in hypo:
+            node_kinds[n.id] = "hypothetical"
+        elif n.id in own_kind:
+            node_kinds[n.id] = own_kind[n.id]
+        elif n.id in trunk_kinds:
+            node_kinds[n.id] = min(trunk_kinds[n.id], key=_STRENGTH.get)
+        else:  # not upstream of any terminal; the validator rejects such graphs, this is only a safe default
+            node_kinds[n.id] = "model_only"
+    edge_kinds = {e.id: node_kinds.get(e.to, "model_only") for e in g.edges}
+    return {"branches": branches, "node_kinds": node_kinds, "edge_kinds": edge_kinds}
+
+
+def derive_branches(graph: Graph | dict, scenario: Scenario | dict | None = None, *,
+                    synthetic_excerpt_ids: set[str] | frozenset[str] = frozenset()) -> list[Branch]:
+    """Only the branches of derive_views (in graph terminal order)."""
+    return derive_views(graph, scenario, synthetic_excerpt_ids=synthetic_excerpt_ids)["branches"]
+
+
+def dump_views(graph: Graph | dict, scenario: Scenario | dict | None = None, *,
+               synthetic_excerpt_ids: set[str] | frozenset[str] = frozenset()) -> dict:
+    """derive_views in canonical JSON form, ready to merge into a version bundle or an entrypoint result."""
+    v = derive_views(graph, scenario, synthetic_excerpt_ids=synthetic_excerpt_ids)
+    return {"branches": [b.dump() for b in v["branches"]], "node_kinds": v["node_kinds"], "edge_kinds": v["edge_kinds"]}

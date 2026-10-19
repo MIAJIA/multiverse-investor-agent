@@ -197,16 +197,18 @@ def unanswered_contradictions(graph: Graph | dict, evidence_pack: EvidencePack |
             for x in pack.excerpts if x.stance == "contradicts" and x.excerpt_id not in cited]
 
 
-# ---- 计划（每个 terminal 一份）-------------------------------------------
+# ---- Plans (exactly one per terminal) ------------------------------------------------
 
 def validate_plans(graph: Graph | dict, drafts: list) -> list[Issue]:
-    """计划草稿（ProposalDraft，或带同名字段的 TradeProposal）对图的引用：
-    - terminal 集合必须恰好等于图上全部 terminal：每个一份，不多不少（阻断）；
-    - direction.instrument 必须属于该 terminal 的 instruments（阻断）；
-    - 引用的条件和 claim 必须存在，至少一条进场条件（阻断）；
-    - 进场条件所在的 claim 应该是该 terminal 的祖先或它自己，否则非阻断提示（条件可以被多份计划共用）。
-      离场条件不提示：提示词鼓励互为镜像的条件，对手分支上的信号本来就该当离场条件用（4.6）。"""
-    from catalyst.branches import ancestors  # branches 只依赖 schema；放在函数里免得 import 顺序绕圈
+    """Plan drafts (ProposalDraft, or TradeProposal with the same fields) against the graph. Blocking:
+    - the set of plan terminals equals the set of terminals in the graph: one plan each, no more, no less;
+    - direction.instrument belongs to that terminal's instruments;
+    - referenced conditions and claims exist; at least one entry condition;
+    - all plans share one reading of the user's words: user_judgment.original_statement and clarified_statement are
+      identical across plans (the UI confirms it once for the whole graph; code never picks one of several).
+    Non-blocking: an entry condition on a claim that is not upstream of the plan's terminal (conditions may be
+    shared). Exit conditions get no hint: the prompt encourages mirror exit conditions that sit on a rival branch."""
+    from catalyst.branches import ancestors  # branches only imports schema; local import keeps module order simple
 
     g = parse_graph(graph)
     out: list[Issue] = []
@@ -215,36 +217,44 @@ def validate_plans(graph: Graph | dict, drafts: list) -> list[Issue]:
     terminals = [n.id for n in g.nodes if n.role == "terminal"]
     seen: list[str] = [d.terminal_id for d in drafts]
     for t in sorted({t for t in seen if seen.count(t) > 1}):
-        out.append(Issue(t, f"terminal {t} 有 {seen.count(t)} 份计划：每个 terminal 恰好一份"))
+        out.append(Issue(t, f"terminal {t} has {seen.count(t)} plans; write exactly one plan per terminal"))
     for t in sorted(set(seen) - set(terminals)):
-        what = "不是 terminal 节点" if t in nodes else "不在图里"
-        out.append(Issue(t, f"计划的 terminal_id {t} {what}；计划只能挂在这些 terminal 上：{terminals}"))
+        what = "is not a terminal node" if t in nodes else "is not in the graph"
+        out.append(Issue(t, f"plan terminal_id {t} {what}; plans may only target these terminals: {terminals}"))
     for t in terminals:
         if t not in seen:
-            out.append(Issue(t, f"terminal {t} 没有计划：图上每个 terminal 都要有一份计划，方向和标的都要写"))
+            out.append(Issue(t, f"terminal {t} has no plan; every terminal in the graph needs one plan with a "
+                                "direction and an instrument"))
+    for field in ("original_statement", "clarified_statement"):
+        values = {getattr(d.user_judgment, field) for d in drafts}
+        if len(values) > 1:
+            out.append(Issue("proposals", f"user_judgment.{field} differs across plans ({sorted(values)}); "
+                                          "it is one reading of the user's words for the whole graph, so write the "
+                                          "same text in every plan"))
     for d in drafts:
         t = d.terminal_id
         if hasattr(d, "entry_condition_ids"):
             entry, exit_ = list(d.entry_condition_ids), list(d.exit_condition_ids)
         else:
             entry, exit_ = [c.id for c in d.entry_conditions], [c.id for c in d.exit_conditions]
-        out += [Issue(i, f"计划 {t} 引用了不存在的条件 {i}") for i in entry + exit_ if i not in conds]
+        out += [Issue(i, f"plan {t} references unknown condition {i}") for i in entry + exit_ if i not in conds]
         if not entry:
-            out.append(Issue(t, f"计划 {t} 至少要有一条进场条件（空集不会自动通过，但也说明不了还需要什么）"))
+            out.append(Issue(t, f"plan {t} needs at least one entry condition (an empty set never passes, and it "
+                                "says nothing about what is still needed)"))
         kd = d.key_dependency
         if kd and kd.condition_id and kd.condition_id not in conds:
-            out.append(Issue(kd.condition_id, f"计划 {t} 的 key_dependency 引用了不存在的条件"))
+            out.append(Issue(kd.condition_id, f"key_dependency of plan {t} references an unknown condition"))
         if kd and kd.claim_id and kd.claim_id not in nodes:
-            out.append(Issue(kd.claim_id, f"计划 {t} 的 key_dependency 引用了不存在的 claim"))
+            out.append(Issue(kd.claim_id, f"key_dependency of plan {t} references an unknown claim"))
         if t in nodes and nodes[t].role == "terminal":
             if d.direction.instrument not in nodes[t].instruments:
-                out.append(Issue(t, f"计划 {t} 的标的 {d.direction.instrument} 不是这个 terminal 的 instrument："
-                                    f"{nodes[t].instruments}"))
+                out.append(Issue(t, f"plan {t} trades {d.direction.instrument}, which is not an instrument of this "
+                                    f"terminal: {nodes[t].instruments}"))
             upstream = ancestors(g, t) | {t}
             for i in dict.fromkeys(entry):
                 if i in conds and conds[i].claim_id not in upstream:
-                    out.append(Issue(i, f"计划 {t} 的进场条件 {i} 挂在 {conds[i].claim_id} 上，它不是 {t} 的上游",
-                                     blocking=False))
+                    out.append(Issue(i, f"entry condition {i} of plan {t} sits on {conds[i].claim_id}, which is not "
+                                        f"upstream of {t}", blocking=False))
     return out
 
 

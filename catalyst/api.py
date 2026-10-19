@@ -8,9 +8,10 @@
                                           → 返回体另有 web: {online, status, excerpts, message…}：联网开 / 关、拿到几段或失败原因
   GET  /api/runs/{run_id}/versions/{v}    → {graph, proposals, branches, scenario, diff, excerpts}（schema.VersionBundle）
   POST /api/runs/{run_id}/fork            {base_version, op}
-  POST /api/runs/{run_id}/sign            {version, terminal_id, clarified_statement?, criteria?, deadline?,
+  POST /api/runs/{run_id}/sign            {version, terminal_id, clarified_statement?, criteria?, deadline?, note?,
                                            confirmed_claim_ids?, condition_overrides?}
-                                          sign = 批准 terminal_id 那一份计划；可选字段不给就沿用计划里的值
+                                          sign approves the plan on terminal_id; terminal_id=null approves none
+                                          (no trade). Optional fields keep the plan's values when omitted.
 """
 from __future__ import annotations
 
@@ -100,18 +101,20 @@ def fork_run(run_id: str, body: dict) -> dict:
 
 
 def sign_run(run_id: str, body: dict) -> dict:
-    """批准一份计划。请求体缺字段时回 {ok: false, errors}，不抛 KeyError（KeyError 会被当成 404）。"""
+    """Approve one plan, or none with terminal_id=null. A missing key yields {ok: false, errors} instead of a
+    KeyError (which the handler would turn into a 404). terminal_id must be present; null is a valid value."""
     store = _store(run_id)
-    missing = [k for k in ("version", "terminal_id") if not body.get(k)]
+    missing = [k for k in ("version", "terminal_id") if k not in body or (k == "version" and not body[k])]
     if missing:
-        return {"ok": False, "errors": [f"[{k}] 必填" for k in missing], "version": None}
+        return {"ok": False, "errors": [f"[{k}] required (terminal_id may be null to approve no plan)"
+                                        for k in missing], "version": None}
     bundle = store.bundle(body["version"])
     if not bundle["proposals"]:
         return {"ok": False, "errors": [f"[{body['version']}] 这个版本没有计划，不能批准"], "version": None}
     meta = json.loads((store.root / "case.json").read_text())
     return ep.sign(bundle["graph"], bundle["proposals"], terminal_id=body["terminal_id"],
                    clarified_statement=body.get("clarified_statement"),
-                   criteria=body.get("criteria"), deadline=body.get("deadline"),
+                   criteria=body.get("criteria"), deadline=body.get("deadline"), note=body.get("note"),
                    confirmed_claim_ids=body.get("confirmed_claim_ids") or [],
                    condition_overrides=body.get("condition_overrides") or {},
                    config=ep.Config(today=meta["today"]), store=store)

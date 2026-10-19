@@ -78,7 +78,8 @@ def test_http_roundtrip(scripted):
                                      data=json.dumps({"event": "x", "target": "BZ", "today": "2026-10-18"}).encode())
         created = json.loads(urllib.request.urlopen(req).read())
         got = json.loads(urllib.request.urlopen(f"{base}/api/runs/{created['run_id']}/versions/r-v1").read())
-        assert got["graph"]["version"] == "r-v1" and set(got) == {"graph", "proposals", "branches", "scenario", "diff", "excerpts"}
+        assert got["graph"]["version"] == "r-v1" and set(got) == {"graph", "proposals", "branches", "node_kinds", "edge_kinds",
+                                                                   "scenario", "diff", "excerpts"}
         with pytest.raises(urllib.error.HTTPError) as e:
             urllib.request.urlopen(f"{base}/api/runs/nope/versions/r-v1")
         assert e.value.code == 404

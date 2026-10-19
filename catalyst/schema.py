@@ -198,6 +198,7 @@ class UserJudgment(Strict):
     requires_user_confirmation: bool = True
     confirmed: bool = False
     confirmed_claim_ids: list[str] = Field(default_factory=list)
+    note: Optional[str] = None  # the user's note at approval; user-written only, absent from ModelUserJudgment
 
 
 class MarketReference(Strict):
@@ -214,7 +215,7 @@ class ScenarioRef(Strict):
 
 
 class ProposalMeta(Strict):
-    proposal_version: str = Field(description="f\"{graph_version}.{terminal_id}\"：同一版本里的多份计划不重名")
+    proposal_version: str = Field(description="f\"{graph_version}.{terminal_id}\", unique among the plans of a version")
     prompt_version: str
     model: str
     approval_required: Literal[True] = True
@@ -240,15 +241,18 @@ def _critic_disabled() -> CriticReport:
 
 
 class TradeProposal(Strict):
-    """一个 terminal 的计划：派生分析 + 用户判断 + 图版本号。每个版本每个 terminal 恰好一份（版本包的 proposals）。
-    gate / status / support_status / meta / approval_reset / rival_changed 只由代码写。
+    """The plan for one terminal: derived analysis + user judgment + graph version. Exactly one per terminal per
+    version (the bundle's proposals). gate / status / support_status / meta / approval_reset / rival_changed are
+    written by code only.
 
-    user_judgment.confirmed 就是「已批准」：同一版本最多一份为 true（批准一份会撤销同版本其他计划的批准）。
-    approval_reset 与 rival_changed 描述「这个版本相对父版本发生了什么」，每次派生都重新计算，不继承父版本的值；
-    只有 fork 会写 true，inspect / sign 一律 false：
-    - approval_reset：这份计划在父版本里已批准，这次分叉的写范围碰到了它（docs/changes 4.3），批准已撤销，需要重新批准。
-    - rival_changed：这份计划没受这次分叉影响，但同版本另一份计划受了影响。它只说明「另一份计划受了影响」，
-      不判断两者是不是竞争关系：并列受益的 terminal（如 C1）也会触发。"""
+    user_judgment.confirmed means "approved": at most one plan per version is true (approving one revokes the others).
+    approval_reset and rival_changed describe what happened in this version relative to its parent. They are
+    recomputed on every derivation and never inherited; only fork writes true, inspect / sign always write false.
+    - approval_reset: the plan was approved in the parent version and this fork's write scope touched it
+      (docs/changes 4.3); the approval is revoked and needs to be given again.
+    - rival_changed: this plan was not affected by the fork, but another plan in the same version was. It only says
+      "another plan was affected" and does not judge whether the two compete: terminals that benefit side by side
+      (e.g. C1) trigger it too."""
     terminal_id: str
     status: ProposalStatus = "draft"
     gate: Gate
@@ -268,17 +272,20 @@ class TradeProposal(Strict):
     rival_changed: bool = False
 
 
-# ---- 分支（catalyst/branches.py 由代码推导，不由模型标注）----------------------
+# ---- Branches (derived by code in catalyst/branches.py, never labelled by the model) ----
 
 class Branch(Strict):
-    """一个 terminal 一条分支。kind 按优先级：hypothetical > evidenced > model_only（规则见 branches.py）。"""
+    """One branch per terminal. kind by priority: hypothetical > evidenced > model_only (rules in branches.py)."""
     terminal_id: str
-    divergence_node_ids: list[str] = Field(description="这条分支祖先里的分叉点：几条出边能到达的 terminal 集合不一样的节点")
-    own_node_ids: list[str] = Field(description="(ancestors(t) ∪ {t}) − 其他 terminal 的全部祖先")
-    own_edge_ids: list[str] = Field(description="终点落在 own_node_ids 里的边")
+    divergence_node_ids: list[str] = Field(description="divergence nodes among this branch's ancestors: nodes whose "
+                                                       "out-edges reach different sets of terminals")
+    own_node_ids: list[str] = Field(description="(ancestors(t) ∪ {t}) − all ancestors of the other terminals")
+    own_edge_ids: list[str] = Field(description="edges whose target is in own_node_ids")
     kind: BranchKind
-    trunk: TrunkKind = Field(description="共用上游（祖先里不属于独有部分的节点及其入边）的强度")
-    synthetic_evidence: bool = Field(description="独有边引用了合成占位资料包的片段：kind 一律不是 evidenced，界面标「资料为占位」")
+    trunk: TrunkKind = Field(description="strength of the shared upstream (ancestors outside the own part, and the "
+                                         "edges into them)")
+    synthetic_evidence: bool = Field(description="an own edge cites an excerpt from a synthetic placeholder pack: "
+                                                 "kind is never evidenced, the UI says the material is a placeholder")
 
 
 # ---- 证据 ---------------------------------------------------------------
@@ -330,7 +337,8 @@ class ModelUserJudgment(Strict):
 
 
 class ProposalDraft(Strict):
-    """一个 terminal 的计划草稿。每个 terminal 恰好一份；direction.instrument 必须是该 terminal 的 instrument。"""
+    """The plan draft for one terminal. Exactly one per terminal; direction.instrument must be one of that
+    terminal's instruments."""
     terminal_id: str
     direction: Direction
     entry_condition_ids: list[str]
@@ -365,7 +373,7 @@ class InspectGraphOutput(Strict):
 
 
 class InspectPlanOutput(Strict):
-    """Inspect 第 2 步：在已通过校验的图上挂判定条件，每个 terminal 给一份计划草稿。"""
+    """Inspect step 2: attach decision conditions to the validated graph and give one plan draft per terminal."""
     conditions: list[ModelCondition]
     proposals: list[ProposalDraft]
 
@@ -416,14 +424,17 @@ class ForkOutput(Strict):
     next_checks: list[str]
 
 
-# ---- 版本包（GET /api/runs/{id}/versions/{v}、promote 的 fixture 同形）------
+# ---- Version bundle (GET /api/runs/{id}/versions/{v}; promote writes the same shape) ----
 
 class VersionBundle(Strict):
-    """一个版本的完整视图。proposals 按图里 terminal 的顺序排，每个 terminal 一份；没有提案时是 []。
-    branches 由 catalyst/branches.py 从图和情景推导（没有 terminal 时是 []）。"""
+    """The full view of one version. proposals follow the graph's terminal order, one per terminal ([] when none).
+    branches, node_kinds and edge_kinds are derived together from the graph and the scenario by
+    catalyst/branches.py (derive_views); the UI only looks them up: every node and every edge has a kind."""
     graph: Graph
     proposals: list[TradeProposal]
     branches: list[Branch]
+    node_kinds: dict[str, BranchKind]
+    edge_kinds: dict[str, BranchKind]
     scenario: Optional[Scenario]
     diff: Optional[dict[str, Any]]
     excerpts: list[Excerpt]
@@ -452,9 +463,9 @@ class LegacyProposalError(ValueError):
 
 
 def parse_proposals(data: list | dict | None, graph: dict | Graph) -> list[TradeProposal]:
-    """读一个版本的提案。新格式是列表；方案 B 之前的旧文件是单个 dict，包成只有一项的列表。
-    旧提案没有 terminal_id 时，按 direction.instrument 在图里找唯一含它的 terminal 填上；
-    找不到、或同一个 instrument 出现在多个 terminal 上，直接报错，不猜。"""
+    """Read the plans of a version. The current format is a list; files written before plan B hold a single dict,
+    which becomes a one-item list. A legacy proposal without terminal_id gets the one terminal whose instruments
+    contain direction.instrument; if there is none, or more than one, this raises instead of guessing."""
     if data is None:
         return []
     if isinstance(data, list):
@@ -466,6 +477,7 @@ def parse_proposals(data: list | dict | None, graph: dict | Graph) -> list[Trade
         hits = [n.id for n in g.nodes if n.role == "terminal" and inst in n.instruments]
         if len(hits) != 1:
             raise LegacyProposalError(
-                f"[{inst}] 旧提案没有 terminal_id，按标的在图 {g.version} 里找到 {len(hits)} 个 terminal {hits}，无法确定")
+                f"[{inst}] legacy proposal has no terminal_id and instrument {inst} matches {len(hits)} terminals "
+                f"{hits} in graph {g.version}; cannot decide")
         d["terminal_id"] = hits[0]
     return [TradeProposal.model_validate(d)]

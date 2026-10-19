@@ -95,46 +95,62 @@ Critic 是另一个 prompt，只检查用户选中的那一条链。它的输出
 
 - 所有写操作都返回 `{ok, errors, version}`，前端拿到版本号后再 GET 这个版本。
 - `GET /api/runs/{id}/versions/{v}` 返回 `{graph, proposal, scenario, diff, excerpts}`。`diff` 相对父版本计算，`promote` 写出的 fixture 也是这个形状。
-- **sign = 批准一份计划**，不调用模型，产出一个新版本（`op.kind = "sign"`，`op.value.terminal_id` 是批准的那份）：
-  - 请求体 `{version, terminal_id, clarified_statement?, criteria?, deadline?, confirmed_claim_ids?, condition_overrides?}`。`terminal_id` 必填，缺了回 `{ok: false, errors}`（不再因 KeyError 变成 404）；三个文本字段不给就沿用计划里的值，所以不能通过 sign 清空它们。
-  - 用户改的阈值和截止写进条件；截止提前时，观测窗口跟着收。改条件不调用模型，代码重新判定、重新派生全部计划。
-  - 被批准的那份 `user_judgment.confirmed = true`；同版本其他计划的 confirmed 置 false（D-B4），保留它们的 confirmed_claim_ids。
-  - 批准时只能改 threshold / threshold_note / comparator / deadline 这几个字段。
+- **sign = approve one plan.** No model call; produces a new version (`op.kind = "sign"`, `op.value.terminal_id` is the approved plan, or null).
+  - Request body: `{version, terminal_id, clarified_statement?, criteria?, deadline?, note?, confirmed_claim_ids?, condition_overrides?}`.
+    - `terminal_id` must be present. A missing key returns `{ok: false, errors}` instead of a KeyError turned into a 404.
+    - `terminal_id: null` approves no plan (no trade); the judgment fields must then be empty.
+    - The text fields and `note` keep the plan's values when omitted, so sign cannot clear them.
+  - User-edited thresholds and deadlines are written into the conditions; an earlier deadline shrinks the observation window. Code re-evaluates the conditions and re-derives every plan.
+  - The approved plan gets `user_judgment.confirmed = true`. The other plans in the version get confirmed=false (D-B4) and keep their confirmed_claim_ids.
+  - Only threshold / threshold_note / comparator / deadline can be overridden at approval.
 - **fork** 以基线版本的全部计划和 observations 为输入，逐份重新派生；只有受影响的计划失效（见下节「方案 B」）。
 
-## 方案 B：一张图多条分支 + 批准计划（B-最小，后端）
+## Plan B: competing branches + approved plans (B-minimal, backend)
 
-依据 `docs/changes/2026-10-18-branches-and-plans.md` 第 4 节。
+Source: `docs/changes/2026-10-18-branches-and-plans.md`, section 4, plus four additions from the frontend design review (kind tables, revoking approval, the note, and one statement per version).
 
-- **数据结构**：
-  - `ProposalDraft` / `TradeProposal` 带 `terminal_id`，`Direction` 仍必填。
-  - `InspectPlanOutput.proposals` 是列表，结构化输出实测被 API 接受（Haiku，2 次调用，无 fallback；union 12 个，上限 16）。
-  - 版本包见 `schema.VersionBundle`，一次切换成 `proposals`，不留 `proposal`。
-- **计划顺序**：按图里 terminal 的顺序排，默认显示哪一份不由模型输出顺序决定。
-- **旧文件**：
-  - `proposals/<v>.json` 是单个 dict 时，`parse_proposals` 包成一项的列表，按 `direction.instrument` 在图里找唯一的 terminal 填 `terminal_id`；找不到或有多个时报 `LegacyProposalError`，不猜。
-  - `observations/<v>.json` 新增 `synthetic`（本版本资料里有合成占位资料包），旧文件缺失时按 false 读。
-- **分支推导**（`branches.derive_branches`，store.bundle、promote、fork / inspect 的返回体共用）：
-  - 独有部分：`(ancestors(t) ∪ {t}) − ⋃ ancestors(其他 terminal)`，独有边是终点在独有部分里的边。
-  - 分叉点：几条出边能到达的 terminal 集合不一样的节点；每条分支列出它祖先里的分叉点。
-  - kind：
-    1. hypothetical：`ancestors(t) ∪ {t}` 含 role=shock 的节点、情景冲击新增的节点或情景 ops 改过的假设（terminal 本身被改也算）。
-    2. evidenced：独有边至少一条，全部非 model_only 且带 supports 证据；独有节点没有 contradicted；独有边不引用合成片段。
-    3. model_only：其余情况。
-  - 独有部分一条边都没有时不算 evidenced。`synthetic_evidence` 标「独有边引用了合成片段」，与 kind 独立。
-  - trunk：祖先里不属于独有部分的节点及其入边，按同一规则算；没有边（只共用起点事件）时是 evidenced。
-- **计划校验**（`validator.validate_plans`）：
-  - 阻断：
-    - terminal 集合恰好等于图上全部 terminal（缺、重、挂在非 terminal 上都报）；
-    - 标的属于该 terminal；
-    - 引用存在；
-    - 至少一条进场条件。
-  - 非阻断：进场条件挂在非上游 claim 上。离场条件不提示，因为提示词鼓励用对手分支上的镜像信号当离场条件。
-- **改假设后哪些计划失效**（`entrypoints.plan_affected`，只看代码算出的写范围）：
-  - 判定：terminal 在写范围里，或者进场 / 离场条件挂在写范围内的 claim 上，或者 key_dependency 指向写范围内的 claim 或条件。
-  - 受影响：confirmed 置 false，confirmed_claim_ids 剔除写范围内的 claim。其余计划的批准原样保留。
-  - `approval_reset`：原本已批准、这次受影响。
-  - `rival_changed`：本计划没受影响，但同版本另一份受了影响。只说「另一份受了影响」，不判断两者是否竞争（C1 那种并列受益的 terminal 也会触发）。
-  - 两个标记每次派生都重算，inspect 和 sign 一律写 false。
-- **补查挂钩**：`inspect` 里图和计划建好、还没落盘的位置留了注释，agent loop 在那里接（缺口用 `kind == "model_only"`）。
-- **提示词 p5**：竞争分支只在真正的争议点给出；尚未发生的事件一律 role=shock；每个 terminal 一份计划，鼓励镜像条件。旧录音全部失效，需要重新录制。
+- **Data model**:
+  - `ProposalDraft` / `TradeProposal` carry `terminal_id`; `Direction` stays required.
+  - `InspectPlanOutput.proposals` is a list. The structured output was accepted by the live API (Haiku, 2 calls, no fallback; 12 unions against the limit of 16).
+  - The version bundle is `schema.VersionBundle`, switched in one go to `proposals`; there is no `proposal` field.
+  - `UserJudgment.note` is user-only. `ModelUserJudgment` has no such field.
+- **Plan order**: plans follow the graph's terminal order, so the default plan never depends on the model's output order.
+- **Legacy files**:
+  - A `proposals/<v>.json` holding a single dict is read by `parse_proposals` as a one-item list. Its `terminal_id` is the one terminal whose instruments contain `direction.instrument`; none or several matches raise `LegacyProposalError` instead of guessing.
+  - `observations/<v>.json` gains `synthetic` (this version used a synthetic placeholder pack); a missing field reads as false.
+- **Branch derivation** (`branches.derive_views`, shared by store.bundle, promote, and the inspect / fork results):
+  - Own part: `(ancestors(t) ∪ {t}) − ⋃ ancestors(other terminals)`; own edges are the edges ending in it.
+  - Divergence node: a node whose out-edges reach different terminal sets. Each branch lists the divergence nodes among its ancestors.
+  - kind, by priority:
+    1. hypothetical: `ancestors(t) ∪ {t}` contains a role=shock node, a scenario-added node, or a changed assumption (a changed terminal counts too).
+    2. evidenced: at least one own edge, every own edge non-model_only with supports evidence, no contradicted own node, and no synthetic excerpt cited by an own edge.
+    3. model_only: everything else.
+  - A branch with no own edges is never evidenced. `synthetic_evidence` flags "an own edge cites a synthetic excerpt" and is independent of kind.
+  - trunk: the ancestors outside the own part and the edges into them, scored by the same rule. With no edges (only the starting event shared), it is evidenced.
+  - `node_kinds` / `edge_kinds`:
+    - hypothetical inputs → hypothetical;
+    - own-part nodes → their branch's kind;
+    - shared nodes → the weakest trunk among the branches containing them (model_only < evidenced);
+    - edges → the kind of their target node.
+- **Plan validation** (`validator.validate_plans`):
+  - Blocking:
+    - the plan terminals equal the graph's terminals exactly (missing, duplicate and non-terminal targets are all reported);
+    - each instrument belongs to its plan's terminal;
+    - every reference exists;
+    - each plan has at least one entry condition;
+    - every plan has an identical `original_statement` and `clarified_statement`. There is one reading of the user's words per graph; the model rewrites, code never picks one.
+  - Non-blocking: an entry condition on a claim that is not upstream. Exit conditions get no hint, because the prompt encourages mirrored exit conditions on a rival branch.
+- **Which plans a changed assumption invalidates** (`entrypoints.plan_affected`, write scope only):
+  - A plan is affected when its terminal is in scope, or one of its entry / exit conditions sits on an in-scope claim, or its key_dependency points into the scope.
+  - Affected plans get confirmed=false and lose in-scope confirmed_claim_ids. The others keep their approval.
+  - `approval_reset`: the plan was approved and is now affected.
+  - `rival_changed`: this plan was not affected, but another plan in the version was. It does not judge whether the two compete; C1's side-by-side terminals trigger it too.
+  - Both flags are recomputed on every derivation; inspect and sign always write false.
+- **Follow-up research hook**: a comment in `inspect` marks the point where the graph and plans are built but not yet persisted. The agent loop plugs in there and finds gaps via `kind == "model_only"`.
+- **Prompt p5** (INSPECT and both step prompts are now in English):
+  - competing branches only at genuine disputes;
+  - every event that has not happened yet is role=shock;
+  - one plan per terminal, with mirrored conditions encouraged;
+  - the same statements in every plan.
+
+  All old recordings are invalidated and need re-recording.

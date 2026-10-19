@@ -22,12 +22,21 @@
   - 需要的话，`eval/fixtures/` 和 `tests/_adapter.py`。
 - 模型输出的形状是 `*Output` 和 `ProposalDraft`。它们故意比持久化对象少字段，凡是由代码裁决的字段都不在里面。
 - 图快照不可变。批准（接口名仍是 sign）和分叉（fork）都产出新版本，不覆盖旧版本。
-- **一张图多条分支，每个 terminal 恰好一份计划**（方案 B，`docs/changes/2026-10-18-branches-and-plans.md`）：
-  - 版本包 `VersionBundle` = `{graph, proposals, branches, scenario, diff, excerpts}`，**没有** `proposal` 字段；inspect / fork / sign 的返回体也是 `proposals` 列表（没有时是 `[]`）。
-  - `proposals` 按图里 terminal 的顺序排，每份带 `terminal_id`；`meta.proposal_version = "{graph_version}.{terminal_id}"`。旧文件（单个 dict）由 `parse_proposals` 包成一项的列表。
-  - `branches` 由 `catalyst/branches.py` 推导：`{terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}`。kind 是 hypothetical / evidenced / model_only，由代码定，不由模型标。
-  - 已批准 = `user_judgment.confirmed`，同一版本最多一份。`approval_reset`、`rival_changed` 只由 fork 写，描述「相对父版本发生了什么」，不继承。
-  - 计划的 terminal 集合必须恰好等于图上全部 terminal，标的必须属于该 terminal（`validator.validate_plans`）。
+- **Plan B — competing branches, one plan per terminal** (`docs/changes/2026-10-18-branches-and-plans.md`):
+  - The version bundle `VersionBundle` is `{graph, proposals, branches, node_kinds, edge_kinds, scenario, diff, excerpts}`. There is **no** `proposal` field. inspect / fork / sign results also carry a `proposals` list (`[]` when there are none).
+  - `proposals` follow the graph's terminal order. Each has a `terminal_id`, and `meta.proposal_version = "{graph_version}.{terminal_id}"`. `parse_proposals` reads a legacy single-dict file as a one-item list.
+  - `catalyst/branches.py` (`derive_views`) derives the following; kinds are decided by code, never by the model:
+    - `branches`: `{terminal_id, divergence_node_ids, own_node_ids, own_edge_ids, kind, trunk, synthetic_evidence}`;
+    - the lookup tables `node_kinds: {node_id: kind}` and `edge_kinds: {edge_id: kind}`, with kind one of hypothetical / evidenced / model_only.
+  - Approval:
+    - approved means `user_judgment.confirmed`, and at most one plan per version is approved;
+    - `sign` with `terminal_id: null` approves none (no trade);
+    - `user_judgment.note` is written by the user only.
+  - `approval_reset` and `rival_changed` are written by fork only. They describe what changed relative to the parent version and are never inherited.
+  - `validator.validate_plans` blocks unless:
+    - the plans' terminals are exactly the graph's terminals;
+    - each instrument belongs to its plan's terminal;
+    - every plan carries the same `original_statement` / `clarified_statement`.
 
 ## 目录与归属
 

@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass, field
 
 from catalyst import prompts
-from catalyst.branches import derive_branches, own_node_ids, terminals
+from catalyst.branches import dump_views, own_node_ids, terminals
 from catalyst.conditions import evaluate
 from catalyst.diff import diff as graph_diff
 from catalyst.evidence import EvidenceProvider
@@ -113,7 +113,8 @@ def critic(graph, proposal, *, reasoner=None, config=None) -> CriticReport:
 def derive_proposal(draft: ProposalDraft, g: Graph, *, model: str, user_judgment: UserJudgment | None = None,
                     scenario_ref: ScenarioRef | None = None, approval_reset: bool = False,
                     rival_changed: bool = False) -> TradeProposal:
-    """support_status 看进场条件、key_dependency 所在的 claim，以及这条分支独有的 claim（4.4）。"""
+    """support_status covers the claims of the entry conditions and the key_dependency, plus the claims in this
+    branch's own part (docs/changes 4.4)."""
     by_id = {c.id: c for c in g.conditions}
     entry = [by_id[i] for i in draft.entry_condition_ids]
     gate = evaluate_entry(entry)
@@ -147,14 +148,15 @@ def _draft_of(p: TradeProposal) -> ProposalDraft:
 
 
 def by_terminal_order(g: Graph, items: list) -> list:
-    """计划按图里 terminal 的顺序排：默认显示哪一份由代码定，不由模型的输出顺序定。"""
+    """Order plans by the graph's terminal order: code decides which plan shows first, not the model's output order."""
     order = {t: i for i, t in enumerate(terminals(g))}
     return sorted(items, key=lambda x: order.get(x.terminal_id, len(order)))
 
 
-def _branches(g: Graph, scenario: Scenario | None, pack: EvidencePack | None) -> list[dict]:
+def _views(g: Graph, scenario: Scenario | None, pack: EvidencePack | None) -> dict:
+    """branches / node_kinds / edge_kinds for an entrypoint result (same function as store.bundle)."""
     synthetic = {x.excerpt_id for x in pack.excerpts} if pack and pack.synthetic else set()
-    return [b.dump() for b in derive_branches(g, scenario, synthetic_excerpt_ids=synthetic)]
+    return dump_views(g, scenario, synthetic_excerpt_ids=synthetic)
 
 
 # ---- inspect -----------------------------------------------------------
@@ -224,7 +226,8 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
         focus = f"\n用户选中的方向 id：{candidate_id}（内容未提供）"
     user = (f"今天：{cfg.today}\n事件（用户原话）：{event}\n目标标的：{target or '（未给出，从选中方向或资料里确定）'}{focus}\n\n"
             f"资料包：\n{_pack_text(pack)}")
-    result = {"graph": None, "no_chain": None, "no_chain_reason": None, "proposals": [], "branches": [], "judgment": None,
+    result = {"graph": None, "no_chain": None, "no_chain_reason": None, "proposals": [], "branches": [], "node_kinds": {}, "edge_kinds": {},
+              "judgment": None,
               "observations": _excerpt_ids(pack), "ok": False, "errors": [], "warnings": warnings, "attempts": 0}
 
     # 第 1 步：图
@@ -248,7 +251,7 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     if graph_out.no_chain:
         return _finish(store, result)
 
-    # 第 2 步：条件与计划草稿（图已定，不能再改；每个 terminal 一份）
+    # Step 2: conditions and plan drafts (the graph is final; one plan per terminal)
     graph_json = json.dumps({"nodes": [n.dump() for n in graph_out.nodes], "edges": [e.dump() for e in graph_out.edges]},
                             ensure_ascii=False)
     plan_user = f"{user}\n\n已通过校验的因果图（不能再改）：\n{graph_json}\n\n{prompts.INSPECT_PLAN_STEP}"
@@ -268,9 +271,10 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     g = _graph_from(graph_out.nodes, graph_out.edges, rp.value.conditions, version, op, cfg)
     model = rp.meta.get("model") or rg.meta.get("model") or reasoner.name
     ps = [derive_proposal(d, g, model=model).dump() for d in by_terminal_order(g, rp.value.proposals)]
-    # ---- 补查挂钩（agent loop，docs/changes/2026-10-18-agent-loop.md D-A4/D-A5）：图和计划到这里已经建好、还没落盘。
-    # 缺口用 _branches(g, None, pack) 里 kind == "model_only" 的分支判断；补查后从第 1 步重跑，覆盖 g / ps。
-    result.update(graph=g.dump(), proposals=ps, branches=_branches(g, None, pack))
+    # ---- Follow-up research hook (agent loop, docs/changes/2026-10-18-agent-loop.md D-A4/D-A5): the graph and the
+    # plans are built here but not persisted yet. Find gaps via _views(g, None, pack)["branches"] with
+    # kind == "model_only"; after the follow-up round, rerun from step 1 and overwrite g / ps.
+    result.update(graph=g.dump(), proposals=ps, **_views(g, None, pack))
     if store:
         store.put_snapshot(g.dump())
         store.put_observations(g.version, [x.dump() for x in pack.excerpts] if pack else [],
@@ -353,10 +357,13 @@ def _parent_scenario(base: Graph, scenario, store: RunStore | None) -> Scenario 
 
 
 def plan_affected(p: TradeProposal, scope: Scope) -> bool:
-    """改假设后这份计划是否受影响（docs/changes 4.3）。只看代码算出的写范围，不看模型的 assessment：
-    1. 它的 terminal 在写范围里（写范围是改动目标的全部后代，共用上游、分叉点上的改动都由这一条抓到）；
-    2. 它的进场或离场条件挂在写范围里的 claim 上（覆盖「镜像条件挂在对手分支上」）；
-    3. 它的 key_dependency 指向写范围里的 claim 或条件。"""
+    """Whether a changed assumption affects this plan (docs/changes 4.3). Only the code-computed write scope counts,
+    never the model's assessment. The plan is affected when any of these holds:
+    1. its terminal is in the write scope (the scope is every descendant of the change target, so changes on the
+       shared upstream or at a divergence node are caught here);
+    2. one of its entry or exit conditions sits on a claim in the write scope (covers mirror conditions that sit on
+       a rival branch);
+    3. its key_dependency points at a claim or a condition in the write scope."""
     kd = p.key_dependency
     return (p.terminal_id in scope.nodes
             or any(c.claim_id in scope.nodes for c in p.entry_conditions + p.exit_conditions)
@@ -369,13 +376,14 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
     """pack：本轮资料包；不给就用 cfg.packs。基线图已有的引用在生成时校验过，fork 只校验新增的边。
     scenario：基线版本自己的情景（在情景版本上再分叉时）；不给就从 store 读。情景是叠加的：新情景继承它的
     ops 与 assessment，范围外的 claim 保留它的值，提案的 challenged / support_status 按叠加后的 assessment 算。
-    proposals：基线版本的全部计划，在新图上逐份重新派生。受影响的计划（plan_affected）confirmed 重置为 false、
-    confirmed_claim_ids 剔除写范围内的 claim；其余计划的批准原样保留。"""
+    proposals: every plan of the base version, each re-derived on the new graph. Affected plans (plan_affected) get
+    confirmed=false and lose the confirmed_claim_ids inside the write scope; the others keep their approval."""
     cfg = _cfg(config, packs)
     base = parse_graph(graph)
     o = op if isinstance(op, Op) else Op.model_validate(op)
     result = {"graph": None, "base_graph": base.dump(), "scope": None, "diff": None, "scenario": None,
-              "proposals": [], "branches": [], "ok": False, "errors": [], "warnings": [], "attempts": 0}
+              "proposals": [], "branches": [], "node_kinds": {}, "edge_kinds": {}, "ok": False, "errors": [],
+              "warnings": [], "attempts": 0}
     parent = _parent_scenario(base, scenario, store)
     if parent and parent.version != base.version:
         result["errors"] = [f"[{parent.version}] 传入的情景属于版本 {parent.version}，不是这次分叉的基线 {base.version}"]
@@ -436,7 +444,7 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
         f"[{k}] 上一层情景标了 challenged，这一层的 assessment 改成了 {scenario.assessment.get(k)}；"
         "要撤销上一层情景，应回到更早的版本" for k in downgraded]
     result.update(graph=new_g.dump(), diff=graph_diff(base, new_g), scenario=scenario.dump(),
-                  branches=_branches(new_g, scenario, pk))
+                  **_views(new_g, scenario, pk))
     if proposals:
         olds = parse_proposals(proposals, base)
         ref = ScenarioRef(base_version=base.version, challenged_claim_ids=challenged, next_checks=r.value.next_checks,
@@ -471,16 +479,22 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
 SIGN_CONDITION_FIELDS = {"threshold", "threshold_note", "comparator", "deadline"}
 
 
-def sign(graph, proposals: list[dict], *, terminal_id: str, clarified_statement: str | None = None,
-         criteria: str | None = None, deadline: str | None = None, confirmed_claim_ids: list[str] | None = None,
-         condition_overrides: dict[str, dict] | None = None, config=None, store: RunStore | None = None) -> dict:
-    """批准 terminal_id 那一份计划（接口名仍叫 sign）。批准的是研究计划，不是下单。
+def sign(graph, proposals: list[dict], *, terminal_id: str | None, clarified_statement: str | None = None,
+         criteria: str | None = None, deadline: str | None = None, note: str | None = None,
+         confirmed_claim_ids: list[str] | None = None, condition_overrides: dict[str, dict] | None = None,
+         config=None, store: RunStore | None = None) -> dict:
+    """Approve the plan on terminal_id (the interface keeps the name sign). What is approved is a research plan,
+    never an order.
 
-    - clarified_statement / criteria / deadline 可选：传 None 表示沿用计划里的值（所以这里不能把它们清空）。
-    - 同一版本最多一份计划是已批准（user_judgment.confirmed）：批准一份会撤销同版本其他计划的批准，
-      其他计划只把 confirmed 置 false，保留它们的 confirmed_claim_ids（用户勾过的前提）。
-    - condition_overrides：用户改的阈值 / 截止写进新图版本的条件（改截止时观测窗口跟着收），不调用模型，
-      代码重新判定条件、重新派生全部计划。快照不可变，所以批准永远产出新版本。"""
+    - terminal_id=None approves nothing (= no trade): every plan in the new version has confirmed=false. The
+      judgment fields (clarified_statement, criteria, deadline, note, confirmed_claim_ids) must then be empty.
+    - clarified_statement / criteria / deadline / note are optional: None keeps the plan's value (so sign cannot
+      clear them). note is written by the user only; the model output schema has no such field.
+    - At most one plan per version is approved (user_judgment.confirmed). Approving one revokes the others: they
+      only get confirmed=false and keep their confirmed_claim_ids (premises the user ticked).
+    - condition_overrides: thresholds / deadlines the user changed are written into the conditions of the new graph
+      version (an earlier deadline shrinks the observation window). No model call: code re-evaluates the conditions
+      and re-derives every plan. Snapshots are immutable, so approval always produces a new version."""
     cfg = _cfg(config)
     base = parse_graph(graph)
     confirmed_claim_ids = list(confirmed_claim_ids or [])
@@ -492,9 +506,15 @@ def sign(graph, proposals: list[dict], *, terminal_id: str, clarified_statement:
         return result
     errors = []
     if not olds:
-        errors.append(f"[{base.version}] 这个版本没有计划，不能批准")
+        errors.append(f"[{base.version}] this version has no plans to approve")
+    elif terminal_id is None:
+        given = {"clarified_statement": clarified_statement, "criteria": criteria, "deadline": deadline,
+                 "note": note, "confirmed_claim_ids": confirmed_claim_ids or None}
+        errors += [f"[{k}] terminal_id=null approves no plan, so {k} has nothing to attach to; leave it empty"
+                   for k, v in given.items() if v is not None]
     elif terminal_id not in {p.terminal_id for p in olds}:
-        errors.append(f"[{terminal_id}] 这个版本没有挂在 {terminal_id} 上的计划：可批准的是 {[p.terminal_id for p in olds]}")
+        errors.append(f"[{terminal_id}] this version has no plan on {terminal_id}; plans exist for "
+                      f"{[p.terminal_id for p in olds]}")
     node_ids = {n.id for n in base.nodes}
     errors += [f"[{c}] 确认的 claim 不在图里" for c in confirmed_claim_ids if c not in node_ids]
     data = base.dump()
@@ -531,8 +551,9 @@ def sign(graph, proposals: list[dict], *, terminal_id: str, clarified_statement:
     ps = []
     for old in by_terminal_order(new_g, olds):
         uj = old.user_judgment
-        if old.terminal_id == terminal_id:
-            given = {"clarified_statement": clarified_statement, "criteria": criteria, "deadline": deadline}
+        if terminal_id is not None and old.terminal_id == terminal_id:
+            given = {"clarified_statement": clarified_statement, "criteria": criteria, "deadline": deadline,
+                     "note": note}
             uj = uj.model_copy(update={**{k: v for k, v in given.items() if v is not None},
                                        "confirmed": True, "confirmed_claim_ids": confirmed_claim_ids})
         else:
@@ -547,7 +568,7 @@ def sign(graph, proposals: list[dict], *, terminal_id: str, clarified_statement:
         if (store.root / "observations" / f"{base.version}.json").exists():
             obs = store.get_observations(base.version)
             store.put_observations(new_g.version, obs["excerpts"], synthetic=obs["synthetic"])
-        if parent := _parent_scenario(base, None, store):  # 批准不改情景：情景版本批准后仍是同一个情景
+        if parent := _parent_scenario(base, None, store):  # approval keeps the scenario of a scenario version
             store.put_scenario(parent.model_copy(update={
                 "version": new_g.version, "base_version": base.version,
                 "root_version": parent.root_version or parent.base_version}).dump())
