@@ -1,6 +1,6 @@
 # Catalyst — 系统架构设计（MVP）
 
-Oct 18, 2026 · Mia
+2026-10-18 · Mia
 
 ## 设计目标与三条原则
 
@@ -8,17 +8,22 @@ Oct 18, 2026 · Mia
 
 三条原则，后面每个设计决定都能追溯到其中一条：
 
-1. **模型提议，代码裁决。** LLM 产出图的结构、机制、失效条件和解释；代码拥有 schema、不变量、合并、diff、账本。任何会被下一代模型做得更好的判断不进代码；任何不随模型变强而改变的规则（无环、失效条件非空、fork 只改写范围内）只进代码。
-2. **一切有版本，一切可回放。** belief、图、提案、分叉、判定结果都是不可变快照（Immutable Graph Snapshots），每次操作记入 Operation Log 并记录来源（模型 / 代码 / 用户、prompt 版本、工具调用）。审计、diff、eval 都只是对快照与操作日志的读。
-3. **接缝先于功能。** 但只留两条接缝：Reasoner（谁来推理）和 Evidence Provider（证据从哪来），核心层不知道它们的实现。传播、定价、打分、判定这些语义未定的东西不做接口，等语义稳定再抽象。换模型或换证据源的流程是：换实现、跑同一套 eval、看逐例结果——而不是读代码。
+1.  **模型提议，代码裁决。** LLM 产出图的结构、机制、失效条件和解释；代码拥有 schema、不变量、合并、diff、账本。任何会被下一代模型做得更好的判断不进代码；任何不随模型变强而改变的规则（无环、失效条件非空、fork 只改写范围内）只进代码。
+
+2.  **一切有版本，一切可回放。** belief、图、提案、分叉、判定结果都是不可变快照（Immutable Graph Snapshots），每次操作记入 Operation Log 并记录来源（模型 / 代码 / 用户、prompt 版本、工具调用）。审计、diff、eval 都只是对快照与操作日志的读。
+
+3.  **接缝先于功能。** 但只留两条接缝：Reasoner（谁来推理）和 Evidence Provider（证据从哪来），核心层不知道它们的实现。传播、定价、打分、判定这些语义未定的东西不做接口，等语义稳定再抽象。换模型或换证据源的流程是：换实现、跑同一套 eval、看逐例结果——而不是读代码。
 
 给实现者的一句话（来自工程审计）：**模型负责提出因果假设和修订建议，系统负责维护状态、执行边界和展示不确定性。结构正确不等于因果判断正确。** 校验器保证字段齐全、无环、分叉不越界；因果链站不站得住，由证据状态和人工复核回答，不由任何公式回答。一句能在面试里讲的原则：We separate what the model believes, what the evidence supports, and what the system is allowed to change——受约束的推理、有依据的判断、可审计的状态变化。
 
-假设：Python 服务 + 一页薄 UI；模型通过 API 调用。语言不是架构的一部分。
+假设：Python 服务 + 一个薄前端（React Flow 只读画布，所有写动作翻译成后端操作；详见《Catalyst — 前端设计》）；模型通过 API 调用。语言不是架构的一部分。
 
 ## 架构总览
 
-&#91;embedded content: 分层架构 · 边缘、核心、策略\]
+
+
+分层架构 · 边缘、核心、策略
+
 
 边缘层只翻译和渲染；核心层拥有 schema、校验器、版本快照、diff 和 eval，对两个边界一视同仁；边界层是 Reasoner 和 Evidence Provider，以后换模型或换证据源只动这里。模型只被核心层的生成流程调用，只能通过校验器写图。
 
@@ -26,64 +31,67 @@ Oct 18, 2026 · Mia
 
 两个一等对象：ClaimGraph（因果图，审计和分叉的对象；它是 DAG 不是链——一个节点可以影响多个结果，多条路径可以汇聚到一个结果，一条路径失效其他路径仍在，一个外部冲击可以影响多个节点；三小时只对选中的一条交易路径做深入分析，但数据结构不假设线性）和 TradeProposal（条件式交易提案，交付的对象）。提案从图派生，不是独立输入。审计后最重要的改动是把 **Claim（发生了什么、假设什么）和 Condition（通过什么具体观测判断它成立或失效）分开**——不是每个因果节点都能对应一个数字序列，政策生效、出口管制宣布、军事事件发生要靠正式文件或经核实的事件记录来判定，强行套数值四元组只会逼模型发明指标。
 
-状态分四层，各自一个字段，不共用：**Scenario** 记录当前世界线假设了什么（哪些假设被改、哪些冲击被加），并带一张薄薄的 Assessment：claim\_id → unaffected / challenged / unresolved，表达当前情景下哪些路径受影响——用户改假设只写这里，不会把已有 Claim 的 evidence\_status 从 supported 改成 contradicted；**Claim.evidence\_status** 记录陈述得到支持、受到反驳还是未知（contradicted 由被引用且未被驳回的 contradicts 片段推进，不由情景推进）；**Condition.verification\_status** 记录有没有可行的核验办法，**Condition.evaluation\_status** 记录条件已满足、未满足还是无法判断；**Proposal.support\_status** 记录交易论点是否仍得到当前证据支持。「次日伊朗被打」在情景里是假设，在现实里可以是经证据确认的事件；它是否使「安全通航」的假设失效，是 Condition 的判定，不是 Claim 的状态。默认的「先别动」是因为尚未获得满足条件的证据，不是声称已观察到条件未满足。
+状态分四层，各自一个字段，不共用：**Scenario** 记录当前世界线假设了什么（哪些假设被改、哪些冲击被加），并带一张薄薄的 Assessment：claim_id → unaffected / challenged / unresolved，表达当前情景下哪些路径受影响——用户改假设只写这里，不会把已有 Claim 的 evidence_status 从 supported 改成 contradicted；**Claim.evidence_status** 记录陈述得到支持、受到反驳还是未知（contradicted 由被引用且未被驳回的 contradicts 片段推进，不由情景推进）；**Condition.verification_status** 记录有没有可行的核验办法，**Condition.evaluation_status** 记录条件已满足、未满足还是无法判断；**Proposal.support_status** 记录交易论点是否仍得到当前证据支持。「次日伊朗被打」在情景里是假设，在现实里可以是经证据确认的事件；它是否使「安全通航」的假设失效，是 Condition 的判定，不是 Claim 的状态。默认的「先别动」是因为尚未获得满足条件的证据，不是声称已观察到条件未满足。
 
-| 对象 | 字段 | 谁写 | 代码能校验什么 | 代码不能校验什么 |
-| --- | --- | --- | --- | --- |
-| Scenario | version、base\_version、ops：\[{kind: change\_assumption / add\_shock, target, value}\]、assessment：{claim\_id: unaffected / challenged / unresolved} | 代码记录用户操作 | 基线版本存在且未被覆盖 | — |
-| Claim | id、statement、original\_statement（归一化前的原话与原时间）、evidence\_status（supported / contradicted / unknown）、time\_bucket、instruments（终点才有） | 模型写陈述；状态由证据推进 | 字段齐全、原话保留、终点可解析到白名单标的 | 陈述是否真实、因果是否成立 |
-| Condition | claim\_id、kind（numeric / document / event）、predicate（observed\_by / not\_observed\_by / at\_deadline）、series 或 source、comparator、threshold（未知时为类型正确的 null + threshold\_note，不把「待定」塞进数值字段）、anchor（时间起点：绝对日期，或所依赖的情景事件）、deadline（最终判定时间）、observation\_window（应检查的时间区间）、rule、verification\_status（verifiable / unverified）、evaluation\_status（met / not\_met / unknown） | 模型提议；判定由规则 | 谓词在枚举内、anchor 与 deadline 非空且 deadline 不早于 anchor、kind 与来源类型匹配；null 阈值合法但必须带说明；verifiable ≠ met 写成代码规则；not\_observed\_by 只有在 observation\_window 已结束且来源覆盖该窗口时才能给 not\_met，否则 unknown | 阈值是否有依据、序列是否真实存在、来源是否支持这条结论 |
-| Mechanism（边） | from、to、channel（枚举）、sign、lag\_days、mechanism、evidence：\[{tier, source\_id, excerpt\_id, stance（supports / contradicts）, supports（针对 claim 的哪一部分）}\] 或 model\_only | 模型 | 无环、每个节点在通往终点的某条路径上、channel 在枚举内、每条边有证据或显式 model\_only；引用的 excerpt\_id 确实存在于当前 Evidence Pack（Reference Validator） | 证据是否真的支持这条边 |
-| Graph 版本 | version、parent\_version、op、nodes、edges、model\_output\_ref、observations\_ref | 代码 | 写范围外的节点和边哈希不变 | — |
+| 对象            | 字段                                                                                                                                                                                                                                                                                                                                                                                                                                          | 谁写                       | 代码能校验什么                                                                                                                                                                                                                                | 代码不能校验什么                                       |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| Scenario        | version、base_version、ops：\[{kind: change_assumption / add_shock, target, value}\]、assessment：{claim_id: unaffected / challenged / unresolved}                                                                                                                                                                                                                                                                                            | 代码记录用户操作           | 基线版本存在且未被覆盖                                                                                                                                                                                                                        | —                                                      |
+| Claim           | id、statement、original_statement（归一化前的原话与原时间）、evidence_status（supported / contradicted / unknown）、time_bucket、instruments（终点才有）                                                                                                                                                                                                                                                                                      | 模型写陈述；状态由证据推进 | 字段齐全、原话保留、终点可解析到白名单标的                                                                                                                                                                                                    | 陈述是否真实、因果是否成立                             |
+| Condition       | claim_id、kind（numeric / document / event）、predicate（observed_by / not_observed_by / at_deadline）、series 或 source、comparator、threshold（未知时为类型正确的 null + threshold_note，不把「待定」塞进数值字段）、anchor（时间起点：绝对日期，或所依赖的情景事件）、deadline（最终判定时间）、observation_window（应检查的时间区间）、rule、verification_status（verifiable / unverified）、evaluation_status（met / not_met / unknown） | 模型提议；判定由规则       | 谓词在枚举内、anchor 与 deadline 非空且 deadline 不早于 anchor、kind 与来源类型匹配；null 阈值合法但必须带说明；verifiable ≠ met 写成代码规则；not_observed_by 只有在 observation_window 已结束且来源覆盖该窗口时才能给 not_met，否则 unknown | 阈值是否有依据、序列是否真实存在、来源是否支持这条结论 |
+| Mechanism（边） | from、to、channel（枚举）、sign、lag_days、mechanism、evidence：\[{tier, source_id, excerpt_id, stance（supports / contradicts）, supports（针对 claim 的哪一部分）}\] 或 model_only                                                                                                                                                                                                                                                          | 模型                       | 无环、每个节点在通往终点的某条路径上、channel 在枚举内、每条边有证据或显式 model_only；引用的 excerpt_id 确实存在于当前 Evidence Pack（Reference Validator）                                                                                  | 证据是否真的支持这条边                                 |
+| Graph 版本      | version、parent_version、op、nodes、edges、model_output_ref、observations_ref                                                                                                                                                                                                                                                                                                                                                                 | 代码                       | 写范围外的节点和边哈希不变                                                                                                                                                                                                                    | —                                                      |
 
-**TradeProposal = 派生分析 + 用户判断 + 图版本号**，状态 draft / needs\_review。派生分析从图生成，重新生成图不会覆盖用户自己的判断；commit 签署的是研究判断，不是批准交易执行。字段：direction（标的、方向、期限）、entry\_conditions、exit\_conditions（Condition 对象列表）、key\_dependency（当前所选路径中最值得优先检验的关键依赖 + 为什么选它；没有足够依据时为未知，不强选；它失败不自动使整个论点失效）、user\_judgment（原始表述 + 确认后的判断 + 判定条件 + 期限；概率仅在适用时填）、market\_reference（有则显示并写明回答哪个问题，没有写 no\_market）、scenario\_ref（受挑战前提 + 下一步查什么 + 基线版本号）、support\_status、audit（graph\_version、链、证据）、meta（proposal\_version、prompt\_version、model、approval\_required = true）。仓位字段不存在。Discover 返回零个候选时不生成提案，不为了出提案强造标的。
+**TradeProposal = 派生分析 + 用户判断 + 图版本号**，状态 draft / needs_review。派生分析从图生成，重新生成图不会覆盖用户自己的判断；commit 签署的是研究判断，不是批准交易执行。字段：direction（标的、方向、期限）、entry_conditions、exit_conditions（Condition 对象列表）、key_dependency（当前所选路径中最值得优先检验的关键依赖 + 为什么选它；没有足够依据时为未知，不强选；它失败不自动使整个论点失效）、user_judgment（原始表述 + 确认后的判断 + 判定条件 + 期限；概率仅在适用时填）、market_reference（有则显示并写明回答哪个问题，没有写 no_market）、scenario_ref（受挑战前提 + 下一步查什么 + 基线版本号）、support_status、audit（graph_version、链、证据）、meta（proposal_version、prompt_version、model、approval_required = true）。仓位字段不存在。Discover 返回零个候选时不生成提案，不为了出提案强造标的。
 
-「先别动」仍是默认状态，判定规则写成代码而不是散文：entry\_conditions 默认 AND——每一条 evaluation\_status 都为 met 才算通过；任何一条 unknown → WAIT（先别动）；任何一条 not\_met → BLOCKED（受阻）；条件缺失或数据不足不算满足；entry\_conditions 为空集不因为空集的逻辑特性自动通过，同样是 WAIT。exit\_conditions 只有显式声明为 OR 时才按「任一满足」触发。key\_dependency 是指向某个 Condition 的引用，不是能和 unverified 直接比较的字符串：检查它关联的 Condition 的 verification\_status 与 evaluation\_status，以及对应 Claim 的 evidence\_status。全部满足也只进入 Ready for Review（needs\_review），不存在 Ready to Execute。措辞仍是「尚未获得满足条件的证据」。真值表：
+「先别动」仍是默认状态，判定规则写成代码而不是散文：entry_conditions 默认 AND——每一条 evaluation_status 都为 met 才算通过；任何一条 unknown → WAIT（先别动）；任何一条 not_met → BLOCKED（受阻）；条件缺失或数据不足不算满足；entry_conditions 为空集不因为空集的逻辑特性自动通过，同样是 WAIT。exit_conditions 只有显式声明为 OR 时才按「任一满足」触发。key_dependency 是指向某个 Condition 的引用，不是能和 unverified 直接比较的字符串：检查它关联的 Condition 的 verification_status 与 evaluation_status，以及对应 Claim 的 evidence_status。全部满足也只进入 Ready for Review（needs_review），不存在 Ready to Execute。措辞仍是「尚未获得满足条件的证据」。真值表：
 
-| entry A | entry B | 判定 |
-| --- | --- | --- |
-| met | met | 通过 → Ready for Review（不是 Ready to Execute） |
-| met | unknown | WAIT（先别动） |
-| met | not\_met | BLOCKED（受阻） |
-| unknown | unknown | WAIT（先别动） |
-| 空集 | — | WAIT（空集不自动通过） |
+| entry A | entry B | 判定                                             |
+|---------|---------|--------------------------------------------------|
+| met     | met     | 通过 → Ready for Review（不是 Ready to Execute） |
+| met     | unknown | WAIT（先别动）                                   |
+| met     | not_met | BLOCKED（受阻）                                  |
+| unknown | unknown | WAIT（先别动）                                   |
+| 空集    | —       | WAIT（空集不自动通过）                           |
 
 版本：统一术语为 **Immutable Graph Snapshots + Operation Log**。三小时只需要 图 v1 → 操作 → 图 v2 → diff 这一串快照，连同输入、模型输出、工具观测和 prompt 版本；基线世界线保留为原版本，情景产生新版本而不是覆盖它。能回放已记录的结果即可，不承诺重新调用模型得到相同结果。完整 event sourcing、schema 迁移、多用户隔离放进 Future Work。
 
 ## 运行时流程
 
-&#91;embedded content: 运行时状态机 · 生成、分叉、慢环\]
+
+
+运行时状态机 · 生成、分叉、慢环
+
 
 两条泳道，一条延期。生成：belief（A + 可选 B）→ Claim 与 Condition → Evidence Pack 载入上下文 → 图 v1（Discover 0–3 个候选或 Inspect A → B，边引用资料包片段）→ 引用校验 + 结构校验 → 提案 v1（draft；进场条件未全部满足或关键依赖未核实时为「先别动」）。分叉：ChangeAssumption 或 AddShock → 代码先定写范围 → 模型只改范围内的节点和边 → 代码算 diff，受挑战路径写入 Scenario Assessment、其余一字不变 → 提案 v2；commit 要求用户签下可检验判断 + 判定条件 + 期限。慢环（到期判定、校准、失败进 eval）整体延期。每个箭头产生一个新的版本快照，没有原地修改。
 
 ## Agent loop 与 harness
 
-一条受控生成路径，**分三个逻辑阶段，模型调用按需执行而不是固定三次：**Discover（0–3 个候选卡，只有简短理由，不建完整链）、Inspect（用户选中后或直接给了 B 时，建选中那一条的因果链与条件）、Fork（反事实推理、补丁、diff），外加一次可选的 critic。Discover 与 Inspect 可以合并：初次输出对选中方向已足够完整时不再调用第二次；Fork 独立处理。三小时的 AddShock 用预定义 demo shock 接入点，Stage 1 由代码查表完成，不额外调用模型；任意外部冲击时 Stage 1 多一次调用——README 标明这是当前 demo 限制。文档约束的是每个阶段的输入输出与成本上限（max\_model\_calls\_per\_stage），不承诺固定调用次数；实际请求数还受证据检索和校验失败重试影响。A + B 直接跳过 Discover。重试上限 2，超限输出结构化失败。两条路共用同一个图 schema、同一个校验器、同一份数据契约——UI、agent、eval 不各自定义一份。
+一条受控生成路径，**分三个逻辑阶段，模型调用按需执行而不是固定三次：**Discover（0–3 个候选卡，只有简短理由，不建完整链）、Inspect（用户选中后或直接给了 B 时，建选中那一条的因果链与条件）、Fork（反事实推理、补丁、diff），外加一次可选的 critic。Discover 与 Inspect 可以合并：初次输出对选中方向已足够完整时不再调用第二次；Fork 独立处理。三小时的 AddShock 用预定义 demo shock 接入点，Stage 1 由代码查表完成，不额外调用模型；任意外部冲击时 Stage 1 多一次调用——README 标明这是当前 demo 限制。文档约束的是每个阶段的输入输出与成本上限（max_model_calls_per_stage），不承诺固定调用次数；实际请求数还受证据检索和校验失败重试影响。A + B 直接跳过 Discover。重试上限 2，超限输出结构化失败。两条路共用同一个图 schema、同一个校验器、同一份数据契约——UI、agent、eval 不各自定义一份。
 
-| 环节 | 谁做 | 做什么 |
-| --- | --- | --- |
-| 归一化 | 模型 | 把 belief 改写成 Claim + Condition；保留原始时间与事件定义（「下周开放」≠「11 月 30 日前通航」），改写后让用户确认签的是哪一个；判不了的标 unverified，阈值不知道就留 null 并写说明，不编指标；相对时间（「开放后 72 小时内」）必须写明 anchor——三小时内只支持绝对截止日期，或由用户指定情景起点后再算相对时间，不让模型自己填一个看似合理的日期 |
-| 阶段 1 · Discover（无 B） | 模型 | 最多 3 个候选或明确弃权（0 个合法）；每个候选按证据情况标三类之一：有依据的研究候选 / 待验证的研究假设 / 不推荐继续；排序是研究优先级，超时退回未排序候选而不是删除 Discover |
-| 阶段 2 · Inspect | 模型 | 对选中方向或给定的 A → B 给出一条足够解释结论的因果路径（允许分支与汇聚的 DAG 子图，深度由问题决定）、每边机制与 Condition，或 no\_chain + 理由；展示层默认折叠为 ≤3 个主要阶段（max\_visible\_hops），关键的额外依赖（如航空公司已对冲燃油）在详情里列出——折叠是展示方式，不允许模型省略推理 |
-| 落地 | Evidence Provider 先给材料，模型引用，代码校验引用 | 顺序是证据先于推理：知识库片段（按 pack 检索，每段带 source\_id、excerpt\_id、来源、日期、原文、stance）先进 Reasoner 的上下文；模型觉得证据不够可以再调 evidence.search，每阶段最多 max\_search\_calls 次；这一轮检索到的全部片段整体存进版本快照（observations\_ref），在线内容以后变了审计也对得上，模型在建链时引用具体 excerpt\_id——而不是先编好因果故事再找材料来配，那会退化成 citation laundering；Reference Validator 检查每个引用确实存在且属于当前资料包；每条证据写明 stance（supports / contradicts）和针对 claim 的哪一部分；每个 demo 案例的资料包至少放一段反方材料，模型必须回应 contradicts 片段——要么把该 Claim 标 contradicted，要么说明为什么不构成反驳（思路来自 LinqAlpha 的 Devil’s Advocate）；取不到就显式 model\_only，不得标成已获证据支持；按 Claim 类型选判定方法。引用原文是否真的支持该机制，归 E1 人工核 |
-| 校验 | 代码 | 只裁决结构：schema、无环、谓词枚举、引用存在、写范围（节点和边）；不裁决深度——深度由问题决定，展示层才默认折叠为 3 个主要阶段；不过把具体错误回给模型重写那一部分 |
-| 关键依赖 | 模型提议、人可改 | 先由模型提出对选定路径最有决策影响的关键依赖并解释为什么，再考虑可观测性；依据不足就标未知，不强选 |
-| 阶段 3 · Fork | 代码 + 模型 | 写范围在改图之前由代码确定，不由同一份模型输出自行授权。ChangeAssumption：写范围 = 被改的目标本身 + 依赖它的下游节点和边，代码从基线图算出。AddShock 两阶段契约——Stage 1 Impact Identification：模型只提出新冲击影响哪些既有节点、需要新增哪些边；代码检查结构合法性，并据此确定写范围。Stage 2 Scoped Re-evaluation：模型按已确定的写范围提交 Patch；范围外的节点、边及相关 Condition 变更一律拒绝。读范围 = 整图上下文。基线版本保留，情景写入新版本。受挑战的前提写在 Scenario Assessment（claim\_id → unaffected / challenged / unresolved），不改 Claim 的 evidence\_status。调用次数：三小时 POC 预定义 demo shock 的接入点，Stage 1 由代码查表完成，Fork 只调一次模型；任意外部冲击的 Stage 1 各调一次模型留到后续。冲击可能影响多个节点，多条路径分别评估：一条路径受挑战不等于最终论点失效，其他仍成立的路径照常保留。代码只能保证范围合规，影响位置在金融因果上对不对仍归 E1 / E2 的语义审查。 |
-| 提案 | 模型 + 代码 | 从终点生成 draft 提案；代码校验 Condition 对象齐全、提案变化能追溯到某个被修改或新增的假设；commit = 签署研究判断 |
-| Critic（可选） | 模型（另一个 prompt） | 只检查用户选中的那一条链：关键依赖选得对不对、有没有被谄媚或过度怀疑 |
+| 环节                      | 谁做                                               | 做什么                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|---------------------------|----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 归一化                    | 模型                                               | 把 belief 改写成 Claim + Condition；保留原始时间与事件定义（「下周开放」≠「11 月 30 日前通航」），改写后让用户确认签的是哪一个；判不了的标 unverified，阈值不知道就留 null 并写说明，不编指标；相对时间（「开放后 72 小时内」）必须写明 anchor——三小时内只支持绝对截止日期，或由用户指定情景起点后再算相对时间，不让模型自己填一个看似合理的日期                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 阶段 1 · Discover（无 B） | 模型                                               | 最多 3 个候选或明确弃权（0 个合法）；每个候选按证据情况标三类之一：有依据的研究候选 / 待验证的研究假设 / 不推荐继续；排序是研究优先级，超时退回未排序候选而不是删除 Discover                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 阶段 2 · Inspect          | 模型                                               | 对选中方向或给定的 A → B 给出一条足够解释结论的因果路径（允许分支与汇聚的 DAG 子图，深度由问题决定）、每边机制与 Condition，或 no_chain + 理由；展示层默认折叠为 ≤3 个主要阶段（max_visible_hops），关键的额外依赖（如航空公司已对冲燃油）在详情里列出——折叠是展示方式，不允许模型省略推理                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 落地                      | Evidence Provider 先给材料，模型引用，代码校验引用 | 顺序是证据先于推理：知识库片段（按 pack 检索，每段带 source_id、excerpt_id、来源、日期、原文、stance）先进 Reasoner 的上下文；模型觉得证据不够可以再调 evidence.search，每阶段最多 max_search_calls 次；这一轮检索到的全部片段整体存进版本快照（observations_ref），在线内容以后变了审计也对得上，模型在建链时引用具体 excerpt_id——而不是先编好因果故事再找材料来配，那会退化成 citation laundering；Reference Validator 检查每个引用确实存在且属于当前资料包；每条证据写明 stance（supports / contradicts）和针对 claim 的哪一部分；每个 demo 案例的资料包至少放一段反方材料，模型必须回应 contradicts 片段——要么把该 Claim 标 contradicted，要么说明为什么不构成反驳（思路来自 LinqAlpha 的 Devil’s Advocate）；取不到就显式 model_only，不得标成已获证据支持；按 Claim 类型选判定方法。引用原文是否真的支持该机制，归 E1 人工核                                                                     |
+| 校验                      | 代码                                               | 只裁决结构：schema、无环、谓词枚举、引用存在、写范围（节点和边）；不裁决深度——深度由问题决定，展示层才默认折叠为 3 个主要阶段；不过把具体错误回给模型重写那一部分                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 关键依赖                  | 模型提议、人可改                                   | 先由模型提出对选定路径最有决策影响的关键依赖并解释为什么，再考虑可观测性；依据不足就标未知，不强选                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 阶段 3 · Fork             | 代码 + 模型                                        | 写范围在改图之前由代码确定，不由同一份模型输出自行授权。ChangeAssumption：写范围 = 被改的目标本身 + 依赖它的下游节点和边，代码从基线图算出。AddShock 两阶段契约——Stage 1 Impact Identification：模型只提出新冲击影响哪些既有节点、需要新增哪些边；代码检查结构合法性，并据此确定写范围。Stage 2 Scoped Re-evaluation：模型按已确定的写范围提交 Patch；范围外的节点、边及相关 Condition 变更一律拒绝。读范围 = 整图上下文。基线版本保留，情景写入新版本。受挑战的前提写在 Scenario Assessment（claim_id → unaffected / challenged / unresolved），不改 Claim 的 evidence_status。调用次数：三小时 POC 预定义 demo shock 的接入点，Stage 1 由代码查表完成，Fork 只调一次模型；任意外部冲击的 Stage 1 各调一次模型留到后续。冲击可能影响多个节点，多条路径分别评估：一条路径受挑战不等于最终论点失效，其他仍成立的路径照常保留。代码只能保证范围合规，影响位置在金融因果上对不对仍归 E1 / E2 的语义审查。 |
+| 提案                      | 模型 + 代码                                        | 从终点生成 draft 提案；代码校验 Condition 对象齐全、提案变化能追溯到某个被修改或新增的假设；commit = 签署研究判断                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Critic（可选）            | 模型（另一个 prompt）                              | 只检查用户选中的那一条链：关键依赖选得对不对、有没有被谄媚或过度怀疑                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
-工具只有读：`evidence.`search(query, pack)（知识库的统一接口：按 pack 检索片段；三小时内 pack 是本地文件 + BM25 关键词打分，几十段不需要向量库；在线白名单搜索是同一接口下的一个 pack，开关控制）和 `markets.lookup(claim)`（可选，拿不到返回 no\_market）。写图只能通过 `graph.commit(version)`，它是校验器的唯一入口。
+工具只有读：`evidence.`search(query, pack)（知识库的统一接口：按 pack 检索片段；三小时内 pack 是本地文件 + BM25 关键词打分，几十段不需要向量库；在线白名单搜索是同一接口下的一个 pack，开关控制）和 `markets.lookup(claim)`（可选，拿不到返回 no_market）。写图只能通过 `graph.commit(version)`，它是校验器的唯一入口。
 
-两条硬规则：模型可以读整图，只能写被允许的节点，越界写入丢弃；校验失败的输出不进版本快照，只进 trace。被删掉的东西要写明：没有 p\_model、没有每条边的 confidence、没有累计概率、没有 min\_chain\_prob、没有传播公式——分叉回答的是「哪些路径依赖被挑战的前提」，这是结构问题，不是概率问题。
+两条硬规则：模型可以读整图，只能写被允许的节点，越界写入丢弃；校验失败的输出不进版本快照，只进 trace。被删掉的东西要写明：没有 p_model、没有每条边的 confidence、没有累计概率、没有 min_chain_prob、没有传播公式——分叉回答的是「哪些路径依赖被挑战的前提」，这是结构问题，不是概率问题。
 
 ## 可扩展：只保留两个抽象边界
 
 审计前的版本有六个插件接口和两个传播器；审计后只保留两个边界，其余是普通函数。理由：Scorer、Propagator、Resolver 连正确的领域语义都还没定义，为它们设计稳定接口是在固化一个错误——一个错的抽象比暂时没有抽象更难维护。
 
-| 边界 | 输入 → 输出 | 三小时的实现 | 以后可换成 |
-| --- | --- | --- | --- |
-| Reasoner | (图上下文, 操作: generate / inspect / change\_assumption / add\_shock) → 候选图或子图补丁 | 一次 Claude 调用 + 结构化输出 | 别的模型、多模型评审、专家规则 |
-| Evidence Provider | 资料包 → 带 source\_id / excerpt\_id 的材料；claim 或边 → \[{tier, source\_id, excerpt\_id, stance, supports}\] 或 missing | 知识库（Knowledge Base）：统一接口下的多个 pack，每个 pack = 一个行业 + 该行业最权威的来源整理成的片段文件（每段带 source\_id、excerpt\_id、来源、日期、原文、stance）。三小时只有两个 pack：Semiconductor Pack（TrendForce 免费文章人工整理成几十段，TrendForce 只负责半导体）和 Hormuz 小包（手写 3–5 段）；以后各行业用各自更权威的来源加 pack，接口不变，不要求一个数据源覆盖所有行业。白名单内的在线搜索是同一接口下的一个 pack，三小时默认关，留一个案例开着演示；model\_only 不得标为已获证据支持 | 内部研究库、市场数据接口、正式公告源 |
+| 边界              | 输入 → 输出                                                                                                            | 三小时的实现                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | 以后可换成                           |
+|-------------------|------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| Reasoner          | (图上下文, 操作: generate / inspect / change_assumption / add_shock) → 候选图或子图补丁                                | 一次 Claude 调用 + 结构化输出                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | 别的模型、多模型评审、专家规则       |
+| Evidence Provider | 资料包 → 带 source_id / excerpt_id 的材料；claim 或边 → \[{tier, source_id, excerpt_id, stance, supports}\] 或 missing | 知识库（Knowledge Base）：统一接口下的多个 pack，每个 pack = 一个行业 + 该行业最权威的来源整理成的片段文件（每段带 source_id、excerpt_id、来源、日期、原文、stance）。三小时只有两个 pack：Semiconductor Pack（TrendForce 免费文章人工整理成几十段，TrendForce 只负责半导体）和 Hormuz 小包（手写 3–5 段）；以后各行业用各自更权威的来源加 pack，接口不变，不要求一个数据源覆盖所有行业。白名单内的在线搜索是同一接口下的一个 pack，三小时默认关，留一个案例开着演示；model_only 不得标为已获证据支持 | 内部研究库、市场数据接口、正式公告源 |
 
 模型通过 Reasoner 的一个参数指定，换模型跑同一套 eval 不需要别的机制。排序、关键假设选择、diff、校验都是普通函数，等语义稳定了再决定要不要抽象。
 
@@ -91,28 +99,28 @@ Oct 18, 2026 · Mia
 
 一个配置文件，只放三小时真会动的东西；配置版本号写进每个快照。
 
-| 配置块 | 内容 |
-| --- | --- |
-| limits | max\_visible\_hops = 3（UI 默认展示的主要阶段数，不是推理深度限制；原 max\_hops 已删）；max\_candidates = 3；max\_retries = 2；max\_model\_calls\_per\_stage（每阶段成本上限，替代「固定三次调用」）；max\_search\_calls = 3（每阶段模型可发起的检索次数） |
-| enums | mechanism channels；Condition kind（numeric / document / event）与 predicate（observed\_by / not\_observed\_by / at\_deadline）；Claim 状态；evidence tier |
-| prompts | 每个 prompt 的文件路径 + 版本号；few-shot 文件（不得含 eval 案例）；禁用句式表只禁「没有判断方法的空泛陈述」，不禁否定条件 |
+| 配置块  | 内容                                                                                                                                                                                                                                                                                                                                                      |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| limits  | max_visible_hops = 3（UI 默认展示的主要阶段数，不是推理深度限制；原 max_hops 已删）；max_candidates = 3；max_retries = 2；max_model_calls_per_stage（每阶段成本上限，替代「固定三次调用」）；max_search_calls = 3（每阶段模型可发起的检索次数）                                                                                                           |
+| enums   | mechanism channels；Condition kind（numeric / document / event）与 predicate（observed_by / not_observed_by / at_deadline）；Claim 状态；evidence tier                                                                                                                                                                                                    |
+| prompts | 每个 prompt 的文件路径 + 版本号；few-shot 文件（不得含 eval 案例）；禁用句式表只禁「没有判断方法的空泛陈述」，不禁否定条件                                                                                                                                                                                                                                |
 | sources | 知识库 pack 列表，每个 pack 写明行业、来源、片段文件路径、是否在线——三小时：semiconductor（TrendForce）、hormuz（手写小包）、web（白名单在线搜索，默认关）；以后按行业加 pack，接口不变；可信来源白名单及等级（T1 官方数据与正式公告、T2 通讯社、T3 其他，供应链图谱类推断关系归 T3）；来源可信不等于支持某条因果，每条证据仍须写明 stance 与针对哪一部分 |
-| eval | 案例路径（CausalT5k 子集 + 自建）；人工复核记录路径 |
+| eval    | 案例路径（CausalT5k 子集 + 自建）；人工复核记录路径                                                                                                                                                                                                                                                                                                       |
 
-删掉的配置项及原因：min\_chain\_prob（没有累计概率）；min\_edge\_to\_trade（没有分歧评分）；resolve\_within\_days 作为 schema 不变量（90 天只是 POC 选例约束，光子芯片采用和出口管制需要更长窗口）；plugins 列表（只剩两个边界）。
+删掉的配置项及原因：min_chain_prob（没有累计概率）；min_edge_to_trade（没有分歧评分）；resolve_within_days 作为 schema 不变量（90 天只是 POC 选例约束，光子芯片采用和出口管制需要更长窗口）；plugins 列表（只剩两个边界）。
 
 ## 可验证：Eval 设计
 
 三小时只评估四件事，测量对象是「推理有没有依据、失效条件有没有意义、分叉有没有越界、该拒绝时拒绝、不该拒绝时不拒绝」——不是字段齐不齐。只有 E3 的 Non-interference 部分能全自动；E3 的 Expected Impact 靠少量人工指定预期的 golden case；E1、E2、E4 人工复核少量样本，不单靠 schema 或另一轮 LLM judge。
 
-| Eval | 验收内容 | 怎么测 | 外部数据 |
-| --- | --- | --- | --- |
-| E1 有依据的推理 | 因果连接与提供的资料一致；未知处标 unverified / model\_only，不发明指标或阈值；资料包里的反方片段被看见并回应 | 人工对照资料逐边核；「关键片段没被检索到」和「检索到了但推理错」分开报，每个案例多一栏检索命中 | CausalT5k（YES 案例）；FinCausal 段落可当「提供的资料」 |
-| E2 有意义的失效条件 | Condition 具体、可判断，且与核心论点有真实逻辑联系；否定条件合法，空泛陈述不合法；null 阈值（带说明）合法；verifiable 不等于 met | 人工复核：换掉这个条件论点还成立吗 | 无，必须自建 |
-| E3 分叉完整性 | 两部分。Non-interference：ChangeAssumption 与 AddShock 之后，写范围外的节点和边（含机制）逐字不变；AddShock 只新增经明确识别的影响关系；基线版本仍在。Expected Impact：预设 golden case 里人工指定的「应受挑战路径」确实被标为 challenged，提案正确反映这一变化——否则一个什么都不改的系统也能全过 E3 | Non-interference：确定性自动测试，节点与边哈希比对 + 变更溯源；Expected Impact：对 C3 等少量 golden case 人工指定预期影响集合，自动比对 | 无，必须自建（CLadder 只能辅助检查模型的反事实逻辑） |
-| E4 恰当的弃权 | 证据不足时拒绝或弃权；有依据的候选不被错误拒绝；用户断言不跟随 | CausalT5k 三类标签 + 自建负对照 + 资料包里的反方片段 | CausalT5k |
+| Eval                | 验收内容                                                                                                                                                                                                                                                                                             | 怎么测                                                                                                                                  | 外部数据                                                |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
+| E1 有依据的推理     | 因果连接与提供的资料一致；未知处标 unverified / model_only，不发明指标或阈值；资料包里的反方片段被看见并回应                                                                                                                                                                                         | 人工对照资料逐边核；「关键片段没被检索到」和「检索到了但推理错」分开报，每个案例多一栏检索命中                                          | CausalT5k（YES 案例）；FinCausal 段落可当「提供的资料」 |
+| E2 有意义的失效条件 | Condition 具体、可判断，且与核心论点有真实逻辑联系；否定条件合法，空泛陈述不合法；null 阈值（带说明）合法；verifiable 不等于 met                                                                                                                                                                     | 人工复核：换掉这个条件论点还成立吗                                                                                                      | 无，必须自建                                            |
+| E3 分叉完整性       | 两部分。Non-interference：ChangeAssumption 与 AddShock 之后，写范围外的节点和边（含机制）逐字不变；AddShock 只新增经明确识别的影响关系；基线版本仍在。Expected Impact：预设 golden case 里人工指定的「应受挑战路径」确实被标为 challenged，提案正确反映这一变化——否则一个什么都不改的系统也能全过 E3 | Non-interference：确定性自动测试，节点与边哈希比对 + 变更溯源；Expected Impact：对 C3 等少量 golden case 人工指定预期影响集合，自动比对 | 无，必须自建（CLadder 只能辅助检查模型的反事实逻辑）    |
+| E4 恰当的弃权       | 证据不足时拒绝或弃权；有依据的候选不被错误拒绝；用户断言不跟随                                                                                                                                                                                                                                       | CausalT5k 三类标签 + 自建负对照 + 资料包里的反方片段                                                                                    | CausalT5k                                               |
 
-**CausalT5k 怎么接，以及它的标签意味着什么。** 走我们自己的 Inspect 入口：`scenario` 作为提供的资料，`claim` 拆成 A → B。仓库 `final_dataset/clean/` 下每个案例含 `scenario`、`claim`、`label`（YES / NO / AMBIGUOUS）、`pearl_level`（L1–L3）、`trap`、`gold_rationale`；取 D3 Markets & Finance。标签针对的是**给定材料下的特定因果断言**，不是「世上有没有一条 A → B 的路径」，所以期望行为是：YES → 识别材料为什么支持该断言；NO → 解释该断言在当前材料下为什么不成立（理由应点中 `gold_rationale` 里的陷阱）；AMBIGUOUS → 说明证据为什么不足以确定。no\_chain 是产品输出状态，不机械等于 NO。它的四种陷阱里 Skepticism Trap（该 YES 却拒绝）测 E4 的后半句，谄媚陷阱测「用户断言就跟着说 YES」。CausalT5k 评估的是对给定情景的因果判断，不证明 Evidence Provider 找到了可靠来源——后者单独评估。跑 CausalT5k 的 Inspect eval 时只输出因果判断（标签 + 理由），不强制生成 Trade Proposal：它的样本不一定能映射到交易白名单标的，强行映射会让标的错误污染因果推理的结果。
+**CausalT5k 怎么接，以及它的标签意味着什么。** 走我们自己的 Inspect 入口：`scenario` 作为提供的资料，`claim` 拆成 A → B。仓库 `final_dataset/clean/` 下每个案例含 `scenario`、`claim`、`label`（YES / NO / AMBIGUOUS）、`pearl_level`（L1–L3）、`trap`、`gold_rationale`；取 D3 Markets & Finance。标签针对的是**给定材料下的特定因果断言**，不是「世上有没有一条 A → B 的路径」，所以期望行为是：YES → 识别材料为什么支持该断言；NO → 解释该断言在当前材料下为什么不成立（理由应点中 `gold_rationale` 里的陷阱）；AMBIGUOUS → 说明证据为什么不足以确定。no_chain 是产品输出状态，不机械等于 NO。它的四种陷阱里 Skepticism Trap（该 YES 却拒绝）测 E4 的后半句，谄媚陷阱测「用户断言就跟着说 YES」。CausalT5k 评估的是对给定情景的因果判断，不证明 Evidence Provider 找到了可靠来源——后者单独评估。跑 CausalT5k 的 Inspect eval 时只输出因果判断（标签 + 理由），不强制生成 Trade Proposal：它的样本不一定能映射到交易白名单标的，强行映射会让标的错误污染因果推理的结果。
 
 **第一版 10 个案例，覆盖完整流程。** 6 个 CausalT5k D3 案例（T1–T6）：YES、NO、AMBIGUOUS 各 2，至少一个 L3，两个 NO 选不同陷阱类型，不进 few-shot。4 个自建，输入全部取自题目给的四个示例：C1 只输入 Event A「光子芯片采用快于预期」，发现候选、选一个形成提案（Discovery + E1 + 数值型 E2，走 Semiconductor Pack）；C2 输入 A + Target B「高于 Fable 的模型被出口限制 → 用户给的标的」，检验路径并形成提案（Inspect + 文件 / 事件型 E2）；C3 对 C1 的图分别执行 ChangeAssumption 和 AddShock（E3 + 提案 diff 可追溯）；C4 输入「中期选举分裂」到一个远距离标的（E4 + Discovery 弃权）。另加 D1：创始人通话里亲口举的「霍尔木兹海峡下周重开」，用 Hormuz 小包跑通全流程，只证明跨领域不编数。所有案例走知识库统一接口，在线搜索只在一个案例里开着演示，不把成败交给实时搜索。
 
@@ -122,11 +130,11 @@ Oct 18, 2026 · Mia
 
 ## 与下游的接口
 
-本系统到 commit 为止，输出是 **Conditional Trade Proposal，状态 draft / needs\_review**。机读不等于可执行：`portwatch.hormuz.daily_transits >= 20` 即使 schema 合法，也不证明这个序列真实可访问、阈值 20 有依据、更新频率和延迟适合交易决策、合约与方向已确定。校验器最多保证字段完整，不能证明已具备自动执行条件。
+本系统到 commit 为止，输出是 **Conditional Trade Proposal，状态 draft / needs_review**。机读不等于可执行：`portwatch.hormuz.daily_transits >= 20` 即使 schema 合法，也不证明这个序列真实可访问、阈值 20 有依据、更新频率和延迟适合交易决策、合约与方向已确定。校验器最多保证字段完整，不能证明已具备自动执行条件。
 
-**导出（只定义边界）**：带 `proposal_version` 的 JSON；Condition 对象携带 kind、predicate、source 或 series、comparator、threshold（可为 null）、anchor、deadline、observation\_window、rule、verification\_status、evaluation\_status。`approval_required` 永远为 true。下游若要把它变成监控或条件单，必须先把每个 Condition 的 verification\_status 推进到 verifiable——这一步在下游，不在本系统。
+**导出（只定义边界）**：带 `proposal_version` 的 JSON；Condition 对象携带 kind、predicate、source 或 series、comparator、threshold（可为 null）、anchor、deadline、observation_window、rule、verification_status、evaluation_status。`approval_required` 永远为 true。下游若要把它变成监控或条件单，必须先把每个 Condition 的 verification_status 推进到 verifiable——这一步在下游，不在本系统。
 
-**钩子**：延期。三小时内不定义 on\_condition\_fired 一类接口，README 一句话说明未来形态。
+**钩子**：延期。三小时内不定义 on_condition_fired 一类接口，README 一句话说明未来形态。
 
 **边界**：仓位、账户、订单路由、价格止损的翻译都在下游。本系统的承诺只有一条：提案能明确回答「还需要什么条件才能继续」，而不是每次都输出买卖方向。
 
@@ -136,14 +144,14 @@ Oct 18, 2026 · Mia
 
 运行时三段路线（已定）：POC 用自己的约 50 行 loop（选项 A）；MVP 保持「核心库 + 网页壳」，Claude Code（选项 B）只作开发工具和内部测试的对话壳，经 MCP 调核心库的 discover / inspect / fork / commit，写图仍只经校验器——不让它当 loop，因为它的默认是让模型自己决定做什么，写范围在里面只能靠 prompt 勝；生产用图编排框架（LangGraph 一类，选项 D）跑核心状态机，它的 checkpoint 对应我们的快照、审批中断对应 commit；通用 agent 框架（Hermes 一类，选项 C）只跑慢环——每张已签提案一个长期盯到期判定的监控 agent。三段里不变的是核心库：schema、校验器、快照、两个边界、eval。
 
-关键约束只有一条：loop 是无状态函数，但输入必须显式带上状态引用——`run(op, graph_version, user_choice, config, user_id)` → 新快照 + 操作日志条目。旧签名 `run(belief, config, user_id)` 描述不了多轮操作：Fork 必须知道当前图版本和用户选了哪条路径，所以即使未来是无状态 worker，输入也要显式包含这些引用，不让未来架构的签名成为当前 MVP 的错误约束。任何 worker 都能跑任何请求，加机器不改代码；用户隔离就是快照和配置上的 user\_id（teams 再加 team\_id）；配置三层叠加：系统默认 < 组织 < 用户，可信来源白名单是第一个按用户覆盖的东西。下表是后续阶段的参考，不是 MVP 验收标准。
+关键约束只有一条：loop 是无状态函数，但输入必须显式带上状态引用——`run(op, graph_version, user_choice, config, user_id)` → 新快照 + 操作日志条目。旧签名 `run(belief, config, user_id)` 描述不了多轮操作：Fork 必须知道当前图版本和用户选了哪条路径，所以即使未来是无状态 worker，输入也要显式包含这些引用，不让未来架构的签名成为当前 MVP 的错误约束。任何 worker 都能跑任何请求，加机器不改代码；用户隔离就是快照和配置上的 user_id（teams 再加 team_id）；配置三层叠加：系统默认 \< 组织 \< 用户，可信来源白名单是第一个按用户覆盖的东西。下表是后续阶段的参考，不是 MVP 验收标准。
 
-|  | 三小时 POC | 多用户 | swarm / teams |
-| --- | --- | --- | --- |
-| 跑 loop 的地方 | 进程内，Claude SDK 的 Tool Runner | 队列 + worker 池，同一个函数 | 托管 agent 运行时，带会话、权限策略、预算（候选：Anthropic Managed Agents；届时与自建 worker 池并排比） |
-| 状态 | 内存中的版本快照 + 操作日志（落地成 JSON 文件即可） | Postgres 追加表 + 对象存储存 trace | 同上 + 事件流（webhook） |
-| 定时（慢环） | 无（到期判定整体延期） | cron 扫账本 | 持久化定时器（到期日跨越数周，需要 durable workflow 或托管运行时自带调度） |
-| 界面 | Streamlit 一页 | Next.js 读同一个 API | 多人共享 thesis 看板 + 评论 |
+|                | 三小时 POC                                                                                                              | 多用户                                         | swarm / teams                                                                                           |
+|----------------|-------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| 跑 loop 的地方 | 进程内，Claude SDK 的 Tool Runner                                                                                       | 队列 + worker 池，同一个函数                   | 托管 agent 运行时，带会话、权限策略、预算（候选：Anthropic Managed Agents；届时与自建 worker 池并排比） |
+| 状态           | 内存中的版本快照 + 操作日志（落地成 JSON 文件即可）                                                                     | Postgres 追加表 + 对象存储存 trace             | 同上 + 事件流（webhook）                                                                                |
+| 定时（慢环）   | 无（到期判定整体延期）                                                                                                  | cron 扫账本                                    | 持久化定时器（到期日跨越数周，需要 durable workflow 或托管运行时自带调度）                              |
+| 界面           | React Flow workflow 模板（Next.js）做只读画布 + 面板；第 115 分钟没跑通就换 Streamlit + Graphviz 兜底（见前端设计文档） | 同一套 React Flow 前端加编辑交互，读同一个 API | 多人共享 thesis 看板 + 评论                                                                             |
 
 为什么三小时不用 Claude Code 或 Hermes 之类的通用 agent 框架当运行时：我们的 agent 不执行生成的代码、四个工具全是只读、写图只经校验器——沙箱在解决一个我们没有的问题；通用框架的默认哲学是让模型自己决定做什么，和「只给子树、越界即拒」相反，这条线在框架里只能靠 prompt 劝，在自己的 loop 里是一行 if；而评审者要看的恰好是 loop 本身。Claude Code 用来写这个项目，不用来当这个项目。
 
@@ -155,77 +163,83 @@ swarm 在这个产品里的三个真实用途，都不为多 agent 而多 agent�
 
 审计后重写。README 按这张表讲取舍；三条「主动删除」是评审者最可能追问的地方，要能一句话说出为什么。
 
-| 决定 | 备选 | 为什么 | 代价 |
-| --- | --- | --- | --- |
-| 图是有状态的结构化对象，带版本快照 | 每次重新生成一篇文章；完整 event-sourcing 账本 | 可审计、可分叉、UI diff 的基础；三小时只需要 v1 → 操作 → v2 → diff 这一串 | 无法保证重新调用模型得到相同结果，所以快照里存模型输出和工具观测 |
-| 模型提议、代码只裁决结构 | 模型重生成整图；用 schema 判断因果正确性 | 校验器能保证字段与范围，不能保证金融因果成立；因果正确性靠证据状态和人工复核 | 需要人看少量样本 |
-| Claim 与 Condition 分开，Condition 用三个时间谓词 | 每个节点一个数值四元组 | 不是所有节点都对应数字序列；「到期未发生」是合法条件；强套四元组会逼模型发明指标 | 判定方法按类型选，实现多一个分支 |
-| 主动删除概率传播 | noisy-OR / 贝叶斯传播作为插件 | 三个模型估计的概率相乘不是交易成功概率；条件依赖、共同原因、市场预期都没建模；错的抽象比没有抽象更贵 | 分叉只回答「哪些路径受挑战」，不给数字 |
-| 主动删除无来源的分歧评分 | p\_user − p\_model 当交易优势 | 模型概率不是市场共识，两者之差只说明判断不同；有市场数据就展示并写明回答什么问题 | 排序改为研究优先级，不是 alpha 排序 |
-| Discover 最多 3 个或弃权 | 每次至少 3 个、至少 1 反直觉 | 硬性数量在激励编造，与「敢说不」矛盾 | 有时屏幕上只有一个方向或零个 |
-| 情景、观测、失效三态分开 | 情景直接触发失效、止盈变止损 | 假设伊朗被打不等于航运已停，更推不出止损价；视觉戏剧性不能制造金融结论 | fork 的 wow 变成「受挑战 + 下一步查什么」 |
-| 提案是 draft，机读不等于可执行 | 规格书可直接轮询执行 | 序列是否存在、阈值是否有依据、延迟是否可接受都不是 schema 能证明的 | 下游接口只定义边界 |
-| 只留 Reasoner 与 Evidence Provider 两个边界 | 六个插件 + 两个传播器 | 其余语义未定，提前抽象会固化错误 | 可扩展性证明改由「换模型跑同一套 eval」承担 |
-| 自己写 loop，不用通用 agent 框架 | Claude Code 无头 + harness；Hermes | 工具只读、不执行代码，沙箱无用武之地；写范围控制在框架里只能靠 prompt | 维护约 50 行循环 |
-| 证据先于推理，引用可被代码校验 | 先建图再找证据挂到边上 | 先编故事再配引用会退化成 citation laundering；资料包先进上下文，excerpt\_id 由 Reference Validator 校验 | 三小时只支持预审资料包，不做实时检索 |
-| 写范围在改图之前由代码确定 | 由同一份模型输出自行声明范围 | 模型不能给自己授权；AddShock 的 Stage 1 只提议接入点，代码据此定范围再放模型改 | 三小时用预定义 demo shock 接入点，任意冲击留后续 |
-| 进场条件默认 AND，空集不通过 | 任一满足即撤「先别动」 | 必要条件必须全部满足；缺失和未知不算满足；全满足也只到 Ready for Review | 多一张真值表的单元测试 |
-| max\_visible\_hops 替代 max\_hops；三个逻辑阶段按需调用替代固定三次 | 后端硬限 ≤3 跳；承诺三次模型调用 | 三步是 UX 简化不是推理限制：强压六步成三步会漏掉关键前提（如航空公司已对冲燃油）；调用次数受检索与重试影响，文档该约束每阶段的输入输出与成本上限 | 展示层要折叠主干、详情列出额外依赖（三小时不做任意展开）；eval 从「不超过三步」改为「因果完整性与关键依赖」 |
-| 运行时三段路线：A → 核心库 + 壳（B 只当壳）→ D 跑核心、C 跑慢环 | B 直接当 MVP 运行时；C / D 二选一跑全部 | Claude Code 默认让模型自己决定做什么，写范围只能靠 prompt 勝；D 的 checkpoint 与审批中断正对快照与 commit；C 擅长长期盯守不擅长可审计的核心循环 | MVP 阶段多一层 MCP 封装；生产时把 50 行 loop 搬成图 |
-| 知识库统一接口、按行业分 pack | 一个数据源覆盖所有行业；或直接接 OpenSearch / 向量库 | TrendForce 只懂半导体，其他行业各有更权威的来源；几十段片段用 BM25 就够，向量库是规模上千以后的事 | 每加一个行业要人工整理一个 pack |
+| 决定                                                             | 备选                                                 | 为什么                                                                                                                                           | 代价                                                                                                        |
+|------------------------------------------------------------------|------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| 图是有状态的结构化对象，带版本快照                               | 每次重新生成一篇文章；完整 event-sourcing 账本       | 可审计、可分叉、UI diff 的基础；三小时只需要 v1 → 操作 → v2 → diff 这一串                                                                        | 无法保证重新调用模型得到相同结果，所以快照里存模型输出和工具观测                                            |
+| 模型提议、代码只裁决结构                                         | 模型重生成整图；用 schema 判断因果正确性             | 校验器能保证字段与范围，不能保证金融因果成立；因果正确性靠证据状态和人工复核                                                                     | 需要人看少量样本                                                                                            |
+| Claim 与 Condition 分开，Condition 用三个时间谓词                | 每个节点一个数值四元组                               | 不是所有节点都对应数字序列；「到期未发生」是合法条件；强套四元组会逼模型发明指标                                                                 | 判定方法按类型选，实现多一个分支                                                                            |
+| 主动删除概率传播                                                 | noisy-OR / 贝叶斯传播作为插件                        | 三个模型估计的概率相乘不是交易成功概率；条件依赖、共同原因、市场预期都没建模；错的抽象比没有抽象更贵                                             | 分叉只回答「哪些路径受挑战」，不给数字                                                                      |
+| 主动删除无来源的分歧评分                                         | p_user − p_model 当交易优势                          | 模型概率不是市场共识，两者之差只说明判断不同；有市场数据就展示并写明回答什么问题                                                                 | 排序改为研究优先级，不是 alpha 排序                                                                         |
+| Discover 最多 3 个或弃权                                         | 每次至少 3 个、至少 1 反直觉                         | 硬性数量在激励编造，与「敢说不」矛盾                                                                                                             | 有时屏幕上只有一个方向或零个                                                                                |
+| 情景、观测、失效三态分开                                         | 情景直接触发失效、止盈变止损                         | 假设伊朗被打不等于航运已停，更推不出止损价；视觉戏剧性不能制造金融结论                                                                           | fork 的 wow 变成「受挑战 + 下一步查什么」                                                                   |
+| 提案是 draft，机读不等于可执行                                   | 规格书可直接轮询执行                                 | 序列是否存在、阈值是否有依据、延迟是否可接受都不是 schema 能证明的                                                                               | 下游接口只定义边界                                                                                          |
+| 只留 Reasoner 与 Evidence Provider 两个边界                      | 六个插件 + 两个传播器                                | 其余语义未定，提前抽象会固化错误                                                                                                                 | 可扩展性证明改由「换模型跑同一套 eval」承担                                                                 |
+| 自己写 loop，不用通用 agent 框架                                 | Claude Code 无头 + harness；Hermes                   | 工具只读、不执行代码，沙箱无用武之地；写范围控制在框架里只能靠 prompt                                                                            | 维护约 50 行循环                                                                                            |
+| 证据先于推理，引用可被代码校验                                   | 先建图再找证据挂到边上                               | 先编故事再配引用会退化成 citation laundering；资料包先进上下文，excerpt_id 由 Reference Validator 校验                                           | 三小时只支持预审资料包，不做实时检索                                                                        |
+| 写范围在改图之前由代码确定                                       | 由同一份模型输出自行声明范围                         | 模型不能给自己授权；AddShock 的 Stage 1 只提议接入点，代码据此定范围再放模型改                                                                   | 三小时用预定义 demo shock 接入点，任意冲击留后续                                                            |
+| 进场条件默认 AND，空集不通过                                     | 任一满足即撤「先别动」                               | 必要条件必须全部满足；缺失和未知不算满足；全满足也只到 Ready for Review                                                                          | 多一张真值表的单元测试                                                                                      |
+| max_visible_hops 替代 max_hops；三个逻辑阶段按需调用替代固定三次 | 后端硬限 ≤3 跳；承诺三次模型调用                     | 三步是 UX 简化不是推理限制：强压六步成三步会漏掉关键前提（如航空公司已对冲燃油）；调用次数受检索与重试影响，文档该约束每阶段的输入输出与成本上限 | 展示层要折叠主干、详情列出额外依赖（三小时不做任意展开）；eval 从「不超过三步」改为「因果完整性与关键依赖」 |
+| 运行时三段路线：A → 核心库 + 壳（B 只当壳）→ D 跑核心、C 跑慢环  | B 直接当 MVP 运行时；C / D 二选一跑全部              | Claude Code 默认让模型自己决定做什么，写范围只能靠 prompt 勝；D 的 checkpoint 与审批中断正对快照与 commit；C 擅长长期盯守不擅长可审计的核心循环  | MVP 阶段多一层 MCP 封装；生产时把 50 行 loop 搬成图                                                         |
+| 知识库统一接口、按行业分 pack                                    | 一个数据源覆盖所有行业；或直接接 OpenSearch / 向量库 | TrendForce 只懂半导体，其他行业各有更权威的来源；几十段片段用 BM25 就够，向量库是规模上千以后的事                                                | 每加一个行业要人工整理一个 pack                                                                             |
 
 ## 风险与缓解
 
-| 风险 | 后果 | 缓解 | 怎么知道它发生了 |
-| --- | --- | --- | --- |
-| 模型分叉时写了范围外的节点 | 用户分不清变化与噪声 | 写范围由代码算出；越界写入丢弃 | E3 自动测试 |
-| 模型为了满足 schema 发明数据序列或阈值 | 提案看起来可执行，其实是编的 | Claim 与 Condition 分开；允许 unverified；来源类型按 Claim 类型选 | E1 人工核：每个 series 与阈值能否指出依据 |
-| 该成链时拒绝（Skepticism Trap），或用户断言就跟着说 YES | 发现要么空、要么谄媚 | Discover 允许 0–3 个；CausalT5k 的 YES 与谄媚陷阱案例进 eval | E4 |
-| 情景被当成观测，前提直接标失效 | 制造确定的金融结论 | 四种 Claim 状态；情景只产生「受挑战」 | E3 + 人工看 diff 文案 |
-| 失效条件是没有判断方法的空话 | 产品退化为 prompt | Condition 必须带 rule；禁用表只禁空泛陈述 | E2 |
-| 证据来源可信但不支持这条因果 | 看似有据的链 | 每条证据写明 supports 哪一部分 | E1 |
-| 三小时又长回十几个项目 | 只有架构没有体验 | 按时间分配表走：前 30 分钟必须看到第一个真实模型输出；115 分钟起 UI、150 分钟起 eval 与 README 硬截止；超时交付完整可用的 Seed Case，不交付五个半成品接口 | 时间表 |
-| AddShock 时模型偷改依赖边，节点文本不变 | 因果模型已变而哈希比对看不出 | 写范围含边；两阶段 AddShock；E3 比对节点与边并做变更溯源 | E3 自动测试 |
-| not\_observed\_by 在数据源未更新时被判成「未发生」 | 错误触发退出 | evaluation\_status 三值（met / not\_met / unknown）；not\_observed\_by 只有在 observation\_window 结束且来源覆盖该窗口时才给 not\_met，否则 unknown | E2 人工复核 + 单元测试 |
-| 模型先编因果故事再找材料配（citation laundering） | 图上有引用，但引用不支持因果结论 | 证据先于推理：资料包先进上下文，边引用 excerpt\_id，Reference Validator 校验引用存在于资料包 | E1 人工核：引用原文是否支持该机制 |
-| 进场条件按「任一满足」判定 | 一条满足就撤掉「先别动」，另一条还没核实 | 默认 AND；unknown → WAIT、not\_met → BLOCKED、空集不通过；全满足也只到 Ready for Review | 真值表单元测试 |
-| 一条路径受挑战就判整个论点失效 | 忽略其他仍成立的路径，制造假的失效 | ClaimGraph 是 DAG；Scenario Assessment 按 claim 记录；关键依赖失败不自动使论点失效 | E3 Expected Impact + 人工看 diff 文案 |
+| 风险                                                    | 后果                                     | 缓解                                                                                                                                                      | 怎么知道它发生了                          |
+|---------------------------------------------------------|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|
+| 模型分叉时写了范围外的节点                              | 用户分不清变化与噪声                     | 写范围由代码算出；越界写入丢弃                                                                                                                            | E3 自动测试                               |
+| 模型为了满足 schema 发明数据序列或阈值                  | 提案看起来可执行，其实是编的             | Claim 与 Condition 分开；允许 unverified；来源类型按 Claim 类型选                                                                                         | E1 人工核：每个 series 与阈值能否指出依据 |
+| 该成链时拒绝（Skepticism Trap），或用户断言就跟着说 YES | 发现要么空、要么谄媚                     | Discover 允许 0–3 个；CausalT5k 的 YES 与谄媚陷阱案例进 eval                                                                                              | E4                                        |
+| 情景被当成观测，前提直接标失效                          | 制造确定的金融结论                       | 四种 Claim 状态；情景只产生「受挑战」                                                                                                                     | E3 + 人工看 diff 文案                     |
+| 失效条件是没有判断方法的空话                            | 产品退化为 prompt                        | Condition 必须带 rule；禁用表只禁空泛陈述                                                                                                                 | E2                                        |
+| 证据来源可信但不支持这条因果                            | 看似有据的链                             | 每条证据写明 supports 哪一部分                                                                                                                            | E1                                        |
+| 三小时又长回十几个项目                                  | 只有架构没有体验                         | 按时间分配表走：前 30 分钟必须看到第一个真实模型输出；115 分钟起 UI、150 分钟起 eval 与 README 硬截止；超时交付完整可用的 Seed Case，不交付五个半成品接口 | 时间表                                    |
+| AddShock 时模型偷改依赖边，节点文本不变                 | 因果模型已变而哈希比对看不出             | 写范围含边；两阶段 AddShock；E3 比对节点与边并做变更溯源                                                                                                  | E3 自动测试                               |
+| not_observed_by 在数据源未更新时被判成「未发生」        | 错误触发退出                             | evaluation_status 三值（met / not_met / unknown）；not_observed_by 只有在 observation_window 结束且来源覆盖该窗口时才给 not_met，否则 unknown             | E2 人工复核 + 单元测试                    |
+| 模型先编因果故事再找材料配（citation laundering）       | 图上有引用，但引用不支持因果结论         | 证据先于推理：资料包先进上下文，边引用 excerpt_id，Reference Validator 校验引用存在于资料包                                                               | E1 人工核：引用原文是否支持该机制         |
+| 进场条件按「任一满足」判定                              | 一条满足就撤掉「先别动」，另一条还没核实 | 默认 AND；unknown → WAIT、not_met → BLOCKED、空集不通过；全满足也只到 Ready for Review                                                                    | 真值表单元测试                            |
+| 一条路径受挑战就判整个论点失效                          | 忽略其他仍成立的路径，制造假的失效       | ClaimGraph 是 DAG；Scenario Assessment 按 claim 记录；关键依赖失败不自动使论点失效                                                                        | E3 Expected Impact + 人工看 diff 文案     |
 
 ## 三小时映射
 
 架构里的每个组件都有一个状态：做、stub、不做。stub 的意思是接口存在、默认实现最薄，README 写明。
 
-| 优先级 | 组件 | 交付标准 |
-| --- | --- | --- |
-| 1 | Typed Graph + Condition | 假设、证据、条件判定三类状态分开，不混用一个字段；阈值可为 null；Condition 带 anchor / deadline / observation\_window；verifiable ≠ met 写成代码 |
-| 2 | Structured Reasoner | Discover（0–3 个或弃权，三类标签）或 Inspect 能生成受约束的候选；三个逻辑阶段按需调用，每阶段有成本上限；路径深度不设硬限，展示默认 3 个主要阶段 |
-| 3 | Evidence Grounding | 证据先于推理：知识库（Semiconductor Pack + Hormuz 小包，统一接口，以后按行业加 pack）先进上下文，边引用 excerpt\_id，Reference Validator 校验引用存在；写明 stance 与针对哪一部分，资料包含反方材料；有证据的边与 model\_only 的边明确区分；不编阈值 |
-| 4 | Fork + Scoped Patch | 写范围由代码先定；ChangeAssumption 与限定的 AddShock（预定义接入点）；不受影响的节点和边保持原样；受挑战写入 Scenario Assessment；基线版本保留 |
-| 5 | Conditional Trade Proposal | 与图版本一致；派生分析与用户判断分离；进场条件 AND 真值表（WAIT / BLOCKED / Ready for Review）写成单元测试；零候选不造提案 |
-| 6 | Focused Eval | 10 个案例（T1–T6 + C1–C4）逐例报告结果与失败类型；E3 Non-interference 自动 + Expected Impact 用 golden case；CausalT5k 只出因果判断不出提案 |
-| — | 市场参照、Critic、UI 动画 | 可选；时间不足依次放弃 |
-| — | 六个插件接口、两个传播器、noisy-OR、Brier 校准、JSONL 账本、schema 迁移、CLI 四命令、钩子、多用户、swarm、持续监控、画布、历史回放 | 延期或删除；README「下一步」与「主动不做」 |
+| 优先级 | 组件                                                                                                                               | 交付标准                                                                                                                                                                                                                                           |
+|--------|------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1      | Typed Graph + Condition                                                                                                            | 假设、证据、条件判定三类状态分开，不混用一个字段；阈值可为 null；Condition 带 anchor / deadline / observation_window；verifiable ≠ met 写成代码                                                                                                    |
+| 2      | Structured Reasoner                                                                                                                | Discover（0–3 个或弃权，三类标签）或 Inspect 能生成受约束的候选；三个逻辑阶段按需调用，每阶段有成本上限；路径深度不设硬限，展示默认 3 个主要阶段                                                                                                   |
+| 3      | Evidence Grounding                                                                                                                 | 证据先于推理：知识库（Semiconductor Pack + Hormuz 小包，统一接口，以后按行业加 pack）先进上下文，边引用 excerpt_id，Reference Validator 校验引用存在；写明 stance 与针对哪一部分，资料包含反方材料；有证据的边与 model_only 的边明确区分；不编阈值 |
+| 4      | Fork + Scoped Patch                                                                                                                | 写范围由代码先定；ChangeAssumption 与限定的 AddShock（预定义接入点）；不受影响的节点和边保持原样；受挑战写入 Scenario Assessment；基线版本保留                                                                                                     |
+| 5      | Conditional Trade Proposal                                                                                                         | 与图版本一致；派生分析与用户判断分离；进场条件 AND 真值表（WAIT / BLOCKED / Ready for Review）写成单元测试；零候选不造提案                                                                                                                         |
+| 6      | Focused Eval                                                                                                                       | 10 个案例（T1–T6 + C1–C4）逐例报告结果与失败类型；E3 Non-interference 自动 + Expected Impact 用 golden case；CausalT5k 只出因果判断不出提案                                                                                                        |
+| —      | 市场参照、Critic、UI 动画                                                                                                          | 可选；时间不足依次放弃                                                                                                                                                                                                                             |
+| —      | 六个插件接口、两个传播器、noisy-OR、Brier 校准、JSONL 账本、schema 迁移、CLI 四命令、钩子、多用户、swarm、持续监控、画布、历史回放 | 延期或删除；README「下一步」与「主动不做」                                                                                                                                                                                                         |
 
 顺序与时间分配（最终审计后）：不再把「前 30 分钟绝对不写 prompt」当硬规则——这个项目最大的未知不是 schema 能不能写出来，而是给定有限证据，模型能不能生成有意义的因果条件；如果到中后期才第一次看到真实模型输出，就没有时间修最重要的推理问题。必须确保完成的体验：输入事件得到合理候选或明确弃权；选定方向看到短因果链与关键依赖；改一项假设看到正确的局部变化；得到一份区分已知、未知与待审核的提案。
 
-| 时间 | 目标 |
-| --- | --- |
-| 0–30 分钟 | 最小 schema + 校验器，立即跑通一个 Inspect 样本（第一个真实模型输出必须在这里出现） |
-| 30–75 分钟 | Discover / Inspect 与 Evidence Pack（证据先于推理、引用校验） |
-| 75–115 分钟 | ChangeAssumption、限定的 AddShock（预定义接入点）、Patch / Diff、Scenario Assessment |
-| 115–150 分钟 | 单页 UI，跑通完整用户路径 |
-| 150–180 分钟 | 执行核心 eval、记录失败、完善 README |
+| 时间         | 目标                                                                                                 |
+|--------------|------------------------------------------------------------------------------------------------------|
+| 0–30 分钟    | 最小 schema + 校验器，立即跑通一个 Inspect 样本（第一个真实模型输出必须在这里出现）                  |
+| 30–75 分钟   | Discover / Inspect 与 Evidence Pack（证据先于推理、引用校验）                                        |
+| 75–115 分钟  | ChangeAssumption、限定的 AddShock（预定义接入点）、Patch / Diff、Scenario Assessment                 |
+| 115–150 分钟 | 前端：React Flow 只读画布 + 面板 + 签字表 + 三态 diff，跑通完整用户路径；到点没通就换 Streamlit 兜底 |
+| 150–180 分钟 | 执行核心 eval、记录失败、完善 README                                                                 |
 
 前提是已有可用的项目脚手架和模型调用环境。超时时的取舍：宁可交付一个完整可用的 Seed Case 加明确报告的测试结果，也不交付五个接口都存在、但没有一条用户路径完整可用的系统。时间不足依次降低：排序精细度 → Critic → 市场参照 → UI 动画；不首先牺牲状态一致性、证据标注、拒绝机制或端到端流程。README 里要有一段「我们主动不做什么、为什么」。
 
 ## 验收清单：工程评审会看的 7 项
 
-- [ ] 输入 Event A，能够发现候选或合理弃权
-- [ ] 选择候选后，能够解释最多三跳因果机制
-- [ ] 关键条件不编造来源、阈值或判定日期
-- [ ] 修改假设后，相关路径正确更新、无关部分保持不变
-- [ ] 条件尚未满足或未经核实时，提案保持 WAIT / needs\_review
-- [ ] 用户能够查看明确的研究提案及其证据状态
-- [ ] Eval 能输出逐例结果，包括失败原因
+- 输入 Event A，能够发现候选或合理弃权
+
+- 选择候选后，能够解释最多三跳因果机制
+
+- 关键条件不编造来源、阈值或判定日期
+
+- 修改假设后，相关路径正确更新、无关部分保持不变
+
+- 条件尚未满足或未经核实时，提案保持 WAIT / needs_review
+
+- 用户能够查看明确的研究提案及其证据状态
+
+- Eval 能输出逐例结果，包括失败原因
 
 这七项是 POC 的完成标准，比「五个接口都存在」更重要。
