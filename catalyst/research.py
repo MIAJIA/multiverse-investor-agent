@@ -3,7 +3,8 @@
   Round 1: the web retrieval before the entry points (websearch.run_web_stage, round=1); its pack is already frozen
            and registered.
   Draft:   Inspect runs as usual (graph + plan) into runs/<id>/research/r1/; this pass is only used to find gaps.
-  Gaps:    found by code (find_gaps; after plan B merges it switches to branches.py's kind, via GapDetector).
+  Gaps:    found by code: find_gaps_by_branch, i.e. model_only edges of model_only branches (branches.py) plus
+           numeric conditions missing data; hypothetical branches are not researched.
   Round 2: only when there are gaps. Its input is the event, the claims / edges / conditions where the gaps are, and
            the ids of excerpts already collected, never the conclusions or the plan. Stance is still labelled by
            web.label, and the round is frozen as a second pack (the retrieval key includes the round and the gaps).
@@ -55,6 +56,21 @@ def find_gaps(result: dict) -> list[dict]:
     return sorted(gaps, key=lambda x: (x["kind"], x["id"]))[:MAX_GAPS]
 
 
+def find_gaps_by_branch(result: dict) -> list[dict]:
+    """Plan B rule (D-A5 after plan B): research only where a branch is model_only. Edges are the model_only edges in
+    the own part of model_only branches, plus model_only trunk edges shared by them; hypothetical branches are skipped
+    (an event that has not happened has no evidence to find). Conditions follow find_gaps."""
+    from catalyst.branches import derive_views  # local import: research is optional for the core
+
+    g = result.get("graph")
+    if not g:
+        return []
+    edge_kinds = derive_views(g)["edge_kinds"]  # an edge takes its target node's kind (own branch or weakest trunk)
+    edge_ids = {eid for eid, kind in edge_kinds.items() if kind == "model_only"}
+    base = find_gaps(result)
+    return [x for x in base if x["kind"] == "condition" or (x["kind"] == "edge" and x["id"] in edge_ids)][:MAX_GAPS]
+
+
 def _gap_reason(gaps: list[dict]) -> str:
     edges = sum(g["kind"] == "edge" for g in gaps)
     conds = len(gaps) - edges
@@ -83,7 +99,7 @@ class ResearchLoop:
     round1: WebResult
     replay_dir: Path | str | None = None
     searcher: Searcher | None = None
-    detect: GapDetector = find_gaps
+    detect: GapDetector = find_gaps_by_branch
     rounds: list[WebResult] = field(default_factory=list)
     followup: dict = field(default_factory=lambda: {"triggered": False, "reason": "研究 loop 没有运行", "gaps": []})
 
