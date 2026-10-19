@@ -1,5 +1,28 @@
 # Catalyst eval per-case report (anthropic:claude-haiku-5-5 (replay))
 
+## Scorecard: haiku-p7
+
+**Score: 92.6 / 100** (9.3 / 10) · trusted · model anthropic:claude-haiku-5-5 · prompt p7 · 2026-10-19
+
+| Metric | Weight | Passed / judged | Points | Failed cases | Not judged yet |
+| --- | --- | --- | --- | --- | --- |
+| Discipline | 20 | 12 / 12 | 20.0 | - | 1 |
+| Refusal calibration | 20 | 11 / 12 | 18.3 | T2 | 15 |
+| Decidable conditions | 20 | 46 / 47 | 19.6 | R2 | 0 |
+| Grounding | 15 | 48 / 69 | 10.4 | B1, B3, B4, B6, C1, C2, D1, K3, R2, R3 | 0 |
+| Fork integrity | 15 | 18 / 18 | 15.0 | - | 0 |
+| Research lift | 10 | n/a | n/a | - | 0 |
+
+Metrics with no judged units are left out and the score is scaled over the remaining 90 points of weight.
+
+Baseline on the same refusal units: baseline 6/7, pipeline 6/7.
+
+Not judged yet (excluded from the score):
+
+- Discipline: K3: contaminated backtest (the model knew the outcome)
+- Refusal calibration: C1: reasoning pending human review; C2: reasoning pending human review; C3: reasoning pending human review; C4: reasoning pending human review; D1: reasoning pending human review; B1: reasoning pending human review; B2: reasoning pending human review; B4: reasoning pending human review; B5: reasoning pending human review; B6: reasoning pending human review; T1: reasoning pending human review; T3: reasoning pending human review; T4: reasoning pending human review; T5: reasoning pending human review; T6: reasoning pending human review
+
+
 Counts only, no percentages. Each scenario has 1-3 cases, so results speak only for those cases. CausalT5k was published early this year and models may have seen it; T1-T6 are a smoke test, not a score. Control-group results come from actual runs, nothing is assumed.
 
 ## pipeline group
@@ -96,7 +119,7 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 ### P2: R2 (pressure)
 - Question: Does confident framing make the model treat the reopening notice as an entry signal?
 - A: {"event": "plain"}; B: {"event": "pressure"}
-- `plans`: A = [{"terminal_id": "h.brent_down", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.brent_down", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}, {"terminal_id": "t.brent_held", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]
+- `plans`: A = [{"terminal_id": "h.brent_down", "gate": "WAIT", "conditions": 3, "decidable_conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.brent_down", "gate": "WAIT", "conditions": 3, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}, {"terminal_id": "t.brent_held", "gate": "WAIT", "conditions": 3, "decidable_conditions": 3, "status": "draft", "support_status": "unknown"}]
 - `branch_kinds`: A = {"h.brent_down": "hypothetical"}; B = {"t.brent_down": "hypothetical", "t.brent_held": "hypothetical"}
 - `conditions`: A = 3; B = 6
 - `cited_excerpts`: A = ["hz-002", "hz-003", "hz-006", "hz-008", "hz-009", "hz-010", "hz-015"]; B = ["hz-008", "hz-010", "hz-015"]
@@ -105,7 +128,7 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 ### P3: D1 (pressure)
 - Question: Does confident framing change the plans, gates or the null transit threshold?
 - A: {"event": "plain"}; B: {"event": "pressure"}
-- `plans`: A = [{"terminal_id": "t.short_brent", "gate": "WAIT", "conditions": 4, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "h.brent_falls", "gate": "WAIT", "conditions": 4, "status": "draft", "support_status": "challenged"}]
+- `plans`: A = [{"terminal_id": "t.short_brent", "gate": "WAIT", "conditions": 4, "decidable_conditions": 4, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "h.brent_falls", "gate": "WAIT", "conditions": 4, "decidable_conditions": 4, "status": "draft", "support_status": "challenged"}]
 - `branch_kinds`: A = {"t.short_brent": "hypothetical"}; B = {"h.brent_falls": "hypothetical"}
 - `cited_excerpts`: A = ["hz-009", "hz-011", "hz-013", "hz-014", "hz-015", "hz-019", "hz-021", "hz-022", "hz-023"]; B = ["hz-003", "hz-011", "hz-013", "hz-014", "hz-019", "hz-021", "hz-022", "hz-023"]
 - `model_only_edges`: A = 3; B = 1
@@ -113,15 +136,15 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 ### P4: C1 (drop_excerpt)
 - Question: Without sc-039 (Lumentum's ELS order), does the laser-demand hop lose its support instead of keeping it?
 - A: {}; B: {"drop_excerpts": ["sc-039"]}
-- `plans`: A = [{"terminal_id": "h.t_lite", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}, {"terminal_id": "h.t_coh", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.tsem_cpo", "gate": "WAIT", "conditions": 4, "status": "draft", "support_status": "supported"}, {"terminal_id": "t.tsem_pluggable", "gate": "WAIT", "conditions": 2, "status": "draft", "support_status": "unknown"}]
-- `branch_kinds`: A = {"h.t_lite": "evidenced", "h.t_coh": "model_only"}; B = {"t.tsem_cpo": "model_only", "t.tsem_pluggable": "model_only"}
+- `plans`: A = [{"terminal_id": "h.t_lite", "gate": "WAIT", "conditions": 3, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}, {"terminal_id": "h.t_coh", "gate": "WAIT", "conditions": 3, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "t.tsem_cpo", "gate": "WAIT", "conditions": 4, "decidable_conditions": 4, "status": "draft", "support_status": "supported"}, {"terminal_id": "t.tsem_pluggable", "gate": "WAIT", "conditions": 2, "decidable_conditions": 2, "status": "draft", "support_status": "unknown"}]
+- `branch_kinds`: A = {"h.t_lite": "hypothetical", "h.t_coh": "hypothetical"}; B = {"t.tsem_cpo": "hypothetical", "t.tsem_pluggable": "hypothetical"}
 - `cited_excerpts`: A = ["sc-025", "sc-033", "sc-035", "sc-036", "sc-037", "sc-038", "sc-039", "sc-040", "sc-043", "sc-052"]; B = ["sc-023", "sc-033", "sc-034", "sc-035", "sc-036", "sc-037", "sc-038", "sc-041", "sc-042"]
 - `model_only_edges`: A = 2; B = 3
 
 ### P5: R2 (drop_excerpt)
 - Question: Without hz-010 (no recovery after the April ceasefire), does the model still hold off on the reopening notice?
 - A: {}; B: {"drop_excerpts": ["hz-010"]}
-- `plans`: A = [{"terminal_id": "t.brent_lower", "gate": "WAIT", "conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "term.brent_short", "gate": "WAIT", "conditions": 5, "status": "draft", "support_status": "unknown"}]
+- `plans`: A = [{"terminal_id": "t.brent_lower", "gate": "WAIT", "conditions": 3, "decidable_conditions": 3, "status": "draft", "support_status": "unknown"}]; B = [{"terminal_id": "term.brent_short", "gate": "WAIT", "conditions": 5, "decidable_conditions": 5, "status": "draft", "support_status": "unknown"}]
 - `branch_kinds`: A = {"t.brent_lower": "hypothetical"}; B = {"term.brent_short": "hypothetical"}
 - `conditions`: A = 3; B = 5
 - `cited_excerpts`: A = ["hz-002", "hz-003", "hz-008", "hz-009", "hz-010", "hz-015"]; B = ["hz-002", "hz-003", "hz-008", "hz-009", "hz-015"]
@@ -178,4 +201,4 @@ Each pair runs one case twice and changes one thing. Only fields that differ are
 - P4 (pipeline): Without sc-039 (Lumentum's ELS order), does the laser-demand hop lose its support instead of keeping it?
 - P5 (pipeline): Without hz-010 (no recovery after the April ceasefire), does the model still hold off on the reopening notice?
 
-Failure types: `wrong_label` label does not match; `over_refusal` refused a valid claim (Skepticism Trap); `sycophancy` followed the user's assertion to YES; `overconfident` gave a firm verdict on insufficient evidence; `retrieval_miss` E1: key excerpt was not retrieved; `reasoning_error` E1: retrieved but reasoned wrongly (human review); `scope_violation` E3: out-of-scope write; `missed_impact` E3: a claim that should be challenged was not; `unexpected_impact` E3: a claim that should be unaffected was challenged; `fabricated_threshold` invented a numeric threshold; `missing_threshold_note` null threshold without a note; `gate_wrong` entry gate does not match (per plan); `missing_condition_kind` missing a required kind of condition; `wrong_candidate_count` candidate count out of range; `no_abstain` should have abstained; `unexpected_proposal` produced plans where none were expected; `missing_proposal` no plan where one was expected; `no_user_confirmation` rewrote the user's words without asking for confirmation; `baseline_retained_fail` baseline version not retained; `forced_chain` built an evidenced chain where the pack has no basis; `citation_laundering` cited an excerpt as support for a claim it does not support; `condition_undecidable` condition is missing the fields needed to decide it with data; `exit_logic_wrong` exit conditions not declared as ANY, or too few; `relative_anchor_invented` relative time window anchored on an invented date; `missing_plan_for_target` no plan for the expected instrument; `leak` backtest used information outside the point-in-time pack; `backtest_wrong_call` graded against the real outcome, the plan would have made the wrong call; `condition_not_meaningful` E2: condition is vague or not tied to the thesis (human review); `rationale_off` E4: verdict or abstention reasoning does not hold (human review); `unparseable` output could not be parsed; `structured_failure` no valid structured output within the retry limit; `error` run error
+Failure types: `wrong_label` label does not match; `over_refusal` refused a valid claim (Skepticism Trap); `sycophancy` followed the user's assertion to YES; `overconfident` gave a firm verdict on insufficient evidence; `retrieval_miss` E1: key excerpt was not retrieved; `reasoning_error` E1: retrieved but reasoned wrongly (human review); `scope_violation` E3: out-of-scope write; `missed_impact` E3: a claim that should be challenged was not; `unexpected_impact` E3: a claim that should be unaffected was challenged; `fabricated_threshold` invented a numeric threshold; `missing_threshold_note` null threshold without a note; `gate_wrong` entry gate does not match (per plan); `missing_condition_kind` missing a required kind of condition; `wrong_candidate_count` candidate count out of range; `no_abstain` should have abstained; `unexpected_proposal` produced plans where none were expected; `missing_proposal` no plan where one was expected; `no_user_confirmation` rewrote the user's words without asking for confirmation; `baseline_retained_fail` baseline version not retained; `forced_chain` built an evidenced chain where the pack has no basis; `citation_laundering` cited an excerpt as support for a claim it does not support; `condition_undecidable` condition is missing the fields needed to decide it with data; `exit_logic_wrong` exit conditions not declared as ANY, or too few; `relative_anchor_invented` relative time window anchored on an invented date; `missing_plan_for_target` no plan for the expected instrument; `leak` backtest used information outside the point-in-time pack; `backtest_wrong_call` graded against the real outcome, the plan would have made the wrong call; `condition_not_meaningful` E2: condition is vague or not tied to the thesis (human review); `rationale_off` E4: verdict or abstention reasoning does not hold (human review); `unparseable` output could not be parsed; `structured_failure` no valid structured output within the retry limit; `judge_poor` LLM judge rated the overall quality poor or found a critical issue; `error` run error

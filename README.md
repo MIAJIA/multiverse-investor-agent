@@ -50,7 +50,36 @@ We do **not** claim that the plans make money, that the failure conditions are c
 Deterministic behaviour is covered by tests, and the eval is reserved for model behaviour that code cannot check.
 
 - **Deterministic tests (over 200, all offline):** the entry-gate truth table, condition time semantics, reference validation, stance consistency, fork non-interference (hashes of every out-of-scope node, edge and condition), stacked scenarios, sign-off, the HTTP API, evidence packs, the web-search whitelist and replay.
-- **Eval:** 11 cases. Six are CausalT5k causal-judgment items (YES / NO / AMBIGUOUS, including a skepticism trap and a sycophancy probe), four are built from the assignment's own examples (C1–C4), and one is the founder's Hormuz example (D1). Every case also runs as a single-prompt baseline with the same model and the same evidence. We report per-case results and failure types, never percentages.
+- **Eval:** 11 cases. Six are CausalT5k causal-judgment items (YES / NO / AMBIGUOUS, including a skepticism trap and a sycophancy probe), four are built from the assignment's own examples (C1–C4), and one is the founder's Hormuz example (D1). Every case also runs as a single-prompt baseline with the same model and the same evidence. Per-case results and failure types stay the main output; each run also gets a 100-point score from six core metrics, so runs can be compared at a glance.
+
+### Scorecard
+
+Each run is scored on six metrics, one per product promise, then combined into a score out of 100 (weights in brackets):
+
+- **Discipline (20):** every plan holds off until its entry conditions are met, and backtests make the right call against what actually happened.
+- **Refusal calibration (20):** abstains when the link is not there, commits when the evidence is there, and does not change its verdict when the user insists.
+- **Decidable conditions (20):** each condition names a data series or source, a rule, a window, and a threshold or a reason it is still open.
+- **Grounding (15):** edges rest on cited evidence rather than model-only inference, with no leaks or laundered citations.
+- **Fork integrity (15):** changing an assumption touches only the write scope and challenges the right claims.
+- **Research lift (10):** the follow-up web search leaves fewer evidence gaps than round 1.
+
+An **LLM judge** stands in for the human reviewer: a different model (Claude Sonnet 5.5) than the agent (Haiku) reads each case's full output and rates its overall quality from 1 to 10, the way a senior analyst would. It looks at the whole answer (is the reasoning grounded, is the counter-evidence faced, are the plans and conditions useful, is the verdict sound) rather than re-checking individual fields, and names a specific problem only when it is critical. The **total score** is half the code checks and half the judge, because the code checks mostly show that the guardrails held while the judge shows whether the content is good; looking at the code checks alone overstates the agent. A real human review overrides the judge. Judge calls are recorded in `eval/results/<run>/judge/` and can be replayed.
+
+Each code metric counts passed units out of the units that can be judged. Units still waiting for human review, backtests the model already knew the outcome of, and undetermined outcomes are left out rather than guessed. A run that crosses a red line (an out-of-scope write, systematic refusal or following, a backtest leak) is marked untrusted whatever its score. The score is the pipeline's; the single-prompt baseline cannot do forks, plans or backtests, so it is compared only on the refusal units both can answer.
+
+<!-- eval-scorecard:start -->
+
+| Run | Model / prompt | Total (/100) | Code checks (/100) | LLM judge (/10) | Discipline | Refusal calibration | Decidable conditions | Grounding | Fork integrity | Research lift | Red line |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| haiku-p6m (offline) | anthropic:claude-haiku-5-5 / p6 | **77.2** | 89.5 | 6.5 | 10/10 | 11/12 | 40/49 | 43/59 | 18/18 | n/a | none |
+| haiku-p7 (offline) | anthropic:claude-haiku-5-5 / p7 | **78.8** | 92.6 | 6.5 | 12/12 | 11/12 | 46/47 | 48/69 | 18/18 | n/a | none |
+| haiku-p7 (offline + online) | anthropic:claude-haiku-5-5 / p7 | **78.3** | 91.6 | 6.5 | 13/13 | 11/12 | 48/53 | 51/75 | 18/18 | 1/1 | none |
+
+Total = code checks x 0.5 + LLM judge (scaled to 100) x 0.5; without a judge run the total is the code score. Code-check weights: Discipline 20, Refusal calibration 20, Decidable conditions 20, Grounding 15, Fork integrity 15, Research lift 10. LLM judge: average overall quality per case (1-10), reviewed by a different model (Sonnet) than the agent (Haiku). Cells are passed / judged units; units still waiting for human review, contaminated backtests and undetermined outcomes are not counted. Details: `eval/results/<run>/scorecard.md`.
+
+<!-- eval-scorecard:end -->
+
+Code checks and the judge tell different stories. The guardrails hold almost everywhere (code checks around 90), but the judge rates the content 6.5 / 10 in both runs: plans often rest on model-only links, counter-evidence is acknowledged and then explained away, and conditions are frequently too loose to decide with data (the judge rated B2 and T2 poor in both runs). The p6 run used the English prompts before numeric conditions were required to state a comparator; p7 added that rule, and offline decidable conditions went from 40/49 to 46/47. Grounding is the weakest metric: close to a third of edges are model-only. Some of that is expected, because an event that has not happened yet has no evidence to cite, but it is also where the model most often fills gaps by inference.
 
 The latest run uses Claude Haiku 5.5 at medium effort, prompt version p7, and the real evidence packs. Its report is `eval/results/haiku-p7/report.md`. Two automatic checks fail, and both failures come from the model's behaviour rather than from the pipeline:
 
@@ -108,6 +137,8 @@ CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run D1 --live      
 CATALYST_MODEL=claude-haiku-5-5 .venv/bin/python -m catalyst run C2 --live --online   # with web search
 .venv/bin/python -m eval.runner --record eval/out/<name>                               # all cases, both groups
 .venv/bin/python -m eval.runner --replay eval/results/haiku-p7 --today 2026-10-19      # re-score the recorded run, no API key
+CATALYST_JUDGE_MODEL=claude-sonnet-5-5 .venv/bin/python -m eval.judge eval/results/haiku-p7/results.json --record eval/results/haiku-p7/judge   # LLM judge (or --replay)
+.venv/bin/python -m eval.scorecard --readme README.md eval/results/haiku-p6m/scorecard.json eval/results/haiku-p7/scorecard-offline.json eval/results/haiku-p7/scorecard.json   # refresh the scorecard table
 .venv/bin/python -m catalyst.api                      # HTTP API on :8000
 cd web && VITE_MOCK=0 npm run dev                     # front end on the real API (default: recorded fixtures)
 ```

@@ -16,7 +16,8 @@ from typing import Any, Callable, Protocol
 
 from eval import backtest as bt
 from eval import scoring
-from eval.checks import cited_excerpts, model_only_edge_count, research_metrics, scenario_checks
+from eval.checks import (cited_excerpts, decidable_missing, graph_edges, model_only_edge_count, output_digest,
+                         research_metrics, scenario_checks)
 from eval.loader import FIXTURES_DIR, load_all_cases, load_fixture, load_json
 from eval.scoring import check, get
 
@@ -294,7 +295,10 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         cands = list(get(d, "candidates") or [])
         observations += list(get(d, "observations") or [])
         labels = [get(c, "label") for c in cands]
-        res["actual"] = {"candidates": len(cands), "candidate_labels": labels, "abstained": bool(get(d, "abstained"))}
+        res["actual"] = {"candidates": len(cands), "candidate_labels": labels, "abstained": bool(get(d, "abstained")),
+                         "abstain_reason": get(d, "abstain_reason"),
+                         "candidate_rationales": [{"label": get(c, "label"), "direction": get(c, "direction"),
+                                                   "rationale": get(c, "rationale")} for c in cands]}
         if exp.get("abstain"):
             ok = len(cands) == 0 or all(l == "not_recommended" for l in labels)
             res["checks"].append(check("abstained_or_only_not_recommended", "E4", ok,
@@ -341,13 +345,18 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
     res["actual"].update({
         "no_chain": no_chain,
         "plans": [{"terminal_id": _plan_label(p), "gate": get(p, "gate"), "conditions": len(_conditions_of(p)),
+                   "decidable_conditions": sum(1 for c in _conditions_of(p) if not decidable_missing(c)),
                    "status": get(p, "status"), "support_status": get(p, "support_status")} for p in plans],
+        "edges": len(graph_edges(out)),
         "branch_kinds": {str(get(b, "terminal_id")): get(b, "kind") for b in (get(out, "branches") or [])},
         "conditions": len(all_conditions),
         "cited_excerpts": sorted(cited_excerpts(out)),
         "model_only_edges": model_only_edge_count(out),
     })
     res["checks"] += scenario_checks(case, out, plans, no_chain)
+    # 给 LLM judge 看的输出摘要：被引用的片段和案例点名要回应的片段都带原文
+    named = set(exp.get("key_excerpts") or []) | set((exp.get("backtest") or {}).get("counter_excerpts_to_address") or [])
+    res["output"] = output_digest(out, evidence, packs, named)
     if backtest_case:
         res["checks"] += bt.leak_checks(case, out, allowed)
         if evaluate_condition is None:
@@ -657,8 +666,15 @@ def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需�
     out = Path(args.out) if args.out else out_dir / "results.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+    from catalyst.prompts import PROMPT_VERSION  # noqa: WPS433
+    from eval import scorecard
+    card = scorecard.build(results, name=out.parent.name, prompt=PROMPT_VERSION, date=args.today)
+    (out.parent / "scorecard.json").write_text(json.dumps(card, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (out.parent / "scorecard.md").write_text(scorecard.render(card), encoding="utf-8")
     md = report.render_report(results, title=f"Catalyst eval per-case report ({model})")
+    md = md.replace("\n", "\n\n" + scorecard.render(card) + "\n", 1)  # 记分卡放在标题下面
     (out.parent / "report.md").write_text(md, encoding="utf-8")
+    print(f"score {card['score']} / 100" + ("" if card["trusted"] else f" (UNTRUSTED: {', '.join(card['red_line'])})"))
     print(f"wrote {len(results)} results -> {out}; report -> {out.parent / 'report.md'}")
     for r in results:
         print(f"  {r['case_id']:3} {r['group']:8} {r['status']:15} {','.join(r['failure_types']) or '-'}")

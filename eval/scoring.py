@@ -42,6 +42,7 @@ FAILURE_TYPES = {
     "rationale_off": "E4: verdict or abstention reasoning does not hold (human review)",
     "unparseable": "output could not be parsed",
     "structured_failure": "no valid structured output within the retry limit",
+    "judge_poor": "LLM judge rated the overall quality poor or found a critical issue",
     "error": "run error",
 }
 

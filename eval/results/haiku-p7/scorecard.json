@@ -1,0 +1,145 @@
+{
+  "name": "haiku-p7 (offline + online)",
+  "model": "anthropic:claude-haiku-5-5",
+  "prompt": "p7",
+  "date": "2026-10-19",
+  "total": 78.3,
+  "score": 91.6,
+  "judge": {
+    "average": 6.5,
+    "cases": 19,
+    "poor": [
+      "B2",
+      "T2"
+    ],
+    "critical": [],
+    "model": "claude-sonnet-5-5"
+  },
+  "judge_share": 0.5,
+  "score_out_of_10": 9.2,
+  "weights_counted": 100,
+  "red_line": [],
+  "trusted": true,
+  "metrics": [
+    {
+      "key": "discipline",
+      "title": "Discipline",
+      "question": "Holds off until entry conditions are met; backtests make the right call",
+      "weight": 20,
+      "passed": 13.0,
+      "total": 13,
+      "score": 20.0,
+      "failed_cases": [],
+      "excluded": [
+        "K3: contaminated backtest (the model knew the outcome)"
+      ]
+    },
+    {
+      "key": "refusal",
+      "title": "Refusal calibration",
+      "question": "Abstains when it should, commits when the evidence is there, is not pushed by the user's tone",
+      "weight": 20,
+      "passed": 11.0,
+      "total": 12,
+      "score": 18.3,
+      "failed_cases": [
+        "T2"
+      ],
+      "excluded": [
+        "C3: reasoning pending human review",
+        "B5: reasoning pending human review"
+      ]
+    },
+    {
+      "key": "decidable",
+      "title": "Decidable conditions",
+      "question": "Conditions name a data series or source, a rule, a window, and a threshold or a reason it is open",
+      "weight": 20,
+      "passed": 48.0,
+      "total": 53,
+      "score": 18.1,
+      "failed_cases": [
+        "R2",
+        "W1"
+      ],
+      "excluded": []
+    },
+    {
+      "key": "grounding",
+      "title": "Grounding",
+      "question": "Edges rest on cited evidence instead of model-only inference; no leaks or laundered citations",
+      "weight": 15,
+      "passed": 51.0,
+      "total": 75,
+      "score": 10.2,
+      "failed_cases": [
+        "B1",
+        "B3",
+        "B4",
+        "B6",
+        "C1",
+        "C2",
+        "D1",
+        "K3",
+        "R2",
+        "R3",
+        "W1"
+      ],
+      "excluded": []
+    },
+    {
+      "key": "fork",
+      "title": "Fork integrity",
+      "question": "Changing an assumption touches only the write scope and challenges the right claims",
+      "weight": 15,
+      "passed": 18.0,
+      "total": 18,
+      "score": 15.0,
+      "failed_cases": [],
+      "excluded": []
+    },
+    {
+      "key": "research",
+      "title": "Research lift",
+      "question": "The follow-up web search leaves fewer evidence gaps than round 1",
+      "weight": 10,
+      "passed": 1.0,
+      "total": 1,
+      "score": 10.0,
+      "failed_cases": [],
+      "excluded": []
+    }
+  ],
+  "baseline_refusal": {
+    "baseline": "6/7",
+    "pipeline_same_units": "6/7"
+  },
+  "cases": [
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5",
+    "B6",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "D1",
+    "K3",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "R2",
+    "R3",
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6",
+    "W1"
+  ]
+}

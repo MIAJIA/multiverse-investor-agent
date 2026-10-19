@@ -60,6 +60,11 @@ def _decidable(c: dict) -> list[str]:
     return missing
 
 
+def decidable_missing(c: dict) -> list[str]:
+    """公开版本：一条条件缺了哪些「能被数据判定」所需的字段（空列表 = 字段齐全）。"""
+    return _decidable(c)
+
+
 def scenario_checks(case: dict, out: Any, plans: list, no_chain: bool) -> list[dict]:
     exp = case.get("expected", {})
     checks: list[dict] = []
@@ -145,4 +150,44 @@ def research_metrics(draft: Any, final: Any, web: dict | None) -> dict:
         "followup_triggered": bool(followup.get("triggered")),
         "followup_reason": followup.get("reason"),
         "gaps": len(followup.get("gaps") or []),
+    }
+
+
+# ---- 给 LLM judge 看的输出摘要 -----------------------------------------------------
+
+_COND_KEYS = ("id", "claim_id", "kind", "predicate", "series", "source", "comparator", "threshold", "threshold_note",
+              "anchor", "deadline", "observation_window", "rule")
+
+
+def output_digest(out: Any, evidence: Any = None, packs: list | None = None, extra_ids: set | None = None) -> dict:
+    """一次 Inspect 结果的精简版：图、计划、分支类别，以及被引用（和案例点名要回应）的片段原文。"""
+    graph = to_plain(get(out, "graph")) or {}
+    plans = [to_plain(p) for p in (get(out, "proposals") or [])]
+    wanted = set(cited_excerpts(out)) | set(extra_ids or ())
+    texts = {}
+    if evidence is not None and packs and wanted:
+        for p in packs:
+            try:
+                for x in evidence.load_pack(p):
+                    if x["excerpt_id"] in wanted:
+                        texts[x["excerpt_id"]] = {k: x.get(k) for k in ("text", "stance", "date", "source")}
+            except (FileNotFoundError, KeyError):
+                continue
+    return {
+        "no_chain": bool(get(out, "no_chain")), "no_chain_reason": get(out, "no_chain_reason"),
+        "nodes": [{k: n.get(k) for k in ("id", "role", "statement", "evidence_status")} for n in graph.get("nodes") or []],
+        "edges": [{"from": e.get("from"), "to": e.get("to"), "sign": e.get("sign"), "mechanism": e.get("mechanism"),
+                   "model_only": bool(e.get("model_only")),
+                   "evidence": [{"excerpt_id": ev.get("excerpt_id"), "stance": ev.get("stance"), "supports": ev.get("supports"),
+                                 "rebuttal": ev.get("rebuttal")} for ev in e.get("evidence") or []]}
+                  for e in graph.get("edges") or []],
+        "plans": [{"terminal_id": p.get("terminal_id"), "direction": p.get("direction"), "gate": p.get("gate"),
+                   "key_dependency": p.get("key_dependency"), "exit_logic": p.get("exit_logic"),
+                   "user_judgment": {k: (p.get("user_judgment") or {}).get(k) for k in
+                                     ("original_statement", "clarified_statement", "requires_user_confirmation")},
+                   "entry_conditions": [{k: c.get(k) for k in _COND_KEYS} for c in p.get("entry_conditions") or []],
+                   "exit_conditions": [{k: c.get(k) for k in _COND_KEYS} for c in p.get("exit_conditions") or []]}
+                  for p in plans],
+        "branches": [{"terminal_id": get(b, "terminal_id"), "kind": get(b, "kind")} for b in (get(out, "branches") or [])],
+        "excerpts": texts,
     }

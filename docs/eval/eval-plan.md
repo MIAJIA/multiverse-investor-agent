@@ -147,3 +147,12 @@ One more hard rule: if the `proposals` field cannot be read, raise an error. Do 
 ## 10. Model and cost
 
 Claude Haiku 5.5 only. Based on the last measured run (11 cases, two groups, 27 calls in total), offline cases cost only a few cents per round under Haiku. Repeated sampling is off for now, and P-layer perturbations run only once per group. The online layer costs about a few cents per case per recording (the agent loop doc estimates Inspect at about $0.005 per run, plus search and fetch). All of these are rough estimates; actual runs are what count.
+
+## 11. Scorecard (added 2026-10-19)
+
+Mia asked for one number per run. Every run now writes `scorecard.json` / `scorecard.md` next to its report (code: `eval/scorecard.py`): six metrics (discipline 20, refusal calibration 20, decidable conditions 20, grounding 15, fork integrity 15, research lift 10), each counted as passed units out of judged units, combined into a score out of 100. Units still waiting for human review, contaminated backtests and undetermined backtest outcomes are excluded, not guessed. The failure criteria in section 9 act as a red line: a run that triggers one is marked untrusted whatever its score. Per-case results stay the primary output; the score is for comparing runs. The README table is refreshed with `python -m eval.scorecard --readme README.md <scorecard.json ...>`.
+
+## 12. LLM judge and the total score (added 2026-10-19)
+
+Human review was the open half of the eval, so an LLM judge now stands in for it (code: `eval/judge.py`). A different model from the agent (Claude Sonnet 5.5; `CATALYST_JUDGE_MODEL` overrides) reads each case's full output, using a compact digest the runner stores per case (graph, plans with conditions, cited excerpts with their text), and rates its **overall quality** from 1 to 10 with a verdict (good / acceptable / poor), strengths, problems and a critical issue only when one is serious. It does not re-check individual fields; that is the code checks' job (Mia: judge the whole, not specific values). Its verdicts replace "pending review"; a real human review overrides them. Forks and probes are not judged. The **total score** is half the code-check score and half the judge average scaled to 100; the red line still overrides everything. First results: the judge rates both p6m and p7 at 6.5 / 10 while the code checks are around 90, so the total is about 78.
+

@@ -21,6 +21,7 @@
           "terminal_id": "t.tlt_long",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 1,
           "status": "draft",
           "support_status": "unknown"
         },
@@ -28,10 +29,12 @@
           "terminal_id": "t.tlt_short",
           "gate": "WAIT",
           "conditions": 3,
+          "decidable_conditions": 1,
           "status": "draft",
           "support_status": "unknown"
         }
       ],
+      "edges": 6,
       "branch_kinds": {
         "t.tlt_long": "hypothetical",
         "t.tlt_short": "hypothetical"
@@ -99,7 +102,7 @@
       "fetches": 2,
       "dropped": 5,
       "reason": null,
-      "replayed": false,
+      "replayed": true,
       "round": 1,
       "queries": [
         {
@@ -124,7 +127,7 @@
           "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
         }
       ],
-      "message": "联网：开，拿到 19 段（搜索 5 次、抓取 2 次，资料包 web:5fd842a424cb）；补查：第 2 轮拿到 8 段（触发原因：0 条没有证据的边（model_only）、2 个缺数据的阈值），图和计划已带上全部片段重跑",
+      "message": "联网：开，拿到 19 段（回放冻结的联网资料包，资料包 web:5fd842a424cb）；补查：第 2 轮拿到 8 段（触发原因：0 条没有证据的边（model_only）、2 个缺数据的阈值），图和计划已带上全部片段重跑",
       "pack_ids": [
         "web:5fd842a424cb",
         "web:2caae0a33a5d"
@@ -139,7 +142,7 @@
           "fetches": 2,
           "dropped": 5,
           "reason": null,
-          "replayed": false,
+          "replayed": true,
           "round": 1,
           "queries": [
             {
@@ -164,7 +167,7 @@
               "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
             }
           ],
-          "message": "联网：开，拿到 19 段（搜索 5 次、抓取 2 次，资料包 web:5fd842a424cb）"
+          "message": "联网：开，拿到 19 段（回放冻结的联网资料包，资料包 web:5fd842a424cb）"
         },
         {
           "online": true,
@@ -175,7 +178,7 @@
           "fetches": 2,
           "dropped": 4,
           "reason": null,
-          "replayed": false,
+          "replayed": true,
           "round": 2,
           "queries": [
             {
@@ -194,7 +197,7 @@
               "url": "https://www.federalreserve.gov/releases/h15/current/default.htm"
             }
           ],
-          "message": "联网：开，拿到 8 段（搜索 3 次、抓取 2 次，资料包 web:2caae0a33a5d）"
+          "message": "联网：开，拿到 8 段（回放冻结的联网资料包，资料包 web:2caae0a33a5d）"
         }
       ],
       "followup": {
@@ -212,7 +215,391 @@
         ]
       }
     },
-    "model": "anthropic:claude-haiku-5-5"
+    "research": {
+      "round1": {
+        "model_only_edges": 5,
+        "model_only_branches": 0,
+        "null_threshold_conditions": 2,
+        "no_chain": false
+      },
+      "final": {
+        "model_only_edges": 3,
+        "model_only_branches": 0,
+        "null_threshold_conditions": 3,
+        "no_chain": false
+      },
+      "excerpts_by_round": [
+        19,
+        8
+      ],
+      "queries_by_round": [
+        [
+          {
+            "query": "federalreserve.gov FOMC meeting October 2026"
+          },
+          {
+            "query": "federalreserve.gov FOMC statement federal funds rate target range 2026"
+          },
+          {
+            "query": "Waller speech economic outlook October 2026 federalreserve.gov"
+          },
+          {
+            "query": "bls.gov consumer price index September 2026 news release"
+          },
+          {
+            "query": "treasury.gov daily treasury par yield curve October 2026"
+          },
+          {
+            "url": "https://www.bls.gov/news.release/archives/cpi_10142026.htm"
+          },
+          {
+            "url": "https://www.federalreserve.gov/newsevents/speech/waller20261008a.htm"
+          }
+        ],
+        [
+          {
+            "query": "federalreserve.gov H.15 selected interest rates Treasury constant maturity 20-year"
+          },
+          {
+            "query": "federalreserve.gov FOMC minutes term premium long-term Treasury yields rose 2026"
+          },
+          {
+            "query": "federalreserve.gov October 2026 FOMC meeting rate cut expectations"
+          },
+          {
+            "url": "https://www.federalreserve.gov/releases/h15/"
+          },
+          {
+            "url": "https://www.federalreserve.gov/releases/h15/current/default.htm"
+          }
+        ]
+      ],
+      "followup_triggered": true,
+      "followup_reason": "0 条没有证据的边（model_only）、2 个缺数据的阈值",
+      "gaps": 2
+    },
+    "output": {
+      "no_chain": false,
+      "no_chain_reason": null,
+      "nodes": [
+        {
+          "id": "h.fed_cut",
+          "role": "shock",
+          "statement": "Fed lowers the target range by 25bp at the 2026-10-27/28 FOMC meeting",
+          "evidence_status": "unknown"
+        },
+        {
+          "id": "h.short_rates",
+          "role": "intermediate",
+          "statement": "Policy-sensitive short Treasury yields fall after the cut",
+          "evidence_status": "unknown"
+        },
+        {
+          "id": "h.inflation_high",
+          "role": "assumption",
+          "statement": "Headline inflation stays well above the 2% target through the cut (September CPI 3.7% y/y)",
+          "evidence_status": "unknown"
+        },
+        {
+          "id": "h.long_yields_fall",
+          "role": "intermediate",
+          "statement": "Long-end Treasury yields fall as the cut lowers the expected policy path",
+          "evidence_status": "unknown"
+        },
+        {
+          "id": "h.term_premium_up",
+          "role": "intermediate",
+          "statement": "Term premium rises and lifts long yields despite the cut",
+          "evidence_status": "unknown"
+        },
+        {
+          "id": "t.tlt_long",
+          "role": "terminal",
+          "statement": "TLT rallies as long-end yields fall",
+          "evidence_status": "unknown"
+        },
+        {
+          "id": "t.tlt_short",
+          "role": "terminal",
+          "statement": "TLT falls as term premium lifts long-end yields",
+          "evidence_status": "unknown"
+        }
+      ],
+      "edges": [
+        {
+          "from": "h.fed_cut",
+          "to": "h.short_rates",
+          "sign": "-",
+          "mechanism": "A 25bp cut lowers the policy rate, so short Treasury yields should fall at or right after the decision. Evidence shows the cut is contested (hike-leaning dots and futures), which affects whether the cut happens, not how it transmits if it does.",
+          "model_only": false,
+          "evidence": [
+            {
+              "excerpt_id": "web-005",
+              "stance": "contradicts",
+              "supports": "Sept dot plot: 16 of 18 participants expected at least one more hike, which argues against a cut at this meeting",
+              "rebuttal": "This bears on the probability that the cut happens, not on whether a cut would lower short yields. The chain is conditional on the cut."
+            },
+            {
+              "excerpt_id": "web-006",
+              "stance": "contradicts",
+              "supports": "Futures prices imply an 85 percent chance of at least one hike by year-end, which argues against an October cut",
+              "rebuttal": "Futures odds measure the likelihood of the event, not the transmission of a cut once it occurs. The chain is conditional on the cut."
+            },
+            {
+              "excerpt_id": "web-r2-008",
+              "stance": "contradicts",
+              "supports": "The September projections show a large majority expect it will be appropriate to raise rates, which argues against a cut",
+              "rebuttal": "This is evidence about the event's likelihood and the committee's direction, not about how a cut would move short yields. The chain is conditional on the cut."
+            }
+          ]
+        },
+        {
+          "from": "h.short_rates",
+          "to": "h.long_yields_fall",
+          "sign": "-",
+          "mechanism": "Lower expected policy rates pull the long end down through the expectations path. The contested premise is whether term premium offsets this, which is the branch split.",
+          "model_only": false,
+          "evidence": [
+            {
+              "excerpt_id": "web-r2-004",
+              "stance": "contradicts",
+              "supports": "In a May 2025 episode, longer-term yields rose partly because of higher term premiums while short yields fell",
+              "rebuttal": "This is one 2025 episode in which term premium lifted long yields. It is the risk the term-premium branch captures, not a refutation that expected cuts lower the long end in the base case."
+            },
+            {
+              "excerpt_id": "web-r2-007",
+              "stance": "contradicts",
+              "supports": "If inflation stays above target, households and businesses may eventually stop believing inflation will return to 2 percent",
+              "rebuttal": "This is a conditional warning about de-anchoring if inflation stays high. It is the premise of the term-premium branch, not evidence about current long yields."
+            }
+          ]
+        },
+        {
+          "from": "h.inflation_high",
+          "to": "h.term_premium_up",
+          "sign": "+",
+          "mechanism": "Persistent above-target inflation raises the inflation risk premium that investors demand for holding long bonds, so long yields can rise even as the policy rate falls. The pack has no excerpt directly linking these, so the edge is a model hypothesis.",
+          "model_only": true,
+          "evidence": []
+        },
+        {
+          "from": "h.fed_cut",
+          "to": "h.term_premium_up",
+          "sign": "+",
+          "mechanism": "A cut that markets read as premature, given inflation above target, can raise term premium as investors demand compensation for policy-credibility risk. The pack has no excerpt directly linking these, so the edge is a model hypothesis.",
+          "model_only": true,
+          "evidence": []
+        },
+        {
+          "from": "h.long_yields_fall",
+          "to": "t.tlt_long",
+          "sign": "+",
+          "mechanism": "Falling long-end yields raise the price of long-duration Treasuries, so TLT rallies. Stable long-run inflation expectations mean the cut is not offset by an inflation premium at the long end.",
+          "model_only": false,
+          "evidence": [
+            {
+              "excerpt_id": "web-r2-006",
+              "stance": "supports",
+              "supports": "Most measures of longer-term inflation expectations have stayed stable at levels consistent with 2 percent inflation, so the long end is not pricing an inflation premium that would block a yield decline",
+              "rebuttal": null
+            }
+          ]
+        },
+        {
+          "from": "h.term_premium_up",
+          "to": "t.tlt_short",
+          "sign": "-",
+          "mechanism": "A rising term premium lifts long yields and lowers TLT's price, so the cut produces a bear steepening that hurts long-duration bonds. The pack has no excerpt directly linking these, so the edge is a model hypothesis.",
+          "model_only": true,
+          "evidence": []
+        }
+      ],
+      "plans": [
+        {
+          "terminal_id": "t.tlt_long",
+          "direction": {
+            "instrument": "TLT",
+            "side": "long",
+            "horizon_days": 7,
+            "note": "Long-end yields fall after the cut and TLT rallies. Conditional on the cut happening at the 2026-10-27/28 meeting."
+          },
+          "gate": "WAIT",
+          "key_dependency": {
+            "condition_id": "cond.h.term_premium_up",
+            "claim_id": "h.term_premium_up",
+            "why": "This is where the branches split. If term premium rises and lifts long yields despite the cut, TLT falls. The pack has no excerpt linking inflation to term premium, so this premise rests on the model's hypothesis and should be checked first."
+          },
+          "exit_logic": "ANY",
+          "user_judgment": {
+            "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+            "clarified_statement": "Fed lowers the target range by 25bp at the 2026-10-27/28 FOMC meeting; horizon through 2026-11-04",
+            "requires_user_confirmation": true
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.h.fed_cut",
+              "claim_id": "h.fed_cut",
+              "kind": "event",
+              "predicate": "observed_by",
+              "series": null,
+              "source": "FOMC policy statement, 2026-10-28",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": null,
+              "anchor": "2026-10-18",
+              "deadline": "2026-10-28",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2026-10-28"
+              },
+              "rule": "met if the 2026-10-28 FOMC statement lowers the target range by 25bp; not_met if the range is held or moved by a different amount"
+            },
+            {
+              "id": "cond.h.long_yields_fall",
+              "claim_id": "h.long_yields_fall",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": null,
+              "source": null,
+              "comparator": "<",
+              "threshold": null,
+              "threshold_note": "The pack gives no long-end yield series or threshold; the user must confirm the benchmark (for example the 10-year or 20-year Treasury yield) and the minimum move. No series chosen here.",
+              "anchor": "2026-10-18",
+              "deadline": "2026-11-04",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2026-11-04"
+              },
+              "rule": "met if the chosen long-end Treasury yield on 2026-11-04 is below its 2026-10-27 close; not_met otherwise"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.h.term_premium_up",
+              "claim_id": "h.term_premium_up",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": null,
+              "source": null,
+              "comparator": ">",
+              "threshold": null,
+              "threshold_note": "The pack has no term-premium estimate or threshold; the user or a data source must confirm the measure and the minimum rise. No series chosen here.",
+              "anchor": "2026-10-18",
+              "deadline": "2026-11-04",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2026-11-04"
+              },
+              "rule": "met if the long-end Treasury yield on 2026-11-04 is above its 2026-10-27 close while short yields fall over the same window; not_met otherwise"
+            }
+          ]
+        },
+        {
+          "terminal_id": "t.tlt_short",
+          "direction": {
+            "instrument": "TLT",
+            "side": "short",
+            "horizon_days": 7,
+            "note": "Term premium rises and lifts long yields, so TLT falls even with a cut. Conditional on the cut happening at the 2026-10-27/28 meeting."
+          },
+          "gate": "WAIT",
+          "key_dependency": {
+            "condition_id": "cond.h.term_premium_up",
+            "claim_id": "h.term_premium_up",
+            "why": "This is where the branches split. If term premium rises and lifts long yields despite the cut, TLT falls. The pack has no excerpt linking inflation to term premium, so this premise rests on the model's hypothesis and should be checked first."
+          },
+          "exit_logic": "ANY",
+          "user_judgment": {
+            "original_statement": "The Fed cuts rates by 25 basis points at the late-October FOMC meeting",
+            "clarified_statement": "Fed lowers the target range by 25bp at the 2026-10-27/28 FOMC meeting; horizon through 2026-11-04",
+            "requires_user_confirmation": true
+          },
+          "entry_conditions": [
+            {
+              "id": "cond.h.fed_cut",
+              "claim_id": "h.fed_cut",
+              "kind": "event",
+              "predicate": "observed_by",
+              "series": null,
+              "source": "FOMC policy statement, 2026-10-28",
+              "comparator": null,
+              "threshold": null,
+              "threshold_note": null,
+              "anchor": "2026-10-18",
+              "deadline": "2026-10-28",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2026-10-28"
+              },
+              "rule": "met if the 2026-10-28 FOMC statement lowers the target range by 25bp; not_met if the range is held or moved by a different amount"
+            },
+            {
+              "id": "cond.h.term_premium_up",
+              "claim_id": "h.term_premium_up",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": null,
+              "source": null,
+              "comparator": ">",
+              "threshold": null,
+              "threshold_note": "The pack has no term-premium estimate or threshold; the user or a data source must confirm the measure and the minimum rise. No series chosen here.",
+              "anchor": "2026-10-18",
+              "deadline": "2026-11-04",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2026-11-04"
+              },
+              "rule": "met if the long-end Treasury yield on 2026-11-04 is above its 2026-10-27 close while short yields fall over the same window; not_met otherwise"
+            }
+          ],
+          "exit_conditions": [
+            {
+              "id": "cond.h.long_yields_fall",
+              "claim_id": "h.long_yields_fall",
+              "kind": "numeric",
+              "predicate": "observed_by",
+              "series": null,
+              "source": null,
+              "comparator": "<",
+              "threshold": null,
+              "threshold_note": "The pack gives no long-end yield series or threshold; the user must confirm the benchmark (for example the 10-year or 20-year Treasury yield) and the minimum move. No series chosen here.",
+              "anchor": "2026-10-18",
+              "deadline": "2026-11-04",
+              "observation_window": {
+                "start": "2026-10-18",
+                "end": "2026-11-04"
+              },
+              "rule": "met if the chosen long-end Treasury yield on 2026-11-04 is below its 2026-10-27 close; not_met otherwise"
+            }
+          ]
+        }
+      ],
+      "branches": [
+        {
+          "terminal_id": "t.tlt_long",
+          "kind": "hypothetical"
+        },
+        {
+          "terminal_id": "t.tlt_short",
+          "kind": "hypothetical"
+        }
+      ],
+      "excerpts": {
+        "web-005": {
+          "text": "Sixteen of the 18 participants who submitted dots anticipated at least one more hike during the two remaining meetings this year.",
+          "stance": "contradicts",
+          "date": "unknown",
+          "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board"
+        },
+        "web-006": {
+          "text": "According to futures market prices for the federal funds rate as of yesterday, traders see an 85 percent chance of at least one hike by the end of the",
+          "stance": "contradicts",
+          "date": "unknown",
+          "source": "Federal Reserve Board (T1 official data) · web retrieval 2026-10-18 · stance labelled by model, not human-reviewed · Speech by Governor Waller on the economic outlook - Federal Reserve Board"
+        }
+      }
+    },
+    "model": "anthropic:claude-haiku-5-5 (replay)"
   },
   {
     "case_id": "W1",
@@ -240,6 +627,6 @@
     "layer": "W",
     "human_review": [],
     "pack_source": "real",
-    "model": "anthropic:claude-haiku-5-5"
+    "model": "anthropic:claude-haiku-5-5 (replay)"
   }
 ]
