@@ -73,7 +73,7 @@ def test_inspect_accepts_a_neutral_citation(ev):
 
 
 def test_prompt_explains_neutral():
-    assert prompts.PROMPT_VERSION == "p6"
+    assert prompts.PROMPT_VERSION == "p7"
     assert "neutral (background" in prompts.BASE and "A neutral excerpt is not counter-evidence and needs no rebuttal" in prompts.BASE
     assert "neutral evidence does not count as support" in prompts.BASE
 

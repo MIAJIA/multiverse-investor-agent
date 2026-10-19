@@ -158,3 +158,12 @@ def _good_graph():
     conds = [{**c, "evaluation_status": "unknown"} for c in out["conditions"]]
     return {"version": "d1-v1", "parent_version": None, "op": {"kind": "inspect"}, "nodes": out["nodes"],
             "edges": out["edges"], "conditions": conds}
+
+
+def test_numeric_condition_needs_comparator_even_without_threshold():
+    """B2 (Haiku, real packs): a numeric condition with threshold=null and no comparator could never be decided."""
+    from catalyst.validator import validate_condition
+    cond = {**_good()["conditions"][0], "comparator": None, "threshold": None, "evaluation_status": "unknown"}
+    assert any("comparator" in str(i) for i in validate_condition(cond))
+    cond["comparator"] = ">="
+    assert not any("comparator" in str(i) for i in validate_condition(cond))

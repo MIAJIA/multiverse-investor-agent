@@ -37,8 +37,10 @@ def validate_condition(condition: Condition | dict) -> list[Issue]:
     if c.kind == "numeric":
         if c.threshold is None and not (c.threshold_note or "").strip():
             out.append(Issue(c.id, "a numeric condition with threshold=null must have a threshold_note (why it is unknown and who confirms it)"))
-        if c.threshold is not None and c.comparator is None:
-            out.append(Issue(c.id, "a numeric condition with a threshold must have a comparator"))
+        if c.comparator is None:
+            # The direction of the comparison is known even when the number is not ("growth above ?"), so a
+            # numeric condition always needs one; otherwise it cannot be decided once the threshold is confirmed.
+            out.append(Issue(c.id, "a numeric condition must have a comparator, even when its threshold is still null"))
         if not c.series and c.verification_status == "verifiable":
             out.append(Issue(c.id, "a verifiable numeric condition must name a series; if you do not know one, mark it unverified and explain in threshold_note"))
         if not c.series and not (c.threshold_note or "").strip():
