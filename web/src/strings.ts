@@ -352,4 +352,35 @@ export const T = {
     sign: '正在批准',
     signNote: '不调用模型，一般几秒。',
   },
+
+  // ---- 研究工作区（每个问题一个，列表存在浏览器里）----
+  ws: {
+    newResearch: '＋ 新建研究',
+    history: '研究记录',
+    noHistory: '还没有研究。在上面输入一个问题，点 Analyze。',
+    approvedTitle: '已批准的计划',
+    noApproved: '还没有批准过计划。',
+    status: { analyzing: '分析中', ready: '完成', failed: '失败', missing: '找不到了' },
+    approved: (title: string) => `已批准：${title}`,
+    notApproved: '未批准',
+    revoked: '一份都不批',
+    noGraph: '没有因果链',
+    online: '联网',
+    versions: (n: number) => `${n} 个版本`,
+    date: (ts: number) => {
+      const d = new Date(ts);
+      const p = (n: number) => String(n).padStart(2, '0');
+      return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    },
+    planTitle: (conclusion: string, instrument: string) => `${conclusion} · ${instrument}`,
+    newHint: '新的问题会开一个新的研究，之前的研究都留在左边的记录里。',
+    missingTitle: '这次研究在后端找不到了',
+    missingNote: (run: string) => `运行 ${run} 已经不在后端的数据目录里（可能换了数据目录，或者被清理了）。这条记录只剩问题和批准历史。`,
+    failedTitle: '这次分析没有完成',
+    interrupted: '上次分析时页面被刷新或关掉了，结果没有拿回来。',
+    retry: '用这个问题重新分析',
+    approvalHistory: '批准记录',
+    loading: '正在从后端取回这次研究…',
+    storageOff: '浏览器不让保存研究记录（可能是无痕模式或禁用了本地存储），关掉页面后记录会丢失。',
+  },
 } as const;
