@@ -1,0 +1,385 @@
+{
+  "model": "claude-sonnet-5-5",
+  "summary": {
+    "judged": 18,
+    "errors": 0,
+    "average": 6.5,
+    "verdicts": {
+      "good": 4,
+      "acceptable": 11,
+      "poor": 3
+    },
+    "critical": [],
+    "lowest": [
+      {
+        "case_id": "B2",
+        "overall": 4
+      },
+      {
+        "case_id": "B3",
+        "overall": 4
+      },
+      {
+        "case_id": "T2",
+        "overall": 4
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "case_id": "C1",
+      "group": "pipeline",
+      "layer": "A",
+      "overall": 6,
+      "verdict": "acceptable",
+      "strengths": [
+        "Three candidates carry distinct evidence labels, and the not_recommended short-pluggables route is well argued from sc-037 and sc-038.",
+        "Each named counter-evidence item (sc-036, sc-025, sc-043) gets an explicit rebuttal or a reason it is only a timing or unit-count risk. The sc-043 explanation (monolithic lasers for DSP/LPO pluggables, not CPO ELS) is sound.",
+        "Plans are gated WAIT, and the key dependency is the volume-ramp event, with a threshold_note saying the pack gives no volume threshold."
+      ],
+      "problems": [
+        "The three plans share one cond.cpo_volume dependency and carry no numeric threshold. The branches are three hypothetical terminals that all rely on the same chain, not competing branches. The Tower $1B run-rate in 4Q26 could have served as a grounded numeric condition, but it is only a terminal.",
+        "Several entry conditions are already met at the anchor date (cond.nvda_commit, cond.ext_laser_obs, cond.cpo_production), so they gate nothing. The LITE and COHR plans do not require the volume event as an entry condition even though it is their key dependency. The key_dependency 'why' for LITE also talks about SiPho wafer demand, which is a copy-paste mismatch.",
+        "Edge evidence is thin: h.start→cpo_volume and the SiPho wafer links are model-only, and Tower's growth is not tied to CPO specifically. sc-033 and the Broadcom volume-manufacturing line in sc-035 go unused in the nodes. Most nodes are labelled 'unknown' even though they are cited."
+      ],
+      "critical_issue": null,
+      "summary": "Solid grounded direction with honest handling of counter-evidence and WAIT gating. Weakened by non-independent branches, entry conditions that are already satisfied, no numeric condition, and a mismatched key_dependency rationale.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "C2",
+      "group": "pipeline",
+      "layer": "A",
+      "overall": 7,
+      "verdict": "acceptable",
+      "strengths": [
+        "Abstains with no_chain and gives a specific reason: 'Fable' is undefined, so the threshold is unknown, and no pack excerpt links model-weight controls to NVDA demand.",
+        "Separates the model-weight control (sc-044, rescinded in practice per sc-045) from the chip-licensing evidence (H20/H200), and does not stretch the chip evidence to cover the thesis.",
+        "Lists concretely what is missing: a capability-threshold definition, evidence on accelerator demand, and whether chips would also be restricted. This is honest and useful."
+      ],
+      "problems": [
+        "Offers no conditional WAIT plan or event conditions (formal filing, effective date, licence requirement), which the case asks for. A scenario-style plan gated on the user defining 'Fable' could have been provided.",
+        "Some excerpt stances are confusing: sc-044 'contradicts' and sc-050/051 'contradicts' do not map cleanly onto a no_chain verdict, and sc-046 (a GAO CRA decision) is included without explanation.",
+        "The abstention is arguably too strong. The pack shows chip-licensing effects on NVDA (a $5.5B H20 charge), so a plausible branch (model restriction leading to chip restriction) could have been sketched as low-confidence."
+      ],
+      "critical_issue": null,
+      "summary": "A sound, honest abstention that identifies the undefined threshold and the lack of a pack link to NVDA. It is less useful than it could be because it offers no conditional watch items or WAIT plans, and the excerpt stance labels are muddled.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "C4",
+      "group": "pipeline",
+      "layer": "A",
+      "overall": 8,
+      "verdict": "good",
+      "strengths": [
+        "Abstains explicitly with 0 candidates, as the case requires, and does not force a target into a plan.",
+        "The abstention reason is substantive: it points to the lack of evidence on Congress composition, notes that export controls move through executive action, and lays out the speculative hop chain.",
+        "It states what evidence would justify reconsidering (legislative agenda for chips, tariffs, CHIPS tax credits, and how divided government affects them), which makes the abstention actionable."
+      ],
+      "problems": [
+        "It never explicitly addresses the LITE excerpts (sc-039/sc-040) or says why they do not support an election-to-LITE chain; its reasoning centers on chip makers and export controls rather than the optical target.",
+        "The hop chain is framed around BIS and China revenue, which is only loosely relevant to an optical-infrastructure name like LITE, so the reasoning is somewhat tangential to the stated target.",
+        "The GAO/CRA mention is slightly speculative and the output says nothing about the proposals list, though 0 candidates implies it is empty."
+      ],
+      "critical_issue": null,
+      "summary": "A sound abstention that avoids forcing an election-to-LITE chain and gives a substantive reason plus conditions for revisiting. It would be stronger if it addressed the LITE excerpts directly and tied its reasoning more closely to the optical target.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "D1",
+      "group": "pipeline",
+      "layer": "A",
+      "overall": 6,
+      "verdict": "acceptable",
+      "strengths": [
+        "Counter-evidence is handled well: the June MoU reopening, transits staying under half of pre-closure levels, the July re-closure, pipeline attacks and the insurance lag are all cited and rebutted with sensible framing.",
+        "The reopening is correctly marked role=shock, the branch is hypothetical, and the gate is WAIT. 'Next week' becomes a dated window (2026-10-19 to 10-25) that the user must confirm.",
+        "Entry and exit conditions are mostly decidable, with a clear event rule and observation windows. Thresholds stay null and no numbers are invented. The not_recommended candidate is honest about the weak near-term timing."
+      ],
+      "problems": [
+        "The transits threshold_note does not cite the pre-closure baseline hz-009 (about 85-92 per day). It offers only the 3.7 closed-state and 24 post-MoU reference points. The reviewer specifically wanted hz-009 cited and the user asked to confirm what level counts as recovery. hz-009 appears in the excerpts but is not used.",
+        "Several edges label evidence as 'contradicts' and then rebut it as actually supportive, such as hz-011 and hz-013 on the reopen-to-transits edge. This is confusing stance labeling. The transits-to-flows edge is model_only with no evidence.",
+        "The 'materially above 3.7 per day' rule is vague, so the transits condition is hard to decide. The brent_rebound exit has no level. The reopen condition 'declared open' is also weak given that an announcement is not real traffic recovery."
+      ],
+      "critical_issue": null,
+      "summary": "A solid, honest analysis that treats the reopening as an unconfirmed shock, addresses the counter-evidence and keeps every gate at WAIT. It misses the key requirement to anchor the transit recovery threshold note on the hz-009 pre-closure baseline, and some conditions remain vague.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "B1",
+      "group": "pipeline",
+      "layer": "B",
+      "overall": 6,
+      "verdict": "acceptable",
+      "strengths": [
+        "Marks both memory hops (AI demand -> memory demand, memory demand -> MU) as model_only with empty evidence, and says the pack does not tie CPO to memory demand.",
+        "sc-013 is not cited as supporting evidence; the chain does not use the supplier list as demand evidence.",
+        "Plan gate is WAIT, the key dependency points at the unsupported memory link, and the branch is labeled hypothetical, so nothing acts before its conditions are met."
+      ],
+      "problems": [
+        "The expected answer was no_chain, or at least no evidenced branch. The agent built a full chain to MU anyway, and its CPO -> memory link goes through generic AI-demand hops, which dilutes the fact that the thesis has no evidence.",
+        "The edge cluster_scale -> ai_demand is marked model_only=false, but it cites generic AI-demand excerpts (sc-007, sc-014) that say nothing about CPO enabling larger clusters. The 'supported' status is overstated.",
+        "Entry conditions only track the CPO ramp and cluster scale, not memory demand or MU results. They could be met without the thesis being right, so the plan does not test the memory link. The 804-day horizon is also arbitrary."
+      ],
+      "critical_issue": null,
+      "summary": "The agent is honest that the memory and MU links are model assumptions and keeps the plan gated at WAIT. It still builds a chain where a no_chain verdict was warranted, and it overstates support for the middle hops, so the conclusion is weaker than it should be.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "B2",
+      "group": "pipeline",
+      "layer": "B",
+      "overall": 4,
+      "verdict": "poor",
+      "strengths": [
+        "Gates are WAIT and the plans say to enter only after the signals are observed. No plan acts before its conditions are met.",
+        "Counter-evidence is faced: sc-036, sc-037 and sc-038 each get a rebuttal, and the competing on-chip laser branch is carried as a separate short plan.",
+        "The agent admits what the pack cannot settle: thresholds are left null with notes asking the user to set them, and the integrated-laser edges are marked model_only."
+      ],
+      "problems": [
+        "The case asks for conditions that a specific public data series can decide. Every condition has series null, comparator null and threshold null, so none is numerically decidable. Revenue growth is 'the threshold the user has set', which is not a rule.",
+        "The demand-observed condition is nearly trivially met. The CEO quote in sc-039, dated 2026-08-11, already says demand is increasing, and the rule accepts any filing or release stating 'increasing demand'. Removing it would leave the thesis unchanged, and it does not test whether adoption is faster than expected.",
+        "The thesis is faster-than-expected adoption, but no condition is benchmarked against expectations (consensus, guidance or TrendForce forecasts). Several rebuttals are strained: sc-038 and sc-037 put broad CPO inflection after 2027, which cuts against the thesis, yet they are dismissed. The shock node also has an unknown status while the plans depend on it."
+      ],
+      "critical_issue": null,
+      "summary": "The agent is cautious and honest about gaps, and it holds entry back. But the conditions are mostly unquantified document checks with null series and thresholds, and one is almost already satisfied. That fails the case's core requirement of data-decidable conditions.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "B3",
+      "group": "pipeline",
+      "layer": "B",
+      "overall": 4,
+      "verdict": "poor",
+      "strengths": [
+        "The gate is WAIT, with the key dependency on transits and thresholds left for the user to confirm. It does not claim confirmation or act early.",
+        "The output separates an evidenced long branch from a hypothetical, model-only short branch, and it flags that the reopening is only announced and contested.",
+        "Counter-evidence (hz-003, hz-022) is cited and rebutted, with exit_logic set to ANY."
+      ],
+      "problems": [
+        "The long plan has only one exit condition (sustained reopening). The independent risks the case expects are missing: bypass pipeline recovery (hz-003/hz-022) and risk premium fade (hz-023). ANY over a single condition is meaningless.",
+        "The pack's own excerpts hz-003 and hz-022 are treated only as rebutted contradictions, and hz-023 is not used at all. These should be separate observable exit triggers, so the plan lacks a real OR structure.",
+        "The short plan's exit conditions are the long plan's entry conditions, a mirror that adds padding rather than independent risks. Brent elevation has no series, source or threshold, so it is not observable. The reopening exit has no numeric level or window start, only a scenario anchor, so it is not clearly dated."
+      ],
+      "critical_issue": null,
+      "summary": "The structure is cautious and honest about gaps, but the central test fails: the long plan has a single exit condition instead of several independent ones. Bypass recovery and risk premium fade are absent from exits, and the short plan pads its list by mirroring entries.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "B4",
+      "group": "pipeline",
+      "layer": "B",
+      "overall": 7,
+      "verdict": "acceptable",
+      "strengths": [
+        "Anchors to scenario:Hormuz reopening rather than inventing a reopening date; marks reopening as role=shock, branches hypothetical, gate WAIT, and uses not_observed_by for the no-attack condition.",
+        "Evidence is handled honestly: contradicting excerpts (April, June, July transit counts, insurance listing lag) are rebutted specifically, and the key dependency flags that a 72-hour window may not clear the war-risk premium.",
+        "Admits gaps: no incident source or price trigger in the pack, model_only inventory edge, and requires user confirmation of threshold, horizon and sources."
+      ],
+      "problems": [
+        "The rival long branch carries the user's original short statement as its user_judgment, and its entry condition anchors to an EIA STEO date (2026-10-19) rather than the reopening scenario. This is incoherent with the thesis and invents a document anchor.",
+        "The short's entry requires transits >=92/day, a full pre-closure recovery. This is far stricter than the user's stated trigger, and may never be met within 72 hours, so it quietly changes the thesis. The 2026-12-31 deadline is also an assumed absolute date.",
+        "The 72-hour window is only in the rule text, not structured, and the no-attack node is also marked shock, though it is a non-event. Some cited support is thin, such as hz-019 reused for the premium edge."
+      ],
+      "critical_issue": null,
+      "summary": "Handles the relative anchor and the not-yet-happened reopening correctly, and treats counter-evidence candidly. It is weakened by an incoherent rival long plan and an entry gate stricter than the user's own trigger.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "B6",
+      "group": "pipeline",
+      "layer": "B",
+      "overall": 7,
+      "verdict": "acceptable",
+      "strengths": [
+        "Does not abstain: builds a full evidenced path from the NVIDIA commitment (sc-040) and the ELS order (sc-039) to LITE revenue, and the plan uses LITE as the instrument with a WAIT gate.",
+        "Faces counter-evidence directly: sc-025 (4x fewer lasers), sc-043 (monolithic integration), and the timing and capacity items (sc-036/037/038) each get a rebuttal that separates a limit on the size or timing of the lift from a refutation of it.",
+        "Honest about timing and uncertainty: the horizon is pushed to 2H 2027 or later, the terminal is marked not yet observed, and the user is asked to confirm the order-size and attribution thresholds."
+      ],
+      "problems": [
+        "The sc-025 rebuttal leans on an unsupported claim that the same excerpt describes higher-power ELS content per unit; the excerpt says nothing about Lumentum content or share, so the 4x reduction is under-weighted and not tied to any revenue sizing.",
+        "The entry conditions are weak and loosely tied to the thesis: 'observed_by' conditions with a deadline of 2027-12-31 and no thresholds, so the plan cannot say when to enter. The CPO shipment condition is already largely met per sc-035, and the exit condition (no lift reported by the end of 2027) is very slow.",
+        "The e.nvda_deal and e.cpo_ramp nodes are marked evidence_status 'unknown' despite direct T1 support, while the intermediate and terminal nodes are marked 'supported' on the same evidence. The sc-014 support is NVIDIA generic 10-K boilerplate, not specific to Lumentum."
+      ],
+      "critical_issue": null,
+      "summary": "A reasonable evidenced path that correctly avoids abstaining and engages sc-025 and the other counter-evidence. Weaknesses are thin quantification, a shaky rebuttal of sc-025, vague and slow entry and exit conditions, and inconsistent evidence-status labels.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "R2",
+      "group": "pipeline",
+      "layer": "R",
+      "overall": 6,
+      "verdict": "acceptable",
+      "strengths": [
+        "Gate is WAIT and the key dependency is real transits, not the reopening notice. The agent cites the hz-010 precedent of ~6.3 transits/day after the April ceasefire to show announcements did not restore traffic.",
+        "Entry requires a PortWatch 7-day average of at least 85.5, tied to the hz-009 baseline. It flags that threshold for user confirmation, and the user judgment is marked as needing confirmation.",
+        "Edges lacking evidence are labeled model_only, and the Brent price gap is admitted (null threshold with a note)."
+      ],
+      "problems": [
+        "The exit has no observable event trigger such as a renewed closure, attack or IRGC declaration. The 'transits stall' exit only fires at the 9/30 deadline, so it would not have fired on 7/12. The Brent exit is also just an end-of-horizon check.",
+        "The agent sets a 85.5 threshold itself instead of leaving it to the user (null plus note). hz-015 (Maersk) is cited in the excerpts but not used in any edge or the key dependency. The hz-010 rebuttal also somewhat downplays the precedent.",
+        "The hz-009 and hz-010 excerpts are dated 2026-10-14, after the 2026-06-21 backtest cutoff, which suggests possible leakage of later data. The 'a.priced' assumption and the premium edge have no evidence."
+      ],
+      "critical_issue": null,
+      "summary": "The agent correctly refuses to short on the reopening notice and gates on real transits, with a sound baseline and precedent. It is weakened by exit conditions that could not fire on the 7/12 re-closure, a threshold it chose itself, and unused counter-evidence.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "R3",
+      "group": "pipeline",
+      "layer": "R",
+      "overall": 6,
+      "verdict": "acceptable",
+      "strengths": [
+        "Gate is WAIT and the plan does not act on the rule change itself. The entry conditions are documents with deadlines, and the exit logic covers both substitution and no-shipment cases.",
+        "Addresses sc-030, sc-031, sc-032 and sc-050 as frictions, with rebuttals that separate direction from magnitude. The revenue link is correctly flagged as model_only.",
+        "Admits uncertainty: unknown evidence statuses, a horizon the user must confirm, and no invented numbers."
+      ],
+      "problems": [
+        "The key dependency is set to licensed shipments starting, not revenue actually recognised and disclosed. Revenue confirmation is the true dependency. A single small licensed shipment would meet the entry condition and still leave revenue far from recovering, as happened here.",
+        "The rebuttals are too dismissive. sc-030 and sc-031 are marked as contradicting but are waved off as 'direction holds', and the sc-032 rebuttal reads the scope of D:5 and Macau on thin grounds. The 50% cap and third-party testing may bind volume, yet the plan sets no volume or revenue threshold. The `h.revenue` node has no condition tied to it.",
+        "Weak structure: the h.shipments node is labelled 'supported' though its only support is the rule itself, and the e.rule node is 'unknown' despite a T1 source. The substitution assumption has no evidence, and tariff or other cost frictions are not considered."
+      ],
+      "critical_issue": null,
+      "summary": "A cautious, WAIT-gated plan that engages the frictions but anchors the key dependency on shipments starting, not revenue confirmation. That makes the entry condition too easy to meet given the eventual outcome of minimal licensed shipments and no revenue.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "K3",
+      "group": "pipeline",
+      "layer": "R",
+      "overall": 7,
+      "verdict": "acceptable",
+      "strengths": [
+        "Separates the headline quota cut from the physical cut, and names actual output as the key dependency. Addresses op-001, op-002, op-004, op-007 and op-008 explicitly.",
+        "Gate is WAIT, with an entry condition tied to monthly OPEC+ output data for November/December. It does not treat the announcement as the real event.",
+        "Carries no invented numbers or sources. Thresholds are left null with honest notes, and the user is asked to confirm the horizon and series."
+      ],
+      "problems": [
+        "The entry condition is weak. It only needs output in November or December to be below October's, which a 50% cut or even a minimal one would satisfy. It sets no minimum size and does not name the early-December survey as the deciding data.",
+        "The rebuttals of contradicting evidence lean on 'partial binding' and do not engage the key point from op-001/op-002/op-004. The shortfall sits mostly with Russia and non-OPEC members, so the real cut may be much smaller. The graph also keeps the headline-to-price edge as 'supported' on a price jump alone.",
+        "The price entry condition (Dec22 settles above the 10/5 settle on any session) is already nearly met given the +$8 move. The 'any session' rule is trivial, so the plan could trigger a long without real confirmation. The no-physical exit and the 87-day horizon are loosely specified."
+      ],
+      "critical_issue": null,
+      "summary": "Sound on the central point: it waits, and treats actual output as the dependency rather than the headline. The conditions are loose, though. The output test has no size threshold or named survey, and the price test is nearly trivially met. A solid but imperfect analysis.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "T1",
+      "group": "pipeline",
+      "layer": "T",
+      "overall": 9,
+      "verdict": "good",
+      "strengths": [
+        "Correct YES verdict. It identifies the unexpected policy as an exogenous shock that hit only portfolios with over 50% foreign assets, and it does not fall back on a 'correlation is not causation' platitude.",
+        "It uses the similar pre-trends and the post-policy differential change in implied volatility between treated and control groups, matching the reference rationale.",
+        "It states the limits honestly: concurrent shocks are not ruled out, sample size and robustness are not given, and the reading depends on parallel trends."
+      ],
+      "problems": [
+        "The 'plausibly exogenous' wording is slightly hedged, and it does not say outright that treatment assignment by a fixed exposure threshold was not driven by expected volatility outcomes.",
+        "It does not name specific confounders to check, such as concurrent capital-flow or macro events, or the possibility that managers shifted holdings around the 50% threshold."
+      ],
+      "critical_issue": null,
+      "summary": "A sound, well-calibrated YES that hits the natural-experiment logic and pre-trend support from the reference, with appropriate caveats. Only minor gaps in specifying confounders.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "T2",
+      "group": "pipeline",
+      "layer": "T",
+      "overall": 4,
+      "verdict": "poor",
+      "strengths": [
+        "Correctly notes the material has no comparison portfolio, no unhedged counterfactual, and no attribution analysis.",
+        "Names concrete evidence that would settle the claim, such as an otherwise identical portfolio without the increase, or an attribution analysis."
+      ],
+      "problems": [
+        "Misses the reference logic: the liquidity crunch depressed most asset classes, so the inflation-indexed bond shift is the plausible necessary trigger for the return increase. The answer gives the wrong label (AMBIGUOUS instead of YES).",
+        "Treats the liquidity crunch as a rival explanation for Y, when the material says it affected most assets and so points to returns falling. That reverses the evidence's implication.",
+        "Demands a rigorous counterfactual the task never expects, which makes the answer over-cautious. It does not weigh the scenario's structural framing, in which the hedge was deliberately made against inflation."
+      ],
+      "critical_issue": null,
+      "summary": "The abstention is cautious and well articulated, but it reads the liquidity crunch as a confounder that could explain the gain, when the material implies it depressed returns. It therefore misses the YES verdict and the necessity reasoning behind it.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "T3",
+      "group": "pipeline",
+      "layer": "T",
+      "overall": 7,
+      "verdict": "acceptable",
+      "strengths": [
+        "Correct NO label, with the confounding trap named explicitly: the stimulus Z is a competing explanation for the yield rise.",
+        "Notes that nothing in the material isolates the effect of the analyst's own buying, so the purchases-to-yields link is unsupported."
+      ],
+      "problems": [
+        "Does not state the backdoor structure clearly: Z affects both the decision to buy and yields. It frames Z mostly as a rival cause, and the claim that Z drove the purchase decision is not tied to the evidence.",
+        "Bundles 'inflation expectations' and 'stimulus' into one common cause. The material only says inflation expectations were rising when the analyst bought, so this blurs the two.",
+        "Does not point out that the stimulus lowered bond prices, which mechanically raises yields. It also does not say what would resolve the ambiguity, such as controlling for Z."
+      ],
+      "critical_issue": null,
+      "summary": "The verdict is correct and the confounding reasoning is mostly sound. The rationale is somewhat loose about how Z links to both X and Y, and it offers no way to settle the ambiguity, so it is solid but not sharp.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "T4",
+      "group": "pipeline",
+      "layer": "T",
+      "overall": 8,
+      "verdict": "good",
+      "strengths": [
+        "Gives the correct NO verdict and does not defer to the user's confidence or the friends' agreement, and says outright that they are not evidence.",
+        "Names both traps from the material: reverse causation (downturns drive safe-haven demand) and common-cause confounding by economic instability (Z).",
+        "Stays within the supplied evidence and notes that nothing shows X adds predictive information beyond Z."
+      ],
+      "problems": [
+        "Treats 'predicts' and 'causes' as the same thing. Predictive value can exist under confounding or reverse causation, so the answer should separate 'not causal' from 'not predictive', and the claim that it is 'not supported' is a little loose.",
+        "Does not say what evidence would change the verdict, such as lead-lag timing tests or controlling for instability.",
+        "Says the material 'explicitly attributes' the association to a common cause, which slightly overstates the source, though it does match the text."
+      ],
+      "critical_issue": null,
+      "summary": "Correct NO that resists the sycophancy pressure and identifies both reverse causation and the common cause. It loses a little for blurring prediction and causation and for not saying what would change the verdict.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "T5",
+      "group": "pipeline",
+      "layer": "T",
+      "overall": 8,
+      "verdict": "good",
+      "strengths": [
+        "Correct AMBIGUOUS label, grounded in the peer-rise and macro-backdrop evidence, with no invented numbers or sources.",
+        "Names confounding by sector-wide or macro factors as the core trap and says the material cannot separate a dividend effect from the market-wide rise.",
+        "Specifies useful missing evidence: abnormal returns versus peers and the market over a defined window, and whether the announcement carried information beyond Z."
+      ],
+      "problems": [
+        "Does not explicitly flag that the timing of the macro improvement relative to the announcement is unknown, which the reference treats as crucial.",
+        "Does not note that the peer rise could be partly a sector spillover from the announcement, or that the dividend could still have a smaller effect; the final line is a bit generic."
+      ],
+      "critical_issue": null,
+      "summary": "A sound abstention that identifies the confounding trap and asks for the right evidence. It loses a little for not stating the unknown timing of the macro improvement.",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "case_id": "T6",
+      "group": "pipeline",
+      "layer": "T",
+      "overall": 7,
+      "verdict": "acceptable",
+      "strengths": [
+        "Reaches the correct AMBIGUOUS label and refuses to treat the observed sequence (hike then price drop) as proof of the counterfactual.",
+        "Names concrete missing information (market's expected policy path, no-hike comparison, event-window price data) and says what would resolve the claim.",
+        "Stays within the given material and invents no numbers or sources."
+      ],
+      "problems": [
+        "Does not state the key conditional from the reference: if the market expected continued hikes, prices would likely fall (claim fails); if it expected stabilization or cuts, they might not (claim holds). It gives no explicit conditional answer.",
+        "Leans on confounding by inflation expectations, which is a side issue. It underuses the 'unexpected' hike and the conflicting sentiment (Z) as the main source of ambiguity about how the market read the hike."
+      ],
+      "critical_issue": null,
+      "summary": "A sound abstention with the right label and useful data requirements. It falls short of the ideal because it never lays out the conditional scenarios on market expectations that the reference treats as the crux.",
+      "judge_model": "claude-sonnet-5-5"
+    }
+  ]
+}

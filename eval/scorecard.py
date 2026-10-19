@@ -39,6 +39,9 @@ REFUSAL_CHECKS = {"label_matches_gold", "abstained_or_only_not_recommended", "no
 FORK_CHECK_SUFFIXES = ("out_of_scope_hash_unchanged", "write_scope_matches_golden", "challenged_matches_golden",
                        "fork_plans_per_terminal", "baseline_retained")
 NO, YES = scoring.NO_ANSWERS, {"是", "yes", "Yes", "YES"}
+# 总分 = 代码分 × (1 - JUDGE_SHARE) + LLM judge 平均分（换算到百分制）× JUDGE_SHARE（Mia 2026-10-19：看整体）。
+# 代码分量的是护栏有没有守住，judge 量的是内容好不好；没有 judge 结果时总分就是代码分。
+JUDGE_SHARE = 0.5
 
 
 def _layer(r: dict) -> str:
@@ -182,7 +185,19 @@ def build(results: list[dict], *, name: str, model: str | None = None, prompt: s
                  and u["what"] in {b["what"] for b in base}]
     model = model or next((r.get("model") for r in results if r.get("model")), None)
     model = model.replace(" (replay)", "") if model else model
-    return {"name": name, "model": model, "prompt": prompt, "date": date, "score": score,
+    verdicts = [r["judge"] for r in results if r.get("group") == "pipeline" and r.get("judge")]
+    judged = None
+    if verdicts:
+        judged = {"average": round(sum(v["overall"] for v in verdicts) / len(verdicts), 1), "cases": len(verdicts),
+                  "poor": sorted(v["case_id"] for v in verdicts if v["verdict"] == "poor"),
+                  "critical": sorted(v["case_id"] for v in verdicts if v.get("critical_issue")),
+                  "model": next((v.get("judge_model") for v in verdicts if v.get("judge_model")), None)}
+    total = score
+    if judged:
+        total = (round(score * (1 - JUDGE_SHARE) + judged["average"] * 10 * JUDGE_SHARE, 1) if score is not None
+                 else round(judged["average"] * 10, 1))
+    return {"name": name, "model": model, "prompt": prompt, "date": date, "total": total, "score": score,
+            "judge": judged, "judge_share": JUDGE_SHARE if judged else 0,
             "score_out_of_10": None if score is None else round(score / 10, 1),
             "weights_counted": available, "red_line": red, "trusted": not red, "metrics": metrics,
             "baseline_refusal": {"baseline": f"{sum(u['pass'] for u in base)}/{len(base)}",
@@ -191,10 +206,13 @@ def build(results: list[dict], *, name: str, model: str | None = None, prompt: s
 
 
 def render(card: dict) -> str:
-    head = (f"**Score: {card['score']} / 100**" if card["score"] is not None else "**Score: n/a**")
+    head = (f"**Total: {card.get('total', card['score'])} / 100**" if card["score"] is not None else "**Total: n/a**")
+    if card.get("judge"):
+        head += (f" = code {card['score']} x {1 - card['judge_share']:g} + LLM judge {card['judge']['average']}/10 "
+                 f"x {card['judge_share']:g}")
     trust = ("trusted" if card["trusted"] else f"**UNTRUSTED** (red line: {', '.join(card['red_line'])})")
     out = [f"## Scorecard: {card['name']}", "",
-           f"{head} ({card['score_out_of_10']} / 10) · {trust} · model {card['model']} · prompt {card['prompt']}"
+           f"{head} · {trust} · model {card['model']} · prompt {card['prompt']}"
            + (f" · {card['date']}" if card.get("date") else ""), "",
            "| Metric | Weight | Passed / judged | Points | Failed cases | Not judged yet |",
            "| --- | --- | --- | --- | --- | --- |"]
@@ -202,6 +220,12 @@ def render(card: dict) -> str:
         passed = f"{m['passed']:g} / {m['total']}" if m["total"] else "n/a"
         out.append(f"| {m['title']} | {m['weight']} | {passed} | {m['score'] if m['score'] is not None else 'n/a'} | "
                    f"{', '.join(m['failed_cases']) or '-'} | {len(m['excluded'])} |")
+    if card.get("judge"):
+        j = card["judge"]
+        out += ["", f"**LLM judge (overall quality, {j['model']}): {j['average']} / 10** over {j['cases']} cases"
+                    + (f"; poor: {', '.join(j['poor'])}" if j["poor"] else "")
+                    + (f"; critical issues: {', '.join(j['critical'])}" if j["critical"] else "")
+                    + f". It counts for {card['judge_share']:g} of the total."]
     if card["weights_counted"] < 100:
         out += ["", f"Metrics with no judged units are left out and the score is scaled over the remaining "
                     f"{card['weights_counted']} points of weight."]
@@ -220,17 +244,21 @@ def readme_block(cards: list[dict]) -> str:
     keys = [m[0] for m in METRICS]
     titles = {k: t for k, _, t, _ in METRICS}
     lines = [README_START, "",
-             "| Run | Model / prompt | Score (/100) | " + " | ".join(titles[k] for k in keys) + " | Red line |",
-             "| --- | --- | --- | " + " | ".join("---" for _ in keys) + " | --- |"]
+             "| Run | Model / prompt | Total (/100) | Code checks (/100) | LLM judge (/10) | " + " | ".join(titles[k] for k in keys) + " | Red line |",
+             "| --- | --- | --- | --- | --- | " + " | ".join("---" for _ in keys) + " | --- |"]
     for c in cards:
         cells = []
         for k in keys:
             m = next(x for x in c["metrics"] if x["key"] == k)
             cells.append(f"{m['passed']:g}/{m['total']}" if m["total"] else "n/a")
-        lines.append(f"| {c['name']} | {c['model']} / {c['prompt']} | **{c['score']}** | " + " | ".join(cells)
+        judge = f"{c['judge']['average']}" if c.get("judge") else "-"
+        lines.append(f"| {c['name']} | {c['model']} / {c['prompt']} | **{c.get('total', c['score'])}** | {c['score']} | {judge} | "
+                     + " | ".join(cells)
                      + f" | {'none' if c['trusted'] else ', '.join(c['red_line'])} |")
-    lines += ["", "Weights: " + ", ".join(f"{t} {w}" for _, w, t, _ in METRICS)
-              + ". Cells are passed / judged units; units still waiting for human review, contaminated backtests and "
+    lines += ["", f"Total = code checks x {1 - JUDGE_SHARE:g} + LLM judge (scaled to 100) x {JUDGE_SHARE:g}; without a judge run the "
+              "total is the code score. Code-check weights: " + ", ".join(f"{t} {w}" for _, w, t, _ in METRICS)
+              + ". LLM judge: average overall quality per case (1-10), reviewed by a different model (Sonnet) than the agent "
+                "(Haiku). Cells are passed / judged units; units still waiting for human review, contaminated backtests and "
                 "undetermined outcomes are not counted. Details: `eval/results/<run>/scorecard.md`.", "", README_END]
     return "\n".join(lines)
 
@@ -253,6 +281,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--date")
     ap.add_argument("--out", help="directory for scorecard.json and scorecard.md")
     ap.add_argument("--readme", help="README to update from scorecard.json files")
+    ap.add_argument("--judge", help="judge.json from eval.judge; its verdicts replace pending human review")
     args = ap.parse_args(argv)
     if args.readme:
         cards = [json.loads(Path(f).read_text(encoding="utf-8")) for f in args.files]
@@ -260,6 +289,10 @@ def main(argv: list[str] | None = None) -> None:
         print(f"updated {args.readme} with {len(cards)} runs")
         return
     results = [r for f in args.files for r in json.loads(Path(f).read_text(encoding="utf-8"))]
+    if args.judge:
+        from eval import judge
+        payload = json.loads(Path(args.judge).read_text(encoding="utf-8"))
+        results = judge.apply(results, [dict(v, judge_model=payload.get("model")) for v in payload["verdicts"]])
     card = build(results, name=args.name or Path(args.files[0]).parent.name, prompt=args.prompt, date=args.date)
     if args.out:
         out = Path(args.out)

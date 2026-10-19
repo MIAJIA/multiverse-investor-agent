@@ -16,8 +16,8 @@ from typing import Any, Callable, Protocol
 
 from eval import backtest as bt
 from eval import scoring
-from eval.checks import (cited_excerpts, decidable_missing, graph_edges, model_only_edge_count, research_metrics,
-                         scenario_checks)
+from eval.checks import (cited_excerpts, decidable_missing, graph_edges, model_only_edge_count, output_digest,
+                         research_metrics, scenario_checks)
 from eval.loader import FIXTURES_DIR, load_all_cases, load_fixture, load_json
 from eval.scoring import check, get
 
@@ -290,7 +290,10 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         cands = list(get(d, "candidates") or [])
         observations += list(get(d, "observations") or [])
         labels = [get(c, "label") for c in cands]
-        res["actual"] = {"candidates": len(cands), "candidate_labels": labels, "abstained": bool(get(d, "abstained"))}
+        res["actual"] = {"candidates": len(cands), "candidate_labels": labels, "abstained": bool(get(d, "abstained")),
+                         "abstain_reason": get(d, "abstain_reason"),
+                         "candidate_rationales": [{"label": get(c, "label"), "direction": get(c, "direction"),
+                                                   "rationale": get(c, "rationale")} for c in cands]}
         if exp.get("abstain"):
             ok = len(cands) == 0 or all(l == "not_recommended" for l in labels)
             res["checks"].append(check("abstained_or_only_not_recommended", "E4", ok,
@@ -346,6 +349,9 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
         "model_only_edges": model_only_edge_count(out),
     })
     res["checks"] += scenario_checks(case, out, plans, no_chain)
+    # 给 LLM judge 看的输出摘要：被引用的片段和案例点名要回应的片段都带原文
+    named = set(exp.get("key_excerpts") or []) | set((exp.get("backtest") or {}).get("counter_excerpts_to_address") or [])
+    res["output"] = output_digest(out, evidence, packs, named)
     if backtest_case:
         res["checks"] += bt.leak_checks(case, out, allowed)
         if evaluate_condition is None:

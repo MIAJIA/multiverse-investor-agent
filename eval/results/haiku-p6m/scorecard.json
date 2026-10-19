@@ -3,7 +3,20 @@
   "model": "anthropic:claude-haiku-5-5",
   "prompt": "p6",
   "date": "2026-10-19",
+  "total": 77.2,
   "score": 89.5,
+  "judge": {
+    "average": 6.5,
+    "cases": 18,
+    "poor": [
+      "B2",
+      "B3",
+      "T2"
+    ],
+    "critical": [],
+    "model": "claude-sonnet-5-5"
+  },
+  "judge_share": 0.5,
   "score_out_of_10": 8.9,
   "weights_counted": 90,
   "red_line": [],
@@ -35,19 +48,8 @@
         "T2"
       ],
       "excluded": [
-        "C2: reasoning pending human review",
         "C3: reasoning pending human review",
-        "C4: reasoning pending human review",
-        "D1: reasoning pending human review",
-        "B1: reasoning pending human review",
-        "B4: reasoning pending human review",
-        "B5: reasoning pending human review",
-        "B6: reasoning pending human review",
-        "T1: reasoning pending human review",
-        "T3: reasoning pending human review",
-        "T4: reasoning pending human review",
-        "T5: reasoning pending human review",
-        "T6: reasoning pending human review"
+        "B5: reasoning pending human review"
       ]
     },
     {
