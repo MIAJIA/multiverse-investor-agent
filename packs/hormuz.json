@@ -1,0 +1,20 @@
+{
+  "pack_id": "hormuz",
+  "synthetic": false,
+  "note": "主要论点：霍尔木兹海峡重新开放会带来可观测的实际通航恢复。stance 相对这个论点：supports = 支撑链上某一环（海峡是主要通道、历史基线规模、过境量可以被观测）；contradicts = 削弱它（观测滞后、序列会回修、AIS 缺口与伪造）。材料只有 2024 年历史基线与 PortWatch 方法说明，不能据此判断 2026 年是否封锁、当前过境量或恢复阈值；历史反例（「宣布开放」后过境量未恢复）材料里没有，待补。",
+  "_provenance": {
+    "built": "2026-10-18，证据线（evidence 分支）",
+    "material_root": "/Users/mia/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/outputs/knowledge_packs/energy.json",
+    "method": "hz-001–003 对照 EIA 原文 URL 复核；hz-004–007 取自 energy.json 的 PortWatch 事实卡。PortWatch 方法页没有发布日期，date 取 sources.json 记录的页面元数据修改日 2026-08-25（upstream_metadata_modified_at），不是观测日期。",
+    "fact_ids": {"hz-001": "E015", "hz-002": "E017 + E018", "hz-003": "原文（事实卡只收了管道存在，未收可绕行容量）", "hz-004": "E025", "hz-005": "E027", "hz-006": "E026", "hz-007": "E028"}
+  },
+  "excerpts": [
+    {"source_id": "eia-tie-65504", "excerpt_id": "hz-001", "source": "EIA Today in Energy（T1 官方数据）· 开篇段落", "date": "2025-06-16", "stance": "supports", "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504", "text": "霍尔木兹海峡位于阿曼和伊朗之间，连接波斯湾与阿曼湾、阿拉伯海。"},
+    {"source_id": "eia-tie-65504", "excerpt_id": "hz-002", "source": "EIA Today in Energy（T1 官方数据）· 开篇段落", "date": "2025-06-16", "stance": "supports", "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504", "text": "EIA 估计 2024 年经海峡的石油流量平均约 2,000 万桶/日（20 million b/d），约占全球石油液体消费的 20%（历史年均值，不是当前过境量）。"},
+    {"source_id": "eia-tie-65504", "excerpt_id": "hz-003", "source": "EIA Today in Energy（T1 官方数据）· 绕行管道段落", "date": "2025-06-16", "stance": "supports", "url": "https://www.eia.gov/todayinenergy/detail.php?id=65504", "text": "EIA 估计沙特与阿联酋管道约有 260 万桶/日（2.6 million b/d）的容量可用于绕开霍尔木兹海峡。"},
+    {"source_id": "imf-portwatch-method", "excerpt_id": "hz-004", "source": "IMF PortWatch Data & Methodology（T1 官方数据）· Daily Port Activity Data and Trade Estimates", "date": "2026-08-25", "stance": "supports", "url": "https://portwatch.imf.org/pages/data-and-methodology", "text": "PortWatch 用 AIS 船舶信号估算港口活动和海运贸易量（模型估计，不是舱单或海关统计）。"},
+    {"source_id": "imf-portwatch-method", "excerpt_id": "hz-005", "source": "IMF PortWatch Data & Methodology（T1 官方数据）· 2024 methodology revision / vessel classification", "date": "2026-08-25", "stance": "supports", "url": "https://portwatch.imf.org/pages/data-and-methodology", "text": "PortWatch 区分干散货、杂货、集装箱、油轮和滚装船等船型。"},
+    {"source_id": "imf-portwatch-method", "excerpt_id": "hz-006", "source": "IMF PortWatch Data & Methodology（T1 官方数据）· Daily Port Activity and Daily Chokepoint datasets", "date": "2026-08-25", "stance": "contradicts", "url": "https://portwatch.imf.org/pages/data-and-methodology", "text": "PortWatch 的咽喉要道数据是日频观测，但每周二美东 9 点才更新：通航恢复不会在数据里即时可见。"},
+    {"source_id": "imf-portwatch-method", "excerpt_id": "hz-007", "source": "IMF PortWatch Data & Methodology（T1 官方数据）· 2026 revision log", "date": "2026-08-25", "stance": "contradicts", "url": "https://portwatch.imf.org/pages/data-and-methodology", "text": "PortWatch 记录了针对船舶覆盖、边界、AIS 伪造和不完整过境的修订，序列可能被追溯回修；AIS 缺口本身不能证明贸易流量真的变化。"}
+  ]
+}
