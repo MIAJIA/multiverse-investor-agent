@@ -73,12 +73,12 @@ def test_c3_missed_impact_is_reported(evidence):
 
 def test_real_mode_without_real_packs_does_not_fall_back(evidence):
     packs, notes = prepare_packs(load_case("C2"), evidence, "real")
-    assert packs == [] and len(notes) == 2, "real 模式缺包就不带，不拿合成包补"
+    assert packs == [] and len(notes) == 1, "real 模式缺包就不带，不拿合成包补"
 
 
 def test_real_mode_uses_real_packs_only(real_evidence):
     packs, notes = prepare_packs(load_case("C2"), real_evidence, "real")
-    assert packs == ["semiconductor"] and any("web" in n for n in notes)
+    assert packs == ["semiconductor"] and notes == [], "联网由 --online 控制，evidence_packs 里不再有 web"
     assert real_evidence.pack("semiconductor").synthetic is False
 
 
@@ -93,7 +93,7 @@ def test_key_excerpts_exist_in_real_packs(real_evidence):
     """C1、C2、D1 的关键片段都要在真实包里，且不是占位片段。"""
     for case_id in ("C1", "C2", "D1"):
         case = load_case(case_id)
-        ids = {x["excerpt_id"] for p in case["input"]["evidence_packs"] if p != "web"
+        ids = {x["excerpt_id"] for p in case["input"]["evidence_packs"]
                for x in real_evidence.load_pack(p)}
         missing = set(case["expected"]["key_excerpts"]) - ids
         assert not missing, (case_id, missing)

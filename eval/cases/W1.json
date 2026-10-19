@@ -1,0 +1,55 @@
+{
+  "id": "W1",
+  "type": "custom",
+  "layer": "W",
+  "title": "联网 + 补查：美联储 10 月降息 → 长债 ETF",
+  "entry": "inspect",
+  "input": {
+    "event": "美联储在 10 月底的 FOMC 会议上降息 25 个基点",
+    "target": "TLT",
+    "today": "2026-10-18",
+    "evidence_packs": []
+  },
+  "run_variants": [
+    "online"
+  ],
+  "expected": {
+    "behavior": "本地资料包没有覆盖这个领域，证据只能来自研究 loop。降息在 today 时尚未发生，应标 role=shock，相关分支是假设分支；在真正有争议处给出竞争分支（例如降息已被市场定价、长端利率不一定跟随短端），没有争议时 1 条也合法；条件引用联网找到的官方来源（FOMC 声明、会议日程），会议日期和阈值不能自己编；每轮研究至少一次专门找反方。",
+    "gate": "WAIT",
+    "approval_required": true,
+    "online_metrics": [
+      "round1_model_only_edges",
+      "round2_model_only_edges",
+      "round1_null_threshold_conditions",
+      "round2_null_threshold_conditions",
+      "followup_triggered",
+      "new_excerpts_by_round"
+    ]
+  },
+  "evals": [
+    "E1",
+    "E2",
+    "分支质量"
+  ],
+  "auto_checks": [
+    "gate_per_plan",
+    "null_threshold_has_note",
+    "online_metrics"
+  ],
+  "human_review": [
+    "E1: 引用的联网片段是否支持机制",
+    "E1: 每轮有没有专门找反方的查询",
+    "分支质量: 分支是否真正竞争",
+    "分支质量: 尚未发生的降息是否标成 role=shock",
+    "E2: 条件是否引用了可核实的官方来源与日期"
+  ],
+  "recording": {
+    "path": "~/Downloads/multiverse-investor-agent-websearch/runs/W1/20261018-223507",
+    "status": "过期：录在 agent loop（补查轮）和方案 B（PROMPT_VERSION 提升）之前，只有一轮研究；两项合并后用 Haiku 重录一次，之后用回放",
+    "summary": "联网开，16 段，搜索 5 次、抓取 2 次，丢弃 2 段"
+  },
+  "source": {
+    "origin": "websearch session 的 runs/_cases/W1.json，原标题「新问题（不在 eval 案例里）」，2026-10-18 正式收进 eval/cases"
+  },
+  "notes": "联网案例的回放是确定的；重新录制才会变。稳定性按重录次数看，次数由 Mia 定。"
+}

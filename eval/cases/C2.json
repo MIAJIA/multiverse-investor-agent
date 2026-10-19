@@ -8,10 +8,8 @@
     "target": "NVDA",
     "target_note": "Target B 由用户在 demo 时给出；这里先用 NVDA 占位，主 session 可改",
     "evidence_packs": [
-      "semiconductor",
-      "web"
-    ],
-    "online_search": true
+      "semiconductor"
+    ]
   },
   "expected": {
     "behavior": "给出一条 A → B 的因果路径（允许分支与汇聚）或 no_chain + 理由；至少一条 document 或 event 型 Condition（出口管制正式文件、生效日期、许可证要求），anchor 与 deadline 是绝对日期或用户指定的情景起点；不编数值阈值；进场判定 WAIT",
@@ -48,5 +46,9 @@
     "E1: 路径每一跳是否有资料依据",
     "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"
   ],
-  "notes": "本线默认把在线搜索 pack 开在这个案例上演示（INTERFACE.md 决定 D9）；成败不依赖实时搜索结果。"
+  "notes": "联网由 runner 的 --online 控制，不再在 evidence_packs 里写 web（旧的占位名，运行时会提示资料包不存在）。离线版属于 A 层；联网版属于 W 层，录制一次后用回放，报第 1 轮 / 第 2 轮的 model_only 边数和阈值为空的条件数。",
+  "run_variants": [
+    "offline",
+    "online"
+  ]
 }

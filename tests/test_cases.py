@@ -48,3 +48,14 @@ def test_custom_cases_are_complete():
     assert by["C4"]["expected"]["abstain"] is True
     assert "E3" in by["C3"]["evals"]
     assert by["D1"]["expected"]["gate"] == "WAIT"
+
+
+def test_online_cases_are_declared_not_hardcoded():
+    """联网由 --online 控制：evidence_packs 里不再出现旧占位名 web；W 层案例标了 run_variants。"""
+    for case_id in CUSTOM_IDS + ["W1"]:
+        assert "web" not in load_case(case_id)["input"].get("evidence_packs", []), case_id
+    w1 = load_case("W1")
+    assert w1["entry"] == "inspect" and w1["run_variants"] == ["online"]
+    assert w1["input"]["evidence_packs"] == [] and w1["recording"]["path"]
+    for case_id in ("C2", "D1"):
+        assert load_case(case_id)["run_variants"] == ["offline", "online"]

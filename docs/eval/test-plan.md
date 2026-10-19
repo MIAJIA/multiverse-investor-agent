@@ -1,4 +1,6 @@
-# 确定性测试计划
+# 集成测试与功能测试计划
+
+> 第 2 版归类：本文件里的测试结果都是确定的，属于集成测试 / 功能测试，**不算 eval 覆盖**。eval 只测模型行为，见 [eval-plan.md](eval-plan.md) 与 [test-set-plan.md](test-set-plan.md)。A1–A4、B1–B4 是功能测试；A5（runner 与核心入口的契约）是集成测试。原来写在 E3 里的 Non-interference（A3）也归到这里。
 
 2026-10-18 · eval 线
 

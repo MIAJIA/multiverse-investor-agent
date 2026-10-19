@@ -64,3 +64,13 @@
 - [x] C3 固定用 golden 图 + `c1_evidence_pack`（`pack=`，`packs=[]`）
 - [x] 测试：148 passed
 - [x] commit（不 push）
+
+## 10. 第 2 版计划（方案 B-最小 + agent loop，core-schema@da2d097）
+- [x] 合并 core-schema
+- [x] 分类：确定性测试归集成 / 功能测试（test-plan.md 改名），eval 只测模型行为
+- [x] eval-plan.md 第 2 版：逐份计划判定、防静默通过、联网指标与稳定性、回测三处泄漏、只用 Haiku
+- [x] test-set-plan.md 第 2 版：A / B / W / R / T / P 六层，26 个案例 + 约 10 组扰动
+- [x] W1 收进 eval/cases；C2 去掉 web，C2 / D1 标 run_variants
+- [x] 复核表加：分支是否真正竞争、尚未发生的事件是否标 shock、每轮是否找反方、回测三项
+- [ ] runner 按方案 B 改（等后端数据结构）
+- [ ] B、R、K 案例文件；回测组包与泄漏检查；联网指标
