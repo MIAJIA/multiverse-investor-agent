@@ -48,7 +48,7 @@ A research tool for retail traders. The user enters an event. The system returns
 | `eval/`, `tests/` (except `tests/core/` and `tests/evidence/`) | Cases, golden fixtures, runner, reports, eval tests | eval line |
 | `tests/core/` | Core regression tests | core line |
 | `tests/evidence/` | Evidence pack tests | evidence line |
-| `web/`, `docs/frontend/` | Front end (Vite + React + @xyflow/react); one page, three tabs sharing one state | front-end line |
+| `web/`, `docs/frontend/` | Front end (Vite + React + @xyflow/react); one page, two tabs (B1 graph with on-graph editing, B2 approve) sharing one state, one research workspace per question | front-end line |
 | `fixtures/` | Shared fixtures generated from real recordings by `python -m catalyst promote` | never hand-written |
 
 **Rules for parallel work**: each line works in its own git worktree and branch, edits only its own files, and does not push. The main session does the merging, and runs the full test suite after each merge.

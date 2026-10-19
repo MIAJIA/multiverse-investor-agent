@@ -4,6 +4,8 @@
 
 > **Superseded in part.** This document describes the first front end (sign-off page, a single proposal, the `/graph` + `/ops` API sketch, a Next.js template with a Streamlit fallback). What was built is a Vite + React + @xyflow/react single page on the API in `catalyst/api.py`, and plan B replaced sign-off with approving one plan per conclusion. The current front-end design is `docs/frontend/plan-b-design.md`, with `docs/frontend/` for the implementation plan and tests. The repository version is the source of truth.
 
+> **Further change on 2026-10-19.** The Scenario Diff page (B3) described below was removed. Assumptions are now changed by editing a node in place on B1, and new causes are added on the canvas, so the product has two pages (B1 graph, B2 approve). Each question opens its own research workspace. See the 2026-10-19 revisions in `docs/engineering-design.md`.
+
 ## In one sentence, and the design principles
 
 The front end is one view of a graph snapshot. It is not a second brain. The canvas only renders a version of the back end's ClaimGraph. Every action the user takes on the canvas is translated into one back-end operation (ChangeAssumption / AddShock / confirm / commit). The validator writes a new snapshot, and then the canvas redraws from it. The three pages map to the product's six stations: Research Workspace (check, conditions, evidence), Sign-off (sign), Scenario Diff (fork). Discover is the first screen of the Workspace.
