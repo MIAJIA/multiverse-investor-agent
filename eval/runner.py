@@ -212,8 +212,11 @@ WEB_RUNS: dict = {"dir": None, "replay": False}
 
 
 def _online_setup(case: dict, inp: dict, packs: list, config: dict, reasoner: Any, evidence: Any):
-    """Returns (packs, research, web) for an online case, wired exactly like catalyst.__main__.cmd_run."""
+    """Returns (packs, research, web, store) for an online case, wired exactly like catalyst.__main__.cmd_run. The store
+    is passed to inspect too, so the research loop freezes round 2 next to round 1 and --replay can read both."""
     import shutil
+    from pathlib import Path
+
     from catalyst.__main__ import attach_web, research_for  # noqa: WPS433
     from catalyst.entrypoints import Config  # noqa: WPS433
     from catalyst.store import RunStore  # noqa: WPS433
@@ -228,7 +231,7 @@ def _online_setup(case: dict, inp: dict, packs: list, config: dict, reasoner: An
     web = attach_web(inp["event"], inp.get("target"), cfg=cfg, ev=evidence, store=store, reasoner=reasoner,
                      replay_dir=replay_dir)
     research = research_for(inp["event"], inp.get("target"), cfg=cfg, ev=evidence, web=web, replay_dir=replay_dir)
-    return list(cfg.packs), research, web
+    return list(cfg.packs), research, web, store
 
 def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidence: Any,
                   pack_source: str = "real", online: bool = False, evaluate_condition: Any = None,
@@ -251,11 +254,11 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
     today = case.get("as_of") or inp.get("today") or today
     if today:
         config["today"] = today
-    research = web = None
+    research = web = web_store = None
     if config["online"]:
-        packs, research, web = _online_setup(case, inp, packs, config, reasoner, evidence)
+        packs, research, web, web_store = _online_setup(case, inp, packs, config, reasoner, evidence)
     kw = {"reasoner": reasoner, "evidence": evidence, "packs": packs, "config": config}
-    ins_kw = {**kw, "research": research} if research is not None else kw
+    ins_kw = {**kw, "research": research, "store": web_store} if research is not None else kw
 
     if case["type"] == "causalt5k":
         out = ep.inspect(inp["event"], inp.get("target"), material=inp["material"], judgment_only=True, **kw)
