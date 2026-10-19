@@ -204,7 +204,8 @@ def validate_plans(graph: Graph | dict, drafts: list) -> list[Issue]:
     - terminal 集合必须恰好等于图上全部 terminal：每个一份，不多不少（阻断）；
     - direction.instrument 必须属于该 terminal 的 instruments（阻断）；
     - 引用的条件和 claim 必须存在，至少一条进场条件（阻断）；
-    - 引用的条件所在的 claim 应该是该 terminal 的祖先或它自己，否则非阻断提示（条件可以被多份计划共用）。"""
+    - 进场条件所在的 claim 应该是该 terminal 的祖先或它自己，否则非阻断提示（条件可以被多份计划共用）。
+      离场条件不提示：提示词鼓励互为镜像的条件，对手分支上的信号本来就该当离场条件用（4.6）。"""
     from catalyst.branches import ancestors  # branches 只依赖 schema；放在函数里免得 import 顺序绕圈
 
     g = parse_graph(graph)
@@ -240,9 +241,9 @@ def validate_plans(graph: Graph | dict, drafts: list) -> list[Issue]:
                 out.append(Issue(t, f"计划 {t} 的标的 {d.direction.instrument} 不是这个 terminal 的 instrument："
                                     f"{nodes[t].instruments}"))
             upstream = ancestors(g, t) | {t}
-            for i in dict.fromkeys(entry + exit_):
+            for i in dict.fromkeys(entry):
                 if i in conds and conds[i].claim_id not in upstream:
-                    out.append(Issue(i, f"计划 {t} 引用的条件 {i} 挂在 {conds[i].claim_id} 上，它不是 {t} 的上游",
+                    out.append(Issue(i, f"计划 {t} 的进场条件 {i} 挂在 {conds[i].claim_id} 上，它不是 {t} 的上游",
                                      blocking=False))
     return out
 

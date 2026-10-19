@@ -13,12 +13,13 @@
 | `catalyst/conditions.py` | 条件判定 met / not_met / unknown | 代码 |
 | `catalyst/gate.py` | 进场 AND 真值表、退出 ANY / ALL | 代码 |
 | `catalyst/fork.py` | 写范围计算、补丁应用（越界即拒）、Scenario 默认值 | 代码 |
+| `catalyst/branches.py` | 分支推导：独有部分、分叉点、kind（hypothetical / evidenced / model_only）、trunk | 代码 |
 | `catalyst/diff.py` | 两个版本的结构 diff（含 `changed_claim_ids`，供前端直接显示） | 代码 |
 | `catalyst/store.py` | 不可变快照 + 操作日志 + trace + 录音，一次运行一个目录 | 代码 |
 | `catalyst/reasoner.py` | Reasoner 边界：实时 / 录制 / 回放 | 模型 |
 | `catalyst/evidence.py` | Evidence Provider 边界：按 pack 载入资料 | — |
 | `catalyst/harness.py` | 受控生成：调模型 → 解析 → schema → 领域校验 → 带错误重写，最多重试 2 次 | 代码 |
-| `catalyst/entrypoints.py` | discover / inspect / fork 三个入口 | — |
+| `catalyst/entrypoints.py` | discover / inspect / fork 三个入口，加上批准（sign） | — |
 | `catalyst/__main__.py` | harness CLI：跑案例、录制、回放、提升 fixture | — |
 
 ## 为什么不手写 fixture
@@ -44,7 +45,7 @@
 
 - **规范形式**：快照、API、diff 和哈希一律使用字段齐全（含默认值）的 `dump()`。E3 的哈希比对必须先把两边都经过 schema 规范化，不能直接哈希手写的原始 dict。
 - **提案状态拆成两个字段**：`status`（生命周期）和 `gate`（进场判定：WAIT / BLOCKED / READY_FOR_REVIEW），两者都只由代码写。gate 为 READY_FOR_REVIEW 时 status 是 needs_review，否则是 draft。
-- **只由代码写的提案字段**：`support_status` 由关键依赖与进场条件所在 claim 的证据状态和情景 assessment 推导；`user_judgment` 里的 confirmed、confirmed_claim_ids、probability 只能由用户写（模型输出 schema 里根本没有这几个字段）。模型改写过原话时，`requires_user_confirmation` 一定是 true。
+- **只由代码写的提案字段**：`support_status` 由关键依赖与进场条件所在 claim、以及这条分支独有的 claim 的证据状态和情景 assessment 推导；`user_judgment` 里的 confirmed、confirmed_claim_ids、probability 只能由用户写（模型输出 schema 里根本没有这几个字段）。模型改写过原话时，`requires_user_confirmation` 一定是 true。
 - **条件判定随版本重算**：inspect 和 fork 产出的每个新版本，都按观测和日期重新判定全部条件。`conditions.evaluate` 永不抛异常，日期不合法时给 unknown。
 - **引用立场不能翻转**：引用片段时的 stance 必须与资料包里该片段的 stance 一致。立场有三种：supports、contradicts、neutral。neutral 是背景信息（如「数据每周才更新」），可以引用，但不让 claim 变成 supported，也不需要 rebuttal，`unanswered_contradictions` 也不管它。三种立场两两都不能互相翻转。
 - **证据只挂在边上**：没有入边的节点不能标 supported（inspect 阶段的检查）。节点级证据留到后续。
@@ -94,8 +95,46 @@ Critic 是另一个 prompt，只检查用户选中的那一条链。它的输出
 
 - 所有写操作都返回 `{ok, errors, version}`，前端拿到版本号后再 GET 这个版本。
 - `GET /api/runs/{id}/versions/{v}` 返回 `{graph, proposal, scenario, diff, excerpts}`。`diff` 相对父版本计算，`promote` 写出的 fixture 也是这个形状。
-- **sign** 不调用模型，产出一个新版本（`op.kind = "sign"`）：
-  - 用户改的阈值和截止写进条件；截止提前时，观测窗口跟着收。
-  - 重新判定条件、重新派生提案，`user_judgment.confirmed = true`。
-  - 签字只能改 threshold / threshold_note / comparator / deadline 这几个字段。
-- **fork** 以基线版本的提案（含签字）和 observations 为输入，所以签字结果在分叉后不会丢失。
+- **sign = 批准一份计划**，不调用模型，产出一个新版本（`op.kind = "sign"`，`op.value.terminal_id` 是批准的那份）：
+  - 请求体 `{version, terminal_id, clarified_statement?, criteria?, deadline?, confirmed_claim_ids?, condition_overrides?}`。`terminal_id` 必填，缺了回 `{ok: false, errors}`（不再因 KeyError 变成 404）；三个文本字段不给就沿用计划里的值，所以不能通过 sign 清空它们。
+  - 用户改的阈值和截止写进条件；截止提前时，观测窗口跟着收。改条件不调用模型，代码重新判定、重新派生全部计划。
+  - 被批准的那份 `user_judgment.confirmed = true`；同版本其他计划的 confirmed 置 false（D-B4），保留它们的 confirmed_claim_ids。
+  - 批准时只能改 threshold / threshold_note / comparator / deadline 这几个字段。
+- **fork** 以基线版本的全部计划和 observations 为输入，逐份重新派生；只有受影响的计划失效（见下节「方案 B」）。
+
+## 方案 B：一张图多条分支 + 批准计划（B-最小，后端）
+
+依据 `docs/changes/2026-10-18-branches-and-plans.md` 第 4 节。
+
+- **数据结构**：
+  - `ProposalDraft` / `TradeProposal` 带 `terminal_id`，`Direction` 仍必填。
+  - `InspectPlanOutput.proposals` 是列表，结构化输出实测被 API 接受（Haiku，2 次调用，无 fallback；union 12 个，上限 16）。
+  - 版本包见 `schema.VersionBundle`，一次切换成 `proposals`，不留 `proposal`。
+- **计划顺序**：按图里 terminal 的顺序排，默认显示哪一份不由模型输出顺序决定。
+- **旧文件**：
+  - `proposals/<v>.json` 是单个 dict 时，`parse_proposals` 包成一项的列表，按 `direction.instrument` 在图里找唯一的 terminal 填 `terminal_id`；找不到或有多个时报 `LegacyProposalError`，不猜。
+  - `observations/<v>.json` 新增 `synthetic`（本版本资料里有合成占位资料包），旧文件缺失时按 false 读。
+- **分支推导**（`branches.derive_branches`，store.bundle、promote、fork / inspect 的返回体共用）：
+  - 独有部分：`(ancestors(t) ∪ {t}) − ⋃ ancestors(其他 terminal)`，独有边是终点在独有部分里的边。
+  - 分叉点：几条出边能到达的 terminal 集合不一样的节点；每条分支列出它祖先里的分叉点。
+  - kind：
+    1. hypothetical：`ancestors(t) ∪ {t}` 含 role=shock 的节点、情景冲击新增的节点或情景 ops 改过的假设（terminal 本身被改也算）。
+    2. evidenced：独有边至少一条，全部非 model_only 且带 supports 证据；独有节点没有 contradicted；独有边不引用合成片段。
+    3. model_only：其余情况。
+  - 独有部分一条边都没有时不算 evidenced。`synthetic_evidence` 标「独有边引用了合成片段」，与 kind 独立。
+  - trunk：祖先里不属于独有部分的节点及其入边，按同一规则算；没有边（只共用起点事件）时是 evidenced。
+- **计划校验**（`validator.validate_plans`）：
+  - 阻断：
+    - terminal 集合恰好等于图上全部 terminal（缺、重、挂在非 terminal 上都报）；
+    - 标的属于该 terminal；
+    - 引用存在；
+    - 至少一条进场条件。
+  - 非阻断：进场条件挂在非上游 claim 上。离场条件不提示，因为提示词鼓励用对手分支上的镜像信号当离场条件。
+- **改假设后哪些计划失效**（`entrypoints.plan_affected`，只看代码算出的写范围）：
+  - 判定：terminal 在写范围里，或者进场 / 离场条件挂在写范围内的 claim 上，或者 key_dependency 指向写范围内的 claim 或条件。
+  - 受影响：confirmed 置 false，confirmed_claim_ids 剔除写范围内的 claim。其余计划的批准原样保留。
+  - `approval_reset`：原本已批准、这次受影响。
+  - `rival_changed`：本计划没受影响，但同版本另一份受了影响。只说「另一份受了影响」，不判断两者是否竞争（C1 那种并列受益的 terminal 也会触发）。
+  - 两个标记每次派生都重算，inspect 和 sign 一律写 false。
+- **补查挂钩**：`inspect` 里图和计划建好、还没落盘的位置留了注释，agent loop 在那里接（缺口用 `kind == "model_only"`）。
+- **提示词 p5**：竞争分支只在真正的争议点给出；尚未发生的事件一律 role=shock；每个 terminal 一份计划，鼓励镜像条件。旧录音全部失效，需要重新录制。
