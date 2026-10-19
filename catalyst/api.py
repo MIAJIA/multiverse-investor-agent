@@ -29,6 +29,7 @@ from catalyst.store import RunStore
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNS = Path(os.environ.get("CATALYST_RUNS_DIR", ROOT / "runs")) / "api"
+DEFAULT_PACKS = tuple(p for p in os.environ.get("CATALYST_DEFAULT_PACKS", "semiconductor,hormuz").split(",") if p)
 
 
 def _provider(packs: list[str]) -> tuple[EvidenceProvider, list[str], list[str]]:
@@ -69,7 +70,9 @@ def _store(run_id: str) -> RunStore:
 def create_run(body: dict) -> dict:
     store = RunStore.new(RUNS, "")
     run_id = store.root.name
-    ev, packs, notes = _provider(body.get("packs") or [])
+    # The local knowledge base goes into context whole (D-A2). The UI does not choose packs, so a request without
+    # "packs" gets the default research packs; backtest packs (e.g. opec2022) are never included by default.
+    ev, packs, notes = _provider(body["packs"] if body.get("packs") else list(DEFAULT_PACKS))
     cfg = ep.Config(packs=packs, run_prefix="r", today=body.get("today") or ep.Config().today,
                     online=bool(body.get("online")))
     reasoner, event, target = _reasoner(store), body["event"], body.get("target")

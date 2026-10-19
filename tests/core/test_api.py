@@ -85,3 +85,20 @@ def test_http_roundtrip(scripted):
         assert e.value.code == 404
     finally:
         srv.shutdown()
+
+
+def test_create_run_defaults_to_research_packs(tmp_path, monkeypatch):
+    """The UI never sends packs; the API must then use the default research packs, not run with no evidence."""
+    seen = {}
+    monkeypatch.setattr(api, "RUNS", tmp_path / "api")
+
+    def provider(packs):
+        seen["packs"] = list(packs)
+        raise RuntimeError("stop after provider")
+    monkeypatch.setattr(api, "_provider", provider)
+    with pytest.raises(RuntimeError):
+        api.create_run({"event": "x"})
+    assert seen["packs"] == list(api.DEFAULT_PACKS) == ["semiconductor", "hormuz"]
+    with pytest.raises(RuntimeError):
+        api.create_run({"event": "x", "packs": ["opec2022"]})
+    assert seen["packs"] == ["opec2022"]
