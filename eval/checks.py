@@ -113,3 +113,36 @@ def scenario_checks(case: dict, out: Any, plans: list, no_chain: bool) -> list[d
                             f"no plan for {missing} (plans cover: {sorted(have)})" if missing else "",
                             "missing_plan_for_target"))
     return checks
+
+
+# ---- W 层：研究 loop 补查前后的对比 ----------------------------------------------------
+
+def gap_counts(result: Any) -> dict:
+    """一次 Inspect 结果里还剩多少「没证据」的地方：纯推断的边、纯推断的分支、阈值为空的数值条件。"""
+    graph = to_plain(get(result, "graph")) or {}
+    conditions = list(graph.get("conditions") or [])
+    return {
+        "model_only_edges": sum(1 for e in graph.get("edges") or [] if e.get("model_only")),
+        "model_only_branches": sum(1 for b in (get(result, "branches") or []) if get(b, "kind") == "model_only"),
+        "null_threshold_conditions": sum(1 for c in conditions if c.get("kind") == "numeric" and c.get("threshold") is None),
+        "no_chain": bool(get(result, "no_chain")),
+    }
+
+
+def research_metrics(draft: Any, final: Any, web: dict | None) -> dict:
+    """第 1 轮（研究 loop 存下的草稿）和最终结果（补查后重跑）的缺口数，加上每轮拿到的片段数和查询数。
+
+    没触发补查时，最终结果就是用同一批资料重跑，数字应当和第 1 轮一样。只报数字。
+    """
+    web = web or {}
+    rounds = web.get("rounds") or ([web] if web else [])
+    followup = web.get("followup") or {}
+    return {
+        "round1": gap_counts(draft) if draft is not None else None,
+        "final": gap_counts(final),
+        "excerpts_by_round": [r.get("excerpts") for r in rounds],
+        "queries_by_round": [r.get("queries") or [] for r in rounds],
+        "followup_triggered": bool(followup.get("triggered")),
+        "followup_reason": followup.get("reason"),
+        "gaps": len(followup.get("gaps") or []),
+    }
