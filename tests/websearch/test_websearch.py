@@ -1,4 +1,4 @@
-"""联网检索：全部离线。检索响应是手写的 API 响应形状（不是图层面的 fixture），模型用脚本化 Reasoner。"""
+"""Web retrieval, fully offline: hand-written API response shapes (not graph fixtures) and a scripted Reasoner."""
 import json
 
 import pytest
@@ -88,7 +88,7 @@ def wl():
     return ws.Whitelist()
 
 
-# ---- 白名单 ---------------------------------------------------------------
+# ---- allow-list -----------------------------------------------------------
 
 @pytest.mark.parametrize("url,ok", [
     ("https://www.sec.gov/x", True),
@@ -97,7 +97,7 @@ def wl():
     ("https://sec.gov.evil.com/x", False),
     ("https://evilsec.gov/x", False),
     ("http://www.sec.gov/x", False),
-    ("https://www.sес.gov/x", False),  # 西里尔字母 е、с
+    ("https://www.sес.gov/x", False),  # Cyrillic е and с
     ("https://user:pw@www.sec.gov/x", False),
     ("https://www.sec.gov:8443/x", False),
     ("https://93.184.216.34/x", False),
@@ -114,17 +114,17 @@ def test_whitelist_file_is_ascii_and_has_exclusions(wl):
     assert "apnews.com" in excluded and "reuters.com" in excluded
 
 
-# ---- 抽取候选 -------------------------------------------------------------
+# ---- candidate extraction ---------------------------------------------------
 
 def test_extract_only_verbatim_whitelisted_citations(wl):
     cands, dropped, record = ws.extract_candidates(responses(), wl)
     texts = [c["text"] for c in cands]
     assert texts == [FETCH_CITE, INJECTION, "Tanker operators said insurance costs remain high"]
     assert [c["verified"] for c in cands] == ["substring", "substring", "api_citation"]
-    assert cands[2]["truncated"] is True  # 去掉的是截断省略号，不是原文
+    assert cands[2]["truncated"] is True  # the stripped part is the truncation ellipsis, not page text
     reasons = sorted(d["reason"] for d in dropped)
-    assert reasons == ["not_in_document", "not_whitelisted"]  # 转述的那条和白名单外的那条
-    assert not any("完全恢复" in t for t in texts)  # 模型自己的话不进资料包
+    assert reasons == ["not_in_document", "not_whitelisted"]  # the paraphrased one and the off-list one
+    assert not any("完全恢复" in t for t in texts)  # the model's own words never enter the pack
     assert record["queries"][0] == {"tool": "web_search", "input": {"query": "hormuz transits"}}
 
 
@@ -146,7 +146,7 @@ def test_page_date_never_invents(age, date):
     assert ws.page_date(age) == date
 
 
-# ---- 检索阶段：上限、标注、资料包 --------------------------------------------
+# ---- retrieval stage: limits, labels, pack -------------------------------------
 
 def test_tools_carry_whitelist_and_limits(wl):
     cfg = ep.Config(online=True, max_web_searches=3, max_web_fetches=2)
@@ -165,16 +165,16 @@ def test_retrieve_builds_frozen_pack(wl, tmp_path):
     assert [x.excerpt_id for x in xs] == ["web-001", "web-002"]
     assert [x.text for x in xs] == [FETCH_CITE, "Tanker operators said insurance costs remain high"]
     assert [x.stance for x in xs] == ["supports", "neutral"]
-    assert [x.date for x in xs] == ["2026-10-06", "unknown"]  # page_age「3 days ago」不换算
-    assert "立场由模型标注，未经人工审核" in xs[0].source and "T1" in xs[0].source
+    assert [x.date for x in xs] == ["2026-10-06", "unknown"]  # page_age "3 days ago" is not converted
+    assert "stance labelled by model, not human-reviewed" in xs[0].source and "T1" in xs[0].source
     assert "page_age" in res.pack.note and "unknown" in res.pack.note
     assert res.pack.pack_id.startswith("web:")
     frozen = json.loads(next((tmp_path / "packs").glob("web-*.json")).read_text())
     assert frozen["pack_id"] == res.pack.pack_id
     assert frozen["_provenance"]["excerpts"][0]["verified"] == "substring"
     assert (tmp_path / "web" / "retrieve.json").exists()
-    assert r.stages == ["web.label"] and INJECTION in r.prompts[0]  # 注入文字只作为数据给标注员
-    # 同内容 → 同 id；和本地 pack 合并时 excerpt_id 不冲突
+    assert r.stages == ["web.label"] and INJECTION in r.prompts[0]  # injected text reaches the labeller only as data
+    # same content -> same id; no excerpt_id clash when combined with a local pack
     again = ws.retrieve_live("霍尔木兹海峡下周重开", "BZ", cfg=CFG, searcher=FakeSearcher(),
                              reasoner=Scripted([LABELS]), store=None, wl=wl)
     assert again.pack.pack_id == res.pack.pack_id
@@ -193,7 +193,7 @@ def test_label_errors_are_fed_back(wl):
     r = Scripted([bad, LABELS])
     res = ws.retrieve_live("e", None, cfg=CFG, searcher=FakeSearcher(), reasoner=r, store=None, wl=wl)
     assert res.status == "ok" and r.stages == ["web.label", "web.label"]
-    assert "[c9] 不是候选 id" in r.prompts[1] and "[c3] 漏了" in r.prompts[1]
+    assert "[c9] is not a candidate id" in r.prompts[1] and "[c3] is missing" in r.prompts[1]
 
 
 def test_excerpt_cap(wl):
@@ -221,7 +221,7 @@ def test_default_off_never_searches():
     assert res.status == "off" and res.message().startswith("联网：关")
 
 
-# ---- 回放 -----------------------------------------------------------------
+# ---- replay -----------------------------------------------------------------
 
 def test_replay_key_mismatch(wl, tmp_path):
     ws.retrieve_live("e", None, cfg=CFG, searcher=FakeSearcher(), reasoner=Scripted([LABELS]),
@@ -260,7 +260,7 @@ def test_cli_record_then_replay_offline(tmp_path, monkeypatch, capsys):
     obs = json.loads(next((rec / "observations").glob("*.json")).read_text())["excerpts"]
     assert [x["excerpt_id"] for x in obs] == ["hz-1", "hz-3", "web-001", "web-002"]
 
-    # 回放：不能上网（检索器一构造就失败），下游请求哈希必须一致，结果逐字节相同
+    # replay: no network (the searcher fails on construction); downstream hashes match; byte-identical output
     monkeypatch.setattr(ws, "AnthropicSearcher", NoNetwork)
     monkeypatch.setattr("catalyst.__main__.default_reasoner", NoNetwork)
     cli(["run", str(case), "--replay", str(rec), "--packs-dir", str(packs)])
@@ -269,11 +269,11 @@ def test_cli_record_then_replay_offline(tmp_path, monkeypatch, capsys):
     for kind in ("snapshots", "proposals", "observations"):
         for f in (rec / kind).glob("*.json"):
             assert (rep / kind / f.name).read_text() == f.read_text(), f"{kind}/{f.name}"
-    assert list((rep / "packs").glob("web-*.json"))  # 回放目录自带这份资料包
+    assert list((rep / "packs").glob("web-*.json"))  # the replay directory carries the pack
 
 
 def test_offline_prompt_unchanged_and_web_prefix(wl):
-    """离线运行的资料包文本一字不变（旧录音的请求哈希不变）；含 web 片段时才加数据前缀。"""
+    """Offline pack text is unchanged (old recordings keep their hashes); the data note appears only with web excerpts."""
     pack = EvidenceProvider("/nonexistent").register(PACK)
     expected = "（注意：这是合成的占位资料包，只用于跑通流程。）\n" + "\n".join(
         json.dumps(x.dump(), ensure_ascii=False) for x in pack.excerpts)
@@ -325,7 +325,24 @@ def test_api_offline_and_failure_are_labelled(api_env):
 
 def test_web_model_defaults_to_haiku_independent_of_reasoning_model(monkeypatch):
     monkeypatch.delenv("CATALYST_WEB_MODEL", raising=False)
-    monkeypatch.setenv("CATALYST_MODEL", "claude-opus-5-5")  # 推理模型不影响检索模型
+    monkeypatch.setenv("CATALYST_MODEL", "claude-opus-5-5")  # the reasoning model does not affect the retrieval model
     assert ws.web_model() == "claude-haiku-5-5"
     monkeypatch.setenv("CATALYST_WEB_MODEL", "claude-sonnet-5-5")
     assert ws.web_model() == "claude-sonnet-5-5"
+
+
+LAW_FIRM = ("https://www.prnewswire.com/news-releases/googlgoog-shareholder-alert-december-1-2026-lead-plaintiff-"
+            "deadline-in-alphabet-inc-securities-class-action---contact-levi--korsinsky-302900722.html")
+COMPANY = "https://www.prnewswire.com/news-releases/google-cloud-launches-gemini-enterprise-for-legal-302859177.html"
+
+
+def test_law_firm_releases_excluded_company_releases_kept(wl):
+    assert wl.excluded(LAW_FIRM, wl.match(LAW_FIRM)) is not None
+    assert wl.excluded(COMPANY, wl.match(COMPANY)) is None
+    assert "law-firm class-action solicitations" in wl.summary()  # the retriever is told these pages are not accepted
+    resp = [{"content": [{"type": "text", "text": "x", "citations": [
+        {"type": "web_search_result_location", "url": u, "title": "t", "cited_text": f"text {i}", "encrypted_index": "e"}
+        for i, u in enumerate([LAW_FIRM, COMPANY])]}], "usage": {}}]
+    cands, dropped, _ = ws.extract_candidates(resp, wl)
+    assert [c["url"] for c in cands] == [COMPANY]
+    assert dropped[0]["reason"].startswith("excluded_path:") and dropped[0]["url"] == LAW_FIRM

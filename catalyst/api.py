@@ -5,8 +5,8 @@
 
 接口（所有写操作都返回 {ok, errors, version}，前端再 GET 这个版本）：
   POST /api/runs                          {event, target?, packs?, online?}
-                                          → 返回体另有 web: {online, status, excerpts, message…}：联网开 / 关、拿到几段或失败原因
-  GET  /api/runs/{run_id}/versions/{v}    → {graph, proposals, branches, scenario, diff, excerpts}（schema.VersionBundle）
+                                          → the response also has web: {online, status, excerpts, rounds, followup, message…}
+  GET  /api/runs/{run_id}/versions/{v}    → {graph, proposals, branches, node_kinds, edge_kinds, scenario, diff, excerpts}（schema.VersionBundle）
   POST /api/runs/{run_id}/fork            {base_version, op}
   POST /api/runs/{run_id}/sign            {version, terminal_id, clarified_statement?, criteria?, deadline?, note?,
                                            confirmed_claim_ids?, condition_overrides?}
@@ -44,12 +44,20 @@ def _reasoner(store: RunStore):
 
 
 def _web(event, target, *, cfg, ev, store, reasoner):
-    """联网检索（默认关）。CATALYST_REPLAY 时读录制目录里冻结的资料包，不上网。"""
+    """Web retrieval round 1 (off by default). With CATALYST_REPLAY it reads the frozen pack, no network."""
     from catalyst.__main__ import attach_web
 
     replay = os.environ.get("CATALYST_REPLAY")
     return attach_web(event, target, cfg=cfg, ev=ev, store=store, reasoner=reasoner,
                       replay_dir=Path(replay) if replay else None)
+
+
+def _research(event, target, *, cfg, ev, web):
+    """With web retrieval on, Inspect gets the research loop; with CATALYST_REPLAY it reads each round's frozen pack."""
+    from catalyst.__main__ import research_for
+
+    replay = os.environ.get("CATALYST_REPLAY")
+    return research_for(event, target, cfg=cfg, ev=ev, web=web, replay_dir=Path(replay) if replay else None)
 
 
 def _store(run_id: str) -> RunStore:
@@ -70,6 +78,7 @@ def create_run(body: dict) -> dict:
     (store.root / "case.json").write_text(json.dumps({"case": {"id": run_id, "input": body}, "packs": cfg.packs,
                                                       "notes": notes, "today": cfg.today, "online": cfg.online,
                                                       "web": web.dump()}, ensure_ascii=False))
+    research = _research(event, target, cfg=cfg, ev=ev, web=web)
     disc = None
     candidate = None
     if not target:
@@ -80,10 +89,15 @@ def create_run(body: dict) -> dict:
                     "discover": disc, "inspect": None, "notes": notes, "web": web.dump()}
         candidate = next((c for c in cands if c["label"] == "grounded"), cands[0])
     ins = ep.inspect(event, target, candidate=candidate, candidate_id=candidate and candidate["id"],
-                     reasoner=reasoner, evidence=ev, config=cfg, store=store)
+                     reasoner=reasoner, evidence=ev, config=cfg, store=store, research=research)
     version = ins["graph"]["version"] if ins.get("graph") else None
+    from catalyst.__main__ import _record_web, web_summary
+
+    if research is not None and research.rounds:
+        _record_web(store, web, research)
+        notes = [research.message(), *notes[1:]]
     return {"ok": ins["ok"], "errors": ins["errors"], "version": version, "run_id": run_id,
-            "discover": disc, "inspect": ins, "notes": notes, "web": web.dump()}
+            "discover": disc, "inspect": ins, "notes": notes, "web": web_summary(web, research)}
 
 
 def fork_run(run_id: str, body: dict) -> dict:
