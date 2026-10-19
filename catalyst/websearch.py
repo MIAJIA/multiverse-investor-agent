@@ -134,7 +134,7 @@ class Searcher(Protocol):
 class AnthropicSearcher:
     """服务端 web_search / web_fetch。模型默认跟 CATALYST_MODEL 走，CATALYST_WEB_MODEL 可覆盖。"""
 
-    def __init__(self, model: str | None = None, effort: str = DEFAULT_EFFORT, max_tokens: int = 16000):
+    def __init__(self, model: str | None = None, effort: str = DEFAULT_EFFORT, max_tokens: int = 32000):
         import anthropic  # 只有实时检索才需要 SDK
 
         self.client = anthropic.Anthropic()
@@ -146,7 +146,10 @@ class AnthropicSearcher:
         for _ in range(MAX_CONTINUATIONS + 1):
             with self.client.beta.messages.stream(model=self.model, max_tokens=self.max_tokens, system=system,
                                              messages=messages, tools=tools,
-                                             output_config={"effort": self.effort}) as stream:
+                                             output_config={"effort": self.effort},
+                                             # 和 AnthropicReasoner 一致：模型拒答时由服务端换模型重试
+                                             betas=["server-side-fallback-2026-07-01"],
+                                             fallbacks="default") as stream:
                 msg = stream.get_final_message()
             out.append(msg.model_dump(mode="json"))
             if msg.stop_reason != "pause_turn":
