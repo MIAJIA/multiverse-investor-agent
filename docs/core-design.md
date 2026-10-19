@@ -51,7 +51,12 @@
 - **fork 的引用校验**：补丁不能改证据引用，所以 fork 只校验 Stage 1 新增的边；基线图已有的引用在生成时已经校验过。Stage 1 的新边必须从新节点连到声明的 impacts。
 - **情景不推进证据**：补丁不能改 `evidence_status`，节点只允许改 statement / time_bucket / instruments。
 - **相对时间**：anchor 或 observation_window 写 `scenario:<事件>` 时合法，但在用户确认起点之前，判定结果一律是 unknown。
-- **结构化输出**：用 pydantic schema 转成严格的 JSON Schema（所有 object 都 `additionalProperties: false`、全部字段列入 required）。API 拒绝该 schema 时，退回到在提示词里约束 JSON，由校验器兜底。
+- **结构化输出**：用 pydantic schema 转成严格的 JSON Schema（所有 object 都 `additionalProperties: false`、全部字段列入 required）。API 拒绝该 schema 时，退回到在提示词里约束 JSON，由校验器兜底；退回原因（API 错误原文）记进 meta 的 `schema_fallback_reason`，录音和 trace 里都能看到。
+- **Inspect 分两步**：一整份 `InspectOutput` 被 API 拒绝（`The compiled grammar is too large`）。实测语法预算大约只够 70 个平铺的字符串字段，可空字段和对象数组还要额外占用；InspectOutput 有 64 个字段、18 个可空字段，嵌套数组也多，就算去掉全部 union、enum 和 description 仍然超限，所以没法靠删字段解决。现在分两步：`inspect`（`InspectGraphOutput`：no_chain、nodes、edges）→ `inspect.plan`（`InspectPlanOutput`：conditions、proposal），两份 schema 都实测能被接受，每份的 union 数都在 API 上限 16 以内。第 2 步只在图通过校验后才跑，并把定稿的图放进提示词；错误只回给出错的那一步重写。`inspect()` 的返回形状不变，`attempts` 是两步之和。
+- **节点短标题**：Claim 有可选字段 `label`（10 个汉字或 4 个英文词以内），老快照没有这个字段也能解析。Inspect 必须写（缺了是阻断错误）；超长只给非阻断提示，代码不截断。分叉补丁可以改 label。
+- **anchor**：绝对时间窗口的 anchor 写今天或事件已发生的日期；只有相对于一个尚未发生、要用户确认起点的事件时才写 `scenario:`。全部条件都是 scenario anchor 时，inspect 给一条非阻断提示（这种提案在用户确认前只会停在 WAIT）。
+- **分叉的 assessment**：提示词列出「需要给出 assessment 的 claim id」（= 写范围的 nodes）。写了边、条件或范围外 claim 时，一次列出全部错误（「c1.e4 是边，不是 claim；assessment 只写这些 claim：[...]」），由模型重写；代码不静默丢掉非法条目。被改的假设本身和新加的冲击节点是情景输入，写 unresolved；challenged 只用于依赖它们的 claim。
+- **Discover 的弃权边界**：只有找不到任何合理机制时才弃权（只能靠「情绪」「政策不确定性」这类泛化渠道硬连，也算没有机制）。下面三种情况都不弃权：没有支持片段（标 hypothesis）；有未驳回的反方片段（这是 Inspect 阶段的校验）；需要用户确认日期或定义。
 - **模型默认值**：`claude-opus-5-5`，effort 设为 high，开启 server-side fallback。可用 `CATALYST_MODEL` / `CATALYST_EFFORT` 覆盖。
 - **重试**：每次重试是一个新的单轮请求，内容是原题、上次输出和错误清单，不改写历史消息。
 

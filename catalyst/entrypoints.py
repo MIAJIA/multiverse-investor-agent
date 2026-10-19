@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import re
 from dataclasses import dataclass, field
 
 from catalyst import prompts
@@ -14,12 +15,13 @@ from catalyst.conditions import evaluate
 from catalyst.diff import diff as graph_diff
 from catalyst.evidence import EvidenceProvider
 from catalyst.fork import (
-    PatchInvalid, ScopeViolation, apply_patch, build_scenario, compute_write_scope, next_version,
+    PatchInvalid, ScopeViolation, apply_patch, assessment_issues, build_scenario, compute_write_scope, next_version,
 )
 from catalyst.gate import evaluate_entry
 from catalyst.harness import run_stage
 from catalyst.schema import (
-    Condition, DiscoverOutput, EvidencePack, FieldUpdate, ForkOutput, Graph, InspectOutput, JudgmentOutput,
+    Claim, Condition, DiscoverOutput, EvidencePack, FieldUpdate, ForkOutput, Graph, InspectGraphOutput,
+    InspectPlanOutput, JudgmentOutput,
     Mechanism, ModelUserJudgment, Op, Patch, ProposalDraft, ProposalMeta, ScenarioRef, TradeProposal, UserJudgment,
     parse_graph, parse_pack,
 )
@@ -115,9 +117,9 @@ def _draft_of(p: TradeProposal) -> ProposalDraft:
 
 # ---- inspect -----------------------------------------------------------
 
-def _graph_from(out: InspectOutput, version: str, op: Op, cfg: Config) -> Graph:
-    conds = [Condition.model_validate({**mc.dump(), "evaluation_status": "unknown"}) for mc in out.conditions]
-    g = Graph(version=version, parent_version=None, op=op, nodes=out.nodes, edges=out.edges, conditions=conds)
+def _graph_from(nodes: list[Claim], edges: list[Mechanism], conditions, version: str, op: Op, cfg: Config) -> Graph:
+    conds = [Condition.model_validate({**mc.dump(), "evaluation_status": "unknown"}) for mc in conditions]
+    g = Graph(version=version, parent_version=None, op=op, nodes=nodes, edges=edges, conditions=conds)
     return _reevaluate(g, cfg)
 
 
@@ -144,9 +146,38 @@ def _root_issues(g: Graph) -> list[str]:
             for n in g.nodes if n.id not in has_in and n.evidence_status == "supported"]
 
 
+LABEL_MAX_CJK, LABEL_MAX_WORDS = 10, 4
+
+
+def _label_issues(nodes: list[Claim]) -> tuple[list[str], list[str]]:
+    """label 是前端用的短标题：Inspect 必须写（阻断）；超长只提示，不由代码截断。
+    含汉字时按「汉字数 + 其余英文词数」计，最多 10；纯英文最多 4 个词。"""
+    errs, warns = [], []
+    for n in nodes:
+        label = (n.label or "").strip()
+        if not label:
+            errs.append(f"[{n.id}] 每个节点都要写 label：10 个汉字或 4 个英文词以内概括 statement")
+            continue
+        cjk = len(re.findall(r"[一-鿿]", label))
+        words = len(re.findall(r"[A-Za-z0-9][\w.+/-]*", re.sub(r"[一-鿿]", " ", label)))
+        if (cjk + words > LABEL_MAX_CJK) if cjk else (words > LABEL_MAX_WORDS):
+            warns.append(f"[{n.id}] label「{label}」超过 10 个汉字或 4 个英文词，前端会显示不全")
+    return errs, warns
+
+
+def _anchor_warnings(g: Graph) -> list[str]:
+    """全部条件都挂在 scenario: 起点上 → 用户确认起点前一条都判不了，提案只会停在 WAIT。"""
+    if g.conditions and all(c.anchor.startswith("scenario:") for c in g.conditions):
+        return ["[conditions] 所有条件的 anchor 都是 scenario:…，用户确认起点之前一条都判不了，提案会一直停在 WAIT；"
+                "绝对时间窗口的 anchor 应写今天或资料里事件发生的日期"]
+    return []
+
+
 def inspect(event: str, target: str | None = None, *, candidate_id: str | None = None, candidate: dict | None = None,
             material: str | None = None, judgment_only: bool = False, reasoner, evidence: EvidenceProvider | None,
             config=None, packs: list[str] | None = None, store: RunStore | None = None) -> dict:
+    """两步受控生成：inspect（因果图）→ inspect.plan（判定条件 + 提案草稿）。一整份 InspectOutput 超出结构化输出的
+    语法上限，拆开后两步都能走 json_schema；第 2 步只在第 1 步的图通过校验后才跑，错误也只回给出错的那一步。"""
     cfg = _cfg(config, packs)
     if judgment_only:
         user = f"材料：\n{material}\n\n因果断言：{event}" + (f" → {target}" if target else "")
@@ -167,38 +198,56 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
         focus = f"\n用户选中的方向 id：{candidate_id}（内容未提供）"
     user = (f"今天：{cfg.today}\n事件（用户原话）：{event}\n目标标的：{target or '（未给出，从选中方向或资料里确定）'}{focus}\n\n"
             f"资料包：\n{_pack_text(pack)}")
-
-    def check(out: InspectOutput):
-        if out.no_chain:
-            ok = (not out.nodes and not out.edges and not out.conditions and out.proposal is None
-                  and bool(out.no_chain_reason))
-            return ([] if ok else ["[no_chain] no_chain=true 时 nodes/edges/conditions 留空、proposal=null，并写 no_chain_reason"]), []
-        if out.proposal is None:
-            return ["[proposal] 有因果链时必须给出提案草稿"], []
-        g = _graph_from(out, version, op, cfg)
-        errs, warns = _issues(validate_graph(g) + validate_references(g, pack) + unanswered_contradictions(g, pack))
-        return errs + _root_issues(g) + _draft_issues(out.proposal, g), warns
-
-    r = run_stage("inspect", system=prompts.INSPECT, user=user, output_model=InspectOutput, reasoner=reasoner,
-                  validate=check, max_retries=cfg.max_retries, store=store)
     result = {"graph": None, "no_chain": None, "no_chain_reason": None, "proposal": None, "judgment": None,
-              "observations": _excerpt_ids(pack), "ok": r.ok, "errors": r.errors, "warnings": warnings + r.warnings,
-              "attempts": r.attempts}
-    if not r.ok:
+              "observations": _excerpt_ids(pack), "ok": False, "errors": [], "warnings": warnings, "attempts": 0}
+
+    # 第 1 步：图
+    def check_graph(out: InspectGraphOutput):
+        if out.no_chain:
+            ok = not out.nodes and not out.edges and bool(out.no_chain_reason)
+            return ([] if ok else ["[no_chain] no_chain=true 时 nodes/edges 留空，并写 no_chain_reason"]), []
+        g = _graph_from(out.nodes, out.edges, [], version, op, cfg)
+        errs, warns = _issues(validate_graph(g) + validate_references(g, pack) + unanswered_contradictions(g, pack))
+        label_errs, label_warns = _label_issues(out.nodes)
+        return errs + _root_issues(g) + label_errs, warns + label_warns
+
+    rg = run_stage("inspect", system=prompts.INSPECT, user=user + "\n\n" + prompts.INSPECT_GRAPH_STEP,
+                   output_model=InspectGraphOutput, reasoner=reasoner, validate=check_graph,
+                   max_retries=cfg.max_retries, store=store)
+    result.update(ok=rg.ok, errors=rg.errors, attempts=rg.attempts, warnings=warnings + rg.warnings)
+    if not rg.ok:
         return _finish(store, result)
-    out = r.value
-    result.update(no_chain=out.no_chain, no_chain_reason=out.no_chain_reason)
-    if out.no_chain:
+    graph_out = rg.value
+    result.update(no_chain=graph_out.no_chain, no_chain_reason=graph_out.no_chain_reason)
+    if graph_out.no_chain:
         return _finish(store, result)
-    g = _graph_from(out, version, op, cfg)
-    p = derive_proposal(out.proposal, g, model=r.meta.get("model", reasoner.name))
+
+    # 第 2 步：条件与提案草稿（图已定，不能再改）
+    graph_json = json.dumps({"nodes": [n.dump() for n in graph_out.nodes], "edges": [e.dump() for e in graph_out.edges]},
+                            ensure_ascii=False)
+    plan_user = f"{user}\n\n已通过校验的因果图（不能再改）：\n{graph_json}\n\n{prompts.INSPECT_PLAN_STEP}"
+
+    def check_plan(out: InspectPlanOutput):
+        g = _graph_from(graph_out.nodes, graph_out.edges, out.conditions, version, op, cfg)
+        errs, _ = _issues(validate_graph(g))  # 图本身已通过；这里新出的错误只会来自条件
+        return errs + _draft_issues(out.proposal, g), _anchor_warnings(g)
+
+    rp = run_stage("inspect.plan", system=prompts.INSPECT, user=plan_user, output_model=InspectPlanOutput,
+                   reasoner=reasoner, validate=check_plan, max_retries=cfg.max_retries, store=store)
+    result.update(ok=rp.ok, errors=rp.errors, attempts=rg.attempts + rp.attempts,
+                  warnings=result["warnings"] + rp.warnings)
+    if not rp.ok:
+        return _finish(store, result)
+    g = _graph_from(graph_out.nodes, graph_out.edges, rp.value.conditions, version, op, cfg)
+    model = rp.meta.get("model") or rg.meta.get("model") or reasoner.name
+    p = derive_proposal(rp.value.proposal, g, model=model)
     result.update(graph=g.dump(), proposal=p.dump())
     if store:
         store.put_snapshot(g.dump())
         store.put_observations(g.version, [x.dump() for x in pack.excerpts] if pack else [])
         store.put_proposal(g.version, p.dump())
         store.log_op(op="inspect", actor="model", input_version=None, output_version=g.version,
-                     prompt_version=prompts.PROMPT_VERSION, model=r.meta.get("model"), attempts=r.attempts)
+                     prompt_version=prompts.PROMPT_VERSION, model=model, attempts=result["attempts"])
     return _finish(store, result)
 
 
@@ -293,19 +342,24 @@ def fork(graph, op, *, reasoner, evidence: EvidenceProvider | None, config=None,
         if o.kind == "add_shock" else {}
     user = (f"今天：{cfg.today}\n操作：{json.dumps(o.dump(), ensure_ascii=False)}\n"
             f"写范围（只能改这些）：{json.dumps(scope.to_dict(), ensure_ascii=False)}\n"
+            f"需要给出 assessment 的 claim id（只写这些节点 id，一个不少；边和条件不写 assessment）：{json.dumps(sorted(scope.nodes), ensure_ascii=False)}\n"
             f"{json.dumps(new, ensure_ascii=False) if new else ''}\n"
             f"基线图：\n{json.dumps(base.dump(), ensure_ascii=False)}\n\n资料包：\n{_pack_text(pk)}")
     holder: dict = {}
 
     def check(out: ForkOutput):
+        claimed = [a.claim_id for a in out.assessment]
+        missing = [f"[{m}] 写范围内的 claim 都要给出 assessment" for m in sorted(set(scope.nodes) - set(claimed))]
+        if bad := assessment_issues(base, scope, claimed):
+            return bad + missing, []
         try:
             patch = _to_patch(out, base).model_copy(update={"node_adds": list(o.new_nodes), "edge_adds": list(o.new_edges)})
             holder["graph"] = _reevaluate(apply_patch(base, patch, scope, op=o, new_version=version), cfg)
             holder["patch"] = patch
         except (ScopeViolation, PatchInvalid) as e:
-            return [str(e)], []
-        missing = sorted(set(scope.nodes) - {a.claim_id for a in out.assessment})
-        return [f"[{m}] 写范围内的 claim 都要给出 assessment" for m in missing], []
+            return [str(e)] + missing, []
+        relabeled = [n for n in holder["graph"].nodes if n.id in {u.id for u in out.node_updates if u.label is not None}]
+        return missing, _label_issues(relabeled)[1]
 
     r = run_stage("fork", system=prompts.FORK, user=user, output_model=ForkOutput, reasoner=reasoner,
                   validate=check, max_retries=cfg.max_retries, store=store)

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from catalyst.schema import Graph, Op, Patch, Scenario, parse_graph
 from catalyst.validator import blocking, validate_graph
 
-NODE_FIELDS = {"statement", "time_bucket", "instruments"}  # evidence_status 不由情景推进
+NODE_FIELDS = {"statement", "label", "time_bucket", "instruments"}  # evidence_status 不由情景推进
 EDGE_FIELDS = {"mechanism", "sign", "lag_days", "channel"}
 CONDITION_FIELDS = {"comparator", "threshold", "threshold_note", "anchor", "deadline", "observation_window", "rule"}
 
@@ -91,6 +91,28 @@ def _as_scope(scope) -> Scope:
     return Scope(frozenset(nodes), frozenset(edges), frozenset())
 
 
+def assessment_issues(graph: Graph, scope: Scope, claim_ids) -> list[str]:
+    """assessment 只能写写范围内的 claim（节点）id。一次列出全部错误，并说清楚错在哪、该写哪些，
+    这样重写一次就能改对；非法条目不会被代码静默丢掉。"""
+    allowed = sorted(scope.nodes)
+    edges, conds = {e.id for e in graph.edges} | set(scope.new_edges), {c.id for c in graph.conditions}
+    nodes = {n.id for n in graph.nodes}
+    out = []
+    for cid in dict.fromkeys(claim_ids):  # 去重、保序
+        if cid in scope.nodes:
+            continue
+        if cid in edges:
+            what = f"{cid} 是边，不是 claim"
+        elif cid in conds:
+            what = f"{cid} 是条件，不是 claim"
+        elif cid in nodes:
+            what = f"{cid} 是写范围外的 claim（范围外一律由代码写 unaffected）"
+        else:
+            what = f"{cid} 不是图里的 claim"
+        out.append(f"[{cid}] {what}；assessment 只写这些 claim：{allowed}")
+    return out
+
+
 def next_version(version: str) -> str:
     m = re.fullmatch(r"(.*-v)(\d+)", version)
     return f"{m.group(1)}{int(m.group(2)) + 1}" if m else f"{version}-v2"
@@ -132,9 +154,8 @@ def apply_patch(graph: Graph | dict, patch: Patch | dict, scope, *, op: Op | dic
     update(data["nodes"], p.node_updates, s.nodes, NODE_FIELDS, "节点")
     update(data["edges"], p.edge_updates, s.edges, EDGE_FIELDS, "边")
     update(data["conditions"], p.condition_updates, s.conditions, CONDITION_FIELDS, "条件")
-    for cid in list(p.assessment) + list(p.assessment_reason):
-        if cid not in s.nodes:
-            raise ScopeViolation(f"[{cid}] assessment 只能写范围内的 claim")
+    if errs := assessment_issues(base, s, list(p.assessment) + list(p.assessment_reason)):
+        raise ScopeViolation("; ".join(errs))
 
     data["version"] = new_version or next_version(base.version)
     data["parent_version"] = base.version

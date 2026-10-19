@@ -63,6 +63,19 @@ def strict_schema(schema: dict) -> dict:
     return s
 
 
+SCHEMA_ERROR_MARKERS = ("schema", "grammar", "union")
+
+
+def _error_message(e) -> str:
+    """API 错误里给人看的那句话（body.error.message），拿不到就用异常文本。"""
+    body = getattr(e, "body", None)
+    if isinstance(body, dict):
+        err = body.get("error")
+        if isinstance(err, dict) and err.get("message"):
+            return str(err["message"])
+    return str(e)
+
+
 class AnthropicReasoner:
     def __init__(self, model: str = DEFAULT_MODEL, effort: str = DEFAULT_EFFORT, max_tokens: int = 32000):
         import anthropic  # 只有实时调用才需要 SDK
@@ -90,21 +103,27 @@ class AnthropicReasoner:
         import anthropic
 
         fmt = {"type": "json_schema", "schema": strict_schema(schema)}
+        schema_fallback_reason = None
         try:
             msg = self._stream(system, user, fmt)
             mode = "json_schema"
         except anthropic.BadRequestError as e:
-            # schema 超出结构化输出支持的范围时退回提示词约束，由校验器兜底
-            if "schema" not in str(e).lower():
+            # schema 超出结构化输出支持的范围（语法过大、union 过多等）时退回提示词约束，由校验器兜底；
+            # 原因原样记进 meta，录音和 trace 里都看得到为什么退回
+            reason = _error_message(e)
+            if not any(k in reason.lower() for k in SCHEMA_ERROR_MARKERS):
                 raise
             msg = self._stream(system, user + "\n\n只输出一个 JSON 对象，符合下面的 JSON Schema：\n"
                                + json.dumps(schema, ensure_ascii=False), None)
-            mode = "prompt_json"
+            mode, schema_fallback_reason = "prompt_json", reason
         if msg.stop_reason == "refusal":
             raise ReasonerRefusal(f"{stage}: {getattr(msg, 'stop_details', None)}")
         text = "".join(b.text for b in msg.content if b.type == "text")
-        return Completion(text, {"model": msg.model, "stop_reason": msg.stop_reason, "mode": mode,
-                                 "usage": msg.usage.model_dump() if msg.usage else None})
+        meta = {"model": msg.model, "stop_reason": msg.stop_reason, "mode": mode,
+                "usage": msg.usage.model_dump() if msg.usage else None}
+        if schema_fallback_reason:
+            meta["schema_fallback_reason"] = schema_fallback_reason
+        return Completion(text, meta)
 
     def single_prompt(self, prompt: str) -> str:
         """baseline 组：同一模型、同一资料，单次 prompt，无 schema、无校验。"""
