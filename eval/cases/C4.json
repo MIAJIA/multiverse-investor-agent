@@ -29,5 +29,5 @@
   "human_review": [
     "E4: 弃权理由是否成立（不是一句空话）"
   ],
-  "notes": "设计文档写的是「输入中期选举分裂到一个远距离标的」：给了 Target B 就会跳过 Discover 走 Inspect。本线按「Discover 弃权」写，标的只作为用户追问时的对照；若主 session 决定走 Inspect，期望改为 no_chain + 理由。"
+  "notes": "设计文档写的是「输入中期选举分裂到一个远距离标的」：给了 Target B 就会跳过 Discover 走 Inspect。本线按「Discover 弃权」写，标的只作为用户追问时的对照；若主 session 决定走 Inspect，期望改为 no_chain + 理由。 注意：真实 semiconductor 包现在含 LITE 的片段（sc-039、sc-040），模型更容易被引去硬连，弃权的期望不变，但复核时要看它有没有拿这些片段凑一条选举 → LITE 的链。"
 }

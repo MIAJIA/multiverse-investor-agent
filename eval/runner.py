@@ -114,30 +114,47 @@ def fixture_packs() -> dict[str, dict]:
     return found
 
 
-def prepare_packs(case: dict, evidence: Any) -> tuple[list[str], list[str]]:
+PACK_SOURCES = ("real", "synthetic")
+
+
+def _is_synthetic(evidence: Any, pack_id: str) -> bool:
+    pack = evidence.pack(pack_id) if hasattr(evidence, "pack") else None
+    return bool(get(pack, "synthetic", False))
+
+
+def prepare_packs(case: dict, evidence: Any, source: str = "real") -> tuple[list[str], list[str]]:
     """本案例实际可用的 pack 列表 + 说明。两个组用同一份列表，保证「同一资料」。
 
-    真实 pack 优先；还没交付时，若 evidence 支持 register，就注入同 pack_id 的合成包，并在说明里写明。
+    一次运行只用一种来源（source 由 run_all 统一传入），因为真实包复用了 sc-001…、hz-001… 这些 id，
+    含义和立场都和 eval/fixtures 里的占位片段不同：
+    - real：只用真实 pack；缺了就不带并写明，不拿合成包补；provider 里若已是合成包也不用。
+    - synthetic：一律注入 eval/fixtures 里同 pack_id 的合成包（覆盖真实包），只验证流程；检索命中不判。
     """
+    if source not in PACK_SOURCES:
+        raise ValueError(source)
     packs, notes = [], []
+    wanted = case.get("input", {}).get("evidence_packs", [])
     if evidence is None:
-        wanted = case.get("input", {}).get("evidence_packs", [])
         return [], [f"没有注入 Evidence Provider，资料包 {wanted} 都没带"] if wanted else []
-    synthetic = None
-    for pid in case.get("input", {}).get("evidence_packs", []):
+    synthetic = fixture_packs() if source == "synthetic" else {}
+    for pid in wanted:
+        if source == "synthetic":
+            if pid in synthetic and hasattr(evidence, "register"):
+                evidence.register(synthetic[pid])
+                packs.append(pid)
+                notes.append(f"资料包 {pid} 用 eval/fixtures 里的合成占位片段（只验证流程，不验证推理；检索命中不判）")
+            else:
+                notes.append(f"资料包 {pid} 没有可注入的合成版本，本轮两个组都不带它")
+            continue
         try:
             evidence.load_pack(pid)
-            packs.append(pid)
-            continue
         except (FileNotFoundError, KeyError):
-            pass
-        synthetic = fixture_packs() if synthetic is None else synthetic
-        if pid in synthetic and hasattr(evidence, "register"):
-            evidence.register(synthetic[pid])
-            packs.append(pid)
-            notes.append(f"资料包 {pid} 还没交付，用 eval/fixtures 里的合成占位片段代替（只验证流程，不验证推理）")
-        else:
-            notes.append(f"资料包 {pid} 不存在，本轮两个组都不带它")
+            notes.append(f"资料包 {pid} 不存在，本轮两个组都不带它（real 模式不拿合成包补）")
+            continue
+        if _is_synthetic(evidence, pid):
+            notes.append(f"资料包 {pid} 在 provider 里是合成包，real 模式不用它")
+            continue
+        packs.append(pid)
     return packs, notes
 
 
@@ -153,8 +170,9 @@ def _structured_ok(res: dict, stage: str, out: Any) -> bool:
 
 # ---- pipeline 组 --------------------------------------------------------------
 
-def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidence: Any) -> None:
-    packs, notes = prepare_packs(case, evidence)
+def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidence: Any,
+                  pack_source: str = "real") -> None:
+    packs, notes = prepare_packs(case, evidence, pack_source)
     res["notes"] += notes
     kw = {"reasoner": reasoner, "evidence": evidence, "packs": packs}
     exp = case["expected"]
@@ -238,6 +256,8 @@ def _run_pipeline(case: dict, res: dict, ep: Entrypoints, reasoner: Any, evidenc
             res["checks"].append(check("user_judgment_confirmation", "E2",
                                        bool(get(uj, "requires_user_confirmation")), failure_type="no_user_confirmation"))
 
+    if pack_source == "synthetic":
+        return  # key_excerpts 是真实包的 id，和占位片段撞号，比了也没有意义
     res["retrieval"] = scoring.retrieval_hit(exp.get("key_excerpts", []), observations)
     if res["retrieval"] is not None and not res["retrieval"]["hit"]:
         res["failure_types"].append("retrieval_miss")
@@ -250,7 +270,13 @@ def _run_fork(case: dict, res: dict, ep: Entrypoints, kw: dict) -> None:
     for fx_name in case["input"]["forks"]:
         fx = load_fixture(fx_name)
         tag = fx["op"]["kind"]
-        out = ep.fork(copy.deepcopy(fixture_base), copy.deepcopy(fx["op"]), **kw)
+        fork_kw = dict(kw)
+        if case["input"].get("fork_pack_fixture"):
+            # golden 图引用的是占位片段 id：只配 c1_evidence_pack，不带真实包（同号不同义）
+            fork_kw["packs"] = []
+            fork_kw["pack"] = {k: v for k, v in load_fixture(case["input"]["fork_pack_fixture"]).items()
+                               if not k.startswith("_")}
+        out = ep.fork(copy.deepcopy(fixture_base), copy.deepcopy(fx["op"]), **fork_kw)
         if not _structured_ok(res, tag, out):
             parts.append(f"{tag}: 结构化失败")
             continue
@@ -325,13 +351,14 @@ def _parse_json(text: str) -> dict:
     return json.loads(text[start:end])
 
 
-def _run_baseline(case: dict, res: dict, reasoner: Reasoner, evidence: Evidence | None) -> None:
+def _run_baseline(case: dict, res: dict, reasoner: Reasoner, evidence: Evidence | None,
+                  pack_source: str = "real") -> None:
     if case["entry"] == "fork":
         res["status"] = "N/A"
         res["actual"] = {"summary": "单次 prompt 没有可比的写范围"}
         res["human_review"] = []
         return
-    packs, notes = prepare_packs(case, evidence)
+    packs, notes = prepare_packs(case, evidence, pack_source)
     res["notes"] += notes
     raw = single_prompt(reasoner, build_baseline_prompt(case, evidence, packs))
     try:
@@ -373,17 +400,18 @@ def _run_baseline(case: dict, res: dict, reasoner: Reasoner, evidence: Evidence 
 # ---- 入口 --------------------------------------------------------------------
 
 def run_case(case: dict, group: str, *, reasoner: Any, evidence: Any = None,
-             entrypoints: Entrypoints | None = None) -> dict:
+             entrypoints: Entrypoints | None = None, pack_source: str = "real") -> dict:
     if group not in GROUPS:
         raise ValueError(group)
     res = _result(case, group)
+    res["pack_source"] = pack_source
     try:
         if group == "pipeline":
             if entrypoints is None:
                 raise RuntimeError("pipeline 组需要注入核心入口（或用 CLI 懒加载 catalyst）")
-            _run_pipeline(case, res, entrypoints, reasoner, evidence)
+            _run_pipeline(case, res, entrypoints, reasoner, evidence, pack_source)
         else:
-            _run_baseline(case, res, reasoner, evidence)
+            _run_baseline(case, res, reasoner, evidence, pack_source)
     except Exception as exc:  # noqa: BLE001 —— 单个案例出错不影响其他案例
         res["status"] = "ERROR"
         res["failure_types"].append("error")
@@ -392,8 +420,11 @@ def run_case(case: dict, group: str, *, reasoner: Any, evidence: Any = None,
 
 
 def run_all(cases: list[dict], groups=GROUPS, *, reasoner: Any, evidence: Any = None,
-            entrypoints: Entrypoints | None = None) -> list[dict]:
-    return [run_case(c, g, reasoner=reasoner, evidence=evidence, entrypoints=entrypoints)
+            entrypoints: Entrypoints | None = None, pack_source: str = "real") -> list[dict]:
+    """一次运行统一一种资料来源（pack_source），两个组、所有案例都一样。"""
+    if pack_source not in PACK_SOURCES:
+        raise ValueError(pack_source)
+    return [run_case(c, g, reasoner=reasoner, evidence=evidence, entrypoints=entrypoints, pack_source=pack_source)
             for g in groups for c in cases]
 
 
@@ -411,6 +442,8 @@ def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需�
     ap.add_argument("--out", default=None, help="results.json 路径；默认 <record 目录>/results.json 或 eval/out/results.json")
     ap.add_argument("--record", metavar="DIR", help="录制目录（cassette.jsonl、results.json、report.md）")
     ap.add_argument("--today", help="条件判定用的日期，默认今天")
+    ap.add_argument("--packs", choices=PACK_SOURCES, default="real",
+                    help="资料来源：real 只用 packs/ 下的真实包（默认）；synthetic 一律用 eval/fixtures 的占位片段。一次运行只用一种")
     ap.add_argument("--replay", metavar="DIR", help="按 <DIR>/cassette.jsonl 零成本回放（只重新判分，不调模型）")
     args = ap.parse_args(argv)
 
@@ -443,7 +476,8 @@ def main(argv: list[str] | None = None) -> None:  # pragma: no cover —— 需�
             fork = staticmethod(functools.partial(ep.fork, config=cfg))
         entrypoints = _WithToday
     results = run_all(load_all_cases(args.case), args.group or GROUPS,
-                      reasoner=reasoner, evidence=evidence_mod.default_provider(), entrypoints=entrypoints)
+                      reasoner=reasoner, evidence=evidence_mod.default_provider(), entrypoints=entrypoints,
+                      pack_source=args.packs)
     for r in results:
         r["model"] = model
     out = Path(args.out) if args.out else out_dir / "results.json"

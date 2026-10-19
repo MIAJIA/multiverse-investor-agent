@@ -21,7 +21,7 @@
       "not_recommended"
     ],
     "abstain": false,
-    "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（集成激光替代外置光源）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
+    "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（sc-036 放量时间、sc-025 激光器数量、sc-043 集成激光路线）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
     "gate": "WAIT",
     "proposal_status": "draft",
     "approval_required": true,
@@ -29,11 +29,14 @@
       "numeric"
     ],
     "key_excerpts": [
-      "sc-001",
-      "sc-003",
-      "sc-005"
+      "sc-033",
+      "sc-035",
+      "sc-036",
+      "sc-039",
+      "sc-025",
+      "sc-043"
     ],
-    "key_excerpts_note": "以 fixture 的 excerpt_id 占位；真实 Semiconductor Pack 落地后由证据线替换成真实片段 id（采用提前、光源需求、反方的集成激光）"
+    "key_excerpts_note": "真实 Semiconductor Pack（packs/semiconductor.json）的 id，按证据线对照表核过原文：CPO 导入提前 sc-033、sc-035；时间上的反方 sc-036（放量在 2027–2028）；光源需求 sc-039（Lumentum 首笔 ELS 订单）；反方 sc-025（ELS 让激光器总数降到 1/4）、sc-043（集成激光路线，目前面向可插拔 / LPO，不是 CPO）。真实包里没有「集成激光替代 CPO 外置光源」的直接证据，也没有官方硅光代工利用率；这两处期望模型标 unverified / model_only，不能编。"
   },
   "evals": [
     "Discovery",
@@ -53,5 +56,6 @@
     "E1: 每条边的引用原文是否支持机制",
     "E1: 反方片段是否被回应",
     "E2: 数值条件换掉之后论点还成立吗"
-  ]
+  ],
+  "notes": "跑真实 pack。C1 golden 图（eval/fixtures/c1_graph_v1.json）只配 c1_evidence_pack 给 C3 和单元测试用，C1 本身的期望不依赖 golden 图或占位片段 id。"
 }

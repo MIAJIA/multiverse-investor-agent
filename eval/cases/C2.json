@@ -23,8 +23,15 @@
     "gate": "WAIT",
     "proposal_status": "draft",
     "approval_required": true,
-    "key_excerpts": [],
-    "key_excerpts_note": "出口管制相关片段由证据线在 Semiconductor Pack / 在线搜索 pack 里提供后填入"
+    "key_excerpts": [
+      "sc-044",
+      "sc-045",
+      "sc-046",
+      "sc-047",
+      "sc-050",
+      "sc-051"
+    ],
+    "key_excerpts_note": "模型权重管制：sc-044（AI Diffusion，ECCN 4E091）、sc-045（不执行）、sc-046（GAO：未正式撤销）、sc-047（撤回全球许可草案）；NVDA 一端：sc-050（H20 许可与 $5.5B 费用）、sc-051（H200 尚无收入）。缺口：真实包里没有「模型权重管制 → NVDA 收入」的直接片段，也没有替代规则；芯片管制片段 sc-029–032、sc-048、sc-049 管的是芯片不是模型权重，不算关键片段。合理输出可以是 no_chain 或把这一跳标 model_only。"
   },
   "evals": [
     "Inspect",

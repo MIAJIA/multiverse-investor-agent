@@ -55,3 +55,12 @@
 - [x] `tests/test_runner_core.py`：runner 对真实核心入口的契约测试
 - [x] 测试：有核心 84 passed；无核心 35 passed、5 skipped（Python 3.9 / 3.14）
 - [x] commit（不 push）
+
+## 9. 与真实资料包对齐（core-schema@673f2ed）
+- [x] 合并 core-schema（fast-forward，含 evidence@87feb6c、frontend@24175f8）
+- [x] C1、C2、D1 的 `key_excerpts` 换成真实 id（逐条回 packs/*.json 核过原文和立场）；缺口写进 `key_excerpts_note`
+- [x] D1 期望：threshold_note 要引用 hz-009 的关闭前基线；情景与真实时间线不一致写进 notes，待 Mia 定
+- [x] runner 一次运行只用一种来源（`--packs real|synthetic`），real 模式不拿占位包补、也不用 provider 里已注册的占位包；synthetic 模式不判检索命中
+- [x] C3 固定用 golden 图 + `c1_evidence_pack`（`pack=`，`packs=[]`）
+- [x] 测试：148 passed
+- [x] commit（不 push）

@@ -43,6 +43,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -92,6 +93,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -138,6 +140,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -184,6 +187,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -230,6 +234,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -276,6 +281,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -290,7 +296,7 @@
       "E2"
     ],
     "expected": {
-      "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（集成激光替代外置光源）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
+      "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（sc-036 放量时间、sc-025 激光器数量、sc-043 集成激光路线）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
       "gate": "WAIT",
       "abstain": false
     },
@@ -312,16 +318,22 @@
     ],
     "retrieval": {
       "expected": [
-        "sc-001",
-        "sc-003",
-        "sc-005"
+        "sc-033",
+        "sc-035",
+        "sc-036",
+        "sc-039",
+        "sc-025",
+        "sc-043"
       ],
       "hits": [
-        "sc-001",
-        "sc-003"
+        "sc-033",
+        "sc-039"
       ],
       "missing": [
-        "sc-005"
+        "sc-035",
+        "sc-036",
+        "sc-025",
+        "sc-043"
       ],
       "hit": false
     },
@@ -372,7 +384,7 @@
         "name": "retrieval_hit",
         "eval": "E1",
         "passed": false,
-        "detail": "缺：['sc-005']",
+        "detail": "缺：['sc-035', 'sc-036', 'sc-025', 'sc-043']",
         "failure_type": "retrieval_miss"
       }
     ],
@@ -382,6 +394,7 @@
       "E1: 反方片段是否被回应",
       "E2: 数值条件换掉之后论点还成立吗"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -405,9 +418,30 @@
       "conditions": 1,
       "proposal_status": "draft"
     },
-    "status": "PENDING_REVIEW",
-    "failure_types": [],
-    "retrieval": null,
+    "status": "FAIL",
+    "failure_types": [
+      "retrieval_miss"
+    ],
+    "retrieval": {
+      "expected": [
+        "sc-044",
+        "sc-045",
+        "sc-046",
+        "sc-047",
+        "sc-050",
+        "sc-051"
+      ],
+      "hits": [],
+      "missing": [
+        "sc-044",
+        "sc-045",
+        "sc-046",
+        "sc-047",
+        "sc-050",
+        "sc-051"
+      ],
+      "hit": false
+    },
     "checks": [
       {
         "name": "chain_or_no_chain",
@@ -443,15 +477,23 @@
         "passed": true,
         "detail": "",
         "failure_type": null
+      },
+      {
+        "name": "retrieval_hit",
+        "eval": "E1",
+        "passed": false,
+        "detail": "缺：['sc-044', 'sc-045', 'sc-046', 'sc-047', 'sc-050', 'sc-051']",
+        "failure_type": "retrieval_miss"
       }
     ],
     "notes": [
-      "资料包 web 不存在，本轮两个组都不带它"
+      "资料包 web 不存在，本轮两个组都不带它（real 模式不拿合成包补）"
     ],
     "human_review": [
       "E1: 路径每一跳是否有资料依据",
       "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -536,6 +578,7 @@
     "human_review": [
       "E3: diff 文案是否把情景说成了观测（只能写「受挑战」，不能写「已失效」）"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -580,6 +623,7 @@
     "human_review": [
       "E4: 弃权理由是否成立（不是一句空话）"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -593,7 +637,7 @@
       "E2"
     ],
     "expected": {
-      "behavior": "跑通全流程；过境量条件的阈值为 null + threshold_note，不编数字；「下周开放」被澄清成带绝对日期的判断并要求用户确认签的是哪一个；资料包反方片段（上次宣布开放后过境未恢复）被回应；进场 WAIT",
+      "behavior": "跑通全流程；过境量条件的阈值仍为 null + threshold_note，但真实包已有关闭前基线（hz-009），threshold_note 应引用它并说明「恢复到多少算恢复」要用户确认，不能再写「资料包没有基准」；「下周开放」被澄清成带绝对日期的判断并要求用户确认；反方片段（开放后过境只有一半、再次关闭）被回应；进场 WAIT",
       "gate": "WAIT"
     },
     "actual": {
@@ -612,12 +656,16 @@
     "failure_types": [],
     "retrieval": {
       "expected": [
-        "hz-001",
-        "hz-003"
+        "hz-008",
+        "hz-009",
+        "hz-011",
+        "hz-012"
       ],
       "hits": [
-        "hz-001",
-        "hz-003"
+        "hz-008",
+        "hz-009",
+        "hz-011",
+        "hz-012"
       ],
       "missing": [],
       "hit": true
@@ -669,8 +717,10 @@
     "notes": [],
     "human_review": [
       "E1: 反方片段是否被回应",
-      "E2: 进出场条件是否具体可判断"
+      "E2: 进出场条件是否具体可判断",
+      "E2: threshold_note 是否引用了关闭前基线 hz-009，而不是编一个数字或说「没有基准」"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -709,6 +759,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -747,6 +798,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -787,6 +839,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -828,6 +881,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -869,6 +923,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -910,6 +965,7 @@
       "E1: 理由是否点中 gold_rationale 的要点（陷阱或成立理由）",
       "E4: 弃权 / 判断理由是否成立"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -924,7 +980,7 @@
       "E2"
     ],
     "expected": {
-      "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（集成激光替代外置光源）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
+      "behavior": "给出 1–3 个候选，每个带三类证据标签之一；选第一个 grounded 候选进入 Inspect，产出 draft 提案；至少一条 numeric Condition，阈值有资料依据或为 null + threshold_note；资料包里的反方片段（sc-036 放量时间、sc-025 激光器数量、sc-043 集成激光路线）被回应：要么把相关 Claim 标 contradicted，要么写明为什么不构成反驳",
       "gate": "WAIT",
       "abstain": false
     },
@@ -966,6 +1022,7 @@
       "E1: 反方片段是否被回应",
       "E2: 数值条件换掉之后论点还成立吗"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -1001,12 +1058,13 @@
       }
     ],
     "notes": [
-      "资料包 web 不存在，本轮两个组都不带它"
+      "资料包 web 不存在，本轮两个组都不带它（real 模式不拿合成包补）"
     ],
     "human_review": [
       "E1: 路径每一跳是否有资料依据",
       "E2: 文件 / 事件型条件是否具体、可判断、与论点有逻辑联系"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -1030,6 +1088,7 @@
     "checks": [],
     "notes": [],
     "human_review": [],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -1070,6 +1129,7 @@
     "human_review": [
       "E4: 弃权理由是否成立（不是一句空话）"
     ],
+    "pack_source": "real",
     "fake": true
   },
   {
@@ -1083,7 +1143,7 @@
       "E2"
     ],
     "expected": {
-      "behavior": "跑通全流程；过境量条件的阈值为 null + threshold_note，不编数字；「下周开放」被澄清成带绝对日期的判断并要求用户确认签的是哪一个；资料包反方片段（上次宣布开放后过境未恢复）被回应；进场 WAIT",
+      "behavior": "跑通全流程；过境量条件的阈值仍为 null + threshold_note，但真实包已有关闭前基线（hz-009），threshold_note 应引用它并说明「恢复到多少算恢复」要用户确认，不能再写「资料包没有基准」；「下周开放」被澄清成带绝对日期的判断并要求用户确认；反方片段（开放后过境只有一半、再次关闭）被回应；进场 WAIT",
       "gate": "WAIT"
     },
     "actual": {
@@ -1116,8 +1176,10 @@
     "notes": [],
     "human_review": [
       "E1: 反方片段是否被回应",
-      "E2: 进出场条件是否具体可判断"
+      "E2: 进出场条件是否具体可判断",
+      "E2: threshold_note 是否引用了关闭前基线 hz-009，而不是编一个数字或说「没有基准」"
     ],
+    "pack_source": "real",
     "fake": true
   }
 ]

@@ -57,6 +57,8 @@ def _actual(r: dict) -> str:
 def _retrieval(r: dict) -> str:
     if r.get("case_type") == "causalt5k":
         return "n/a（scenario 全文给定）"
+    if r.get("pack_source") == "synthetic":
+        return "n/a（合成包，id 与真实包撞号）"
     if r.get("group") == "baseline":
         return "n/a（资料全文进 prompt）"
     ret = r.get("retrieval")

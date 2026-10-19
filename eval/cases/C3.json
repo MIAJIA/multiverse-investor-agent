@@ -9,10 +9,8 @@
       "c3_change_assumption.json",
       "c3_add_shock.json"
     ],
-    "evidence_packs": [
-      "semiconductor"
-    ],
-    "evidence_packs_note": "fork 的上下文带同一份资料包；核心只校验 Stage 1 新增边的引用"
+    "fork_pack_fixture": "c1_evidence_pack.json",
+    "fork_pack_note": "golden 图引用的是占位片段（sc-001…008 的占位含义），fork 的上下文只配 c1_evidence_pack，不带真实 semiconductor 包：真实包复用了同样的 id 但含义和立场不同，混用会让模型看到对不上的引用。"
   },
   "expected": {
     "behavior": "写范围由代码先定；范围外节点、边、Condition 哈希不变；AddShock 只新增 Stage 1 识别的边；challenged 集合 = golden；基线版本仍在；提案 v2 的变化能追溯到被改的假设",
