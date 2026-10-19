@@ -180,15 +180,20 @@ def _root_issues(g: Graph) -> list[str]:
 LABEL_MAX_CJK, LABEL_MAX_WORDS = 10, 4
 
 
-def _label_issues(nodes: list[Claim]) -> tuple[list[str], list[str]]:
+def _label_issues(nodes: list[Claim], event: str | None = None) -> tuple[list[str], list[str]]:
     """label 是前端用的短标题：Inspect 必须写（阻断）；超长只提示，不由代码截断。
-    含汉字时按「汉字数 + 其余英文词数」计，最多 10；纯英文最多 4 个词。"""
+    含汉字时按「汉字数 + 其余英文词数」计，最多 10；纯英文最多 4 个词。
+    When the user's event has no Chinese characters, a Chinese label is blocking: the UI shows labels on the graph and
+    the approve button, so they must be in the user's language (a live Opus run once wrote Chinese labels)."""
     errs, warns = [], []
+    english_event = event is not None and not re.search(r"[一-鿿]", event)
     for n in nodes:
         label = (n.label or "").strip()
         if not label:
             errs.append(f"[{n.id}] every node needs a label: a summary of the statement in at most 10 Chinese characters or 4 English words")
             continue
+        if english_event and re.search(r"[一-鿿]", label):
+            errs.append(f"[{n.id}] label \"{label}\" must be in English, the language of the user's event")
         cjk = len(re.findall(r"[一-鿿]", label))
         words = len(re.findall(r"[A-Za-z0-9][\w.+/-]*", re.sub(r"[一-鿿]", " ", label)))
         if (cjk + words > LABEL_MAX_CJK) if cjk else (words > LABEL_MAX_WORDS):
@@ -264,7 +269,7 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
             return ([] if ok else ["[no_chain] when no_chain=true, leave nodes/edges empty and write no_chain_reason"]), []
         g = _graph_from(out.nodes, out.edges, [], version, op, cfg)
         errs, warns = _issues(validate_graph(g) + validate_references(g, pack) + unanswered_contradictions(g, pack))
-        label_errs, label_warns = _label_issues(out.nodes)
+        label_errs, label_warns = _label_issues(out.nodes, event)
         return errs + _root_issues(g) + label_errs, warns + label_warns
 
     rg = run_stage("inspect", system=prompts.INSPECT, user=user + "\n\n" + prompts.INSPECT_GRAPH_STEP,
