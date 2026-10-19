@@ -31,7 +31,7 @@ class EvidenceProvider:
             return self._registered[pack_id]
         path = self.packs_dir / f"{pack_id}.json"
         if not path.exists():
-            raise FileNotFoundError(f"资料包 {pack_id} 不存在：{path}")
+            raise FileNotFoundError(f"evidence pack {pack_id} does not exist: {path}")
         return self.register(json.loads(path.read_text()))
 
     def load_pack(self, pack_id: str) -> list[dict]:
@@ -46,7 +46,7 @@ class EvidenceProvider:
         for p in packs:
             for x in p.excerpts:
                 if x.excerpt_id in seen:
-                    raise ValueError(f"[{x.excerpt_id}] 在 {seen[x.excerpt_id]} 和 {p.pack_id} 里重复")
+                    raise ValueError(f"[{x.excerpt_id}] appears in both {seen[x.excerpt_id]} and {p.pack_id}")
                 seen[x.excerpt_id] = p.pack_id
         return EvidencePack(pack_id="+".join(pack_ids), synthetic=any(p.synthetic for p in packs),
                             excerpts=[x for p in packs for x in p.excerpts])

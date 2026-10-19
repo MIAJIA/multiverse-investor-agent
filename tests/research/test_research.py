@@ -89,7 +89,7 @@ def test_no_gaps_means_no_followup_and_no_extra_model_calls(ev, tmp_path):
     loop = rs.ResearchLoop(EVENT, TARGET, evidence=ev, round1=web, searcher=NoNetwork)
     res = ep.inspect(EVENT, TARGET, reasoner=r, evidence=ev, config=cfg, store=RunStore(tmp_path), research=loop)
     assert res["ok"] and r.stages == ["inspect", "inspect.plan"]  # the final rerun is served entirely by Memo
-    assert loop.followup["triggered"] is False and "没有缺口" in loop.message()
+    assert loop.followup["triggered"] is False and "no gaps" in loop.message()
     assert (tmp_path / "research" / "r1" / "snapshots").exists() and (tmp_path / "snapshots").exists()
     assert [x["round"] for x in loop.dump()["rounds"]] == [1]
 
@@ -118,7 +118,7 @@ def test_gaps_trigger_one_followup_round_then_rerun(ev, tmp_path):
     assert [f["_provenance"]["round"] for f in frozen] == [2]  # round 1 had no store here, so only round 2 is frozen
     d = loop.dump()
     assert d["followup"]["triggered"] and d["excerpts"] == 3 and [x["round"] for x in d["rounds"]] == [1, 2]
-    assert "第 2 轮拿到 1 段" in d["message"]
+    assert "round 2 added 1 excerpts" in d["message"]
 
 
 def test_followup_failure_still_finishes_with_round1(ev, tmp_path):
@@ -129,7 +129,7 @@ def test_followup_failure_still_finishes_with_round1(ev, tmp_path):
     loop = rs.ResearchLoop(EVENT, TARGET, evidence=ev, round1=web, searcher=s)
     res = ep.inspect(EVENT, TARGET, reasoner=r, evidence=ev, config=cfg, store=RunStore(tmp_path), research=loop)
     assert res["ok"] and r.stages == ["inspect", "inspect.plan"]
-    assert loop.rounds[1].status == "failed" and "没有拿到新片段" in loop.message()
+    assert loop.rounds[1].status == "failed" and "found no new excerpts" in loop.message()
 
 
 def test_followup_dedupes_round1_excerpts(ev):
@@ -176,7 +176,7 @@ def test_cli_two_rounds_record_then_replay_offline(tmp_path, monkeypatch, capsys
     runs = tmp_path / "runs"
     cli(["run", str(case), "--live", "--online", "--runs-dir", str(runs), "--packs-dir", str(packs)])
     out = capsys.readouterr().out
-    assert "补查：第 2 轮拿到 1 段" in out
+    assert "follow-up: round 2 added 1 excerpts" in out
     rec = next((runs / "W1").iterdir())
     meta = json.loads((rec / "case.json").read_text())
     assert meta["web"]["followup"]["triggered"] and [r["round"] for r in meta["web"]["rounds"]] == [1, 2]
@@ -186,7 +186,7 @@ def test_cli_two_rounds_record_then_replay_offline(tmp_path, monkeypatch, capsys
     monkeypatch.setattr(ws, "AnthropicSearcher", NoNetwork)
     monkeypatch.setattr("catalyst.__main__.default_reasoner", NoNetwork)
     cli(["run", str(case), "--replay", str(rec), "--packs-dir", str(packs)])
-    assert "补查：第 2 轮拿到 1 段" in capsys.readouterr().out
+    assert "follow-up: round 2 added 1 excerpts" in capsys.readouterr().out
     rep = next(p for p in (runs / "W1").iterdir() if ".replay-" in p.name)
     for kind in ("snapshots", "proposals", "observations", "packs"):
         for f in (rec / kind).glob("*.json"):
@@ -225,6 +225,6 @@ def test_api_web_field_reports_rounds_and_followup(tmp_path, monkeypatch):
     assert res["ok"] and res["version"] == "r-v1"
     w = res["web"]
     assert w["followup"]["triggered"] and w["excerpts"] == 3 and [r["excerpts"] for r in w["rounds"]] == [2, 1]
-    assert res["notes"][0].startswith("联网：开，拿到 2 段") and "补查：第 2 轮拿到 1 段" in res["notes"][0]
+    assert res["notes"][0].startswith("Web search: on, 2 excerpts") and "follow-up: round 2 added 1 excerpts" in res["notes"][0]
     b = api._store(res["run_id"]).bundle("r-v1")
     assert "web-r2-001" in [x["excerpt_id"] for x in b["excerpts"]]

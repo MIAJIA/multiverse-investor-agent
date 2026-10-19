@@ -46,7 +46,7 @@ class RunStore:
         if path.exists():
             if content_hash(json.loads(path.read_text())) == content_hash(obj):
                 return path
-            raise SnapshotExists(f"{kind}/{version} 已存在且内容不同：快照不可覆盖")
+            raise SnapshotExists(f"{kind}/{version} already exists with different content: snapshots cannot be overwritten")
         path.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
         return path
 

@@ -63,7 +63,7 @@ def _research(event, target, *, cfg, ev, web):
 
 def _store(run_id: str) -> RunStore:
     if not re.fullmatch(r"[\w.-]+", run_id) or not (RUNS / run_id).is_dir():
-        raise KeyError(f"run {run_id} 不存在")
+        raise KeyError(f"run {run_id} does not exist")
     return RunStore(RUNS / run_id)
 
 
@@ -127,7 +127,7 @@ def sign_run(run_id: str, body: dict) -> dict:
                                         for k in missing], "version": None}
     bundle = store.bundle(body["version"])
     if not bundle["proposals"]:
-        return {"ok": False, "errors": [f"[{body['version']}] 这个版本没有计划，不能批准"], "version": None}
+        return {"ok": False, "errors": [f"[{body['version']}] this version has no plans to approve"], "version": None}
     meta = json.loads((store.root / "case.json").read_text())
     return ep.sign(bundle["graph"], bundle["proposals"], terminal_id=body["terminal_id"],
                    clarified_statement=body.get("clarified_statement"),
@@ -164,7 +164,7 @@ class Handler(BaseHTTPRequestHandler):
                 if method == "POST":
                     fn = fork_run if m.group(2) == "fork" else sign_run
                     return self._send(200, fn(m.group(1), self._body()))
-            return self._send(404, {"ok": False, "errors": [f"没有这个接口：{method} {path}"], "version": None})
+            return self._send(404, {"ok": False, "errors": [f"no such endpoint: {method} {path}"], "version": None})
         except (KeyError, FileNotFoundError) as e:
             return self._send(404, {"ok": False, "errors": [str(e)], "version": None})
         except Exception as e:  # noqa: BLE001 —— 原样回给前端显示，同时打到服务端日志

@@ -66,7 +66,7 @@ def _load_case(ref: str, cases_dir: Path) -> dict:
     path = Path(ref) if ref.endswith(".json") else next(
         (p for p in [cases_dir / f"{ref}.json", cases_dir / "causalt5k" / f"{ref}.json"] if p.exists()), None)
     if path is None or not path.exists():
-        sys.exit(f"找不到案例 {ref}（在 {cases_dir} 下）")
+        sys.exit(f"case {ref} not found (under {cases_dir})")
     return json.loads(path.read_text())
 
 
@@ -92,9 +92,9 @@ def _provider(case: dict, cases_dir: Path, packs_dir: Path) -> tuple[EvidencePro
             name, pack = synthetic[pid]
             ev.register(pack)
             packs.append(pid)
-            notes.append(f"资料包 {pid} 还没交付，用 {name} 里的合成占位片段代替（只验证流程，不验证推理）")
+            notes.append(f"evidence pack {pid} is not available yet; using synthetic placeholder excerpts from {name} (tests the flow, not the reasoning)")
         else:
-            notes.append(f"资料包 {pid} 不存在，本轮不带它运行")
+            notes.append(f"evidence pack {pid} does not exist; running without it")
     return ev, packs, notes
 
 
@@ -220,7 +220,7 @@ def _run_forks(case, cases_dir, a, reasoner, ev, cfg, store):
             got = {k for k, v in res["scenario"]["assessment"].items() if v == "challenged"}
             want = set(fx["expected_challenged"])
             print(f"  challenged_matches_golden: {'PASS' if got == want else 'FAIL'}"
-                  + ("" if got == want else f"（多 {sorted(got - want)}，少 {sorted(want - got)}）"))
+                  + ("" if got == want else f" (extra {sorted(got - want)}, missing {sorted(want - got)})"))
     return None
 
 
@@ -228,7 +228,7 @@ def cmd_promote(a) -> None:
     store = RunStore(a.run)
     version = store.latest_version()
     if not version:
-        sys.exit("这次运行没有产出图快照，不能提升成 fixture")
+        sys.exit("this run produced no graph snapshot, so it cannot become a fixture")
     case = json.loads((store.root / "case.json").read_text())
     fixture = {"_source": {"run": str(store.root), "case": case["case"]["id"], "packs": case["packs"],
                            "notes": case["notes"], "cassette": "cassette.jsonl"},
@@ -240,7 +240,7 @@ def cmd_promote(a) -> None:
     out = Path(a.fixtures_dir) / f"{a.name}.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps(fixture, ensure_ascii=False, indent=2))
-    print(f"fixture: {out}（版本 {list(fixture['versions'])}）")
+    print(f"fixture: {out} (versions {list(fixture['versions'])})")
 
 
 def cmd_show(a) -> None:

@@ -13,7 +13,7 @@
 
 At most two rounds (MAX_ROUNDS); code, not the model, decides whether to follow up. The external contract does not
 change: graph, plan and version bundle keep their shape, and new information appears only in dump() (the web field of
-case.json and the API response). Status lines (message / gap reason) stay in Chinese because the CLI and UI show them.
+case.json and the API response). Status lines (message / gap reason) are shown in the CLI and the UI.
 """
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def find_gaps_by_branch(result: dict) -> list[dict]:
 def _gap_reason(gaps: list[dict]) -> str:
     edges = sum(g["kind"] == "edge" for g in gaps)
     conds = len(gaps) - edges
-    return f"{edges} 条没有证据的边（model_only）、{conds} 个缺数据的阈值"
+    return f"{edges} edges without evidence (model_only), {conds} thresholds missing data"
 
 
 class Memo:
@@ -101,7 +101,7 @@ class ResearchLoop:
     searcher: Searcher | None = None
     detect: GapDetector = find_gaps_by_branch
     rounds: list[WebResult] = field(default_factory=list)
-    followup: dict = field(default_factory=lambda: {"triggered": False, "reason": "研究 loop 没有运行", "gaps": []})
+    followup: dict = field(default_factory=lambda: {"triggered": False, "reason": "the research loop did not run", "gaps": []})
 
     def __call__(self, run: Callable[..., dict], cfg, store: RunStore | None, reasoner: Reasoner) -> dict:
         """run(config=, store=, reasoner=) runs Inspect once (passed in by the hook in entrypoints.inspect)."""
@@ -112,10 +112,10 @@ class ResearchLoop:
         gaps = self.detect(first)
         final_cfg = cfg
         if not gaps:
-            why = "第 1 轮建图后没有缺口" if first.get("graph") else "第 1 轮没有产出图（no_chain 或校验失败）"
+            why = "no gaps after the round-1 graph" if first.get("graph") else "round 1 produced no graph (no_chain or validation failure)"
             self.followup = {"triggered": False, "reason": why, "gaps": []}
         elif len(self.rounds) >= MAX_ROUNDS:
-            self.followup = {"triggered": False, "reason": f"已到研究轮数上限 {MAX_ROUNDS}", "gaps": gaps}
+            self.followup = {"triggered": False, "reason": f"reached the research round limit of {MAX_ROUNDS}", "gaps": gaps}
         else:
             self.followup = {"triggered": True, "reason": _gap_reason(gaps), "gaps": gaps}
             prior = [r.pack for r in self.rounds if r.pack is not None]
@@ -135,11 +135,11 @@ class ResearchLoop:
         msg = self.round1.message()
         f = self.followup
         if not f["triggered"]:
-            return f"{msg}；补查：未触发（{f['reason']}）"
+            return f"{msg}; follow-up: not triggered ({f['reason']})"
         r2 = self.rounds[1] if len(self.rounds) > 1 else None
         if r2 is not None and r2.pack is not None:
-            return f"{msg}；补查：第 2 轮拿到 {r2.n} 段（触发原因：{f['reason']}），图和计划已带上全部片段重跑"
-        return f"{msg}；补查：触发（{f['reason']}）但没有拿到新片段：{r2.reason if r2 else '未运行'}"
+            return f"{msg}; follow-up: round 2 added {r2.n} excerpts (trigger: {f['reason']}), and the graph and plans were rebuilt with all excerpts"
+        return f"{msg}; follow-up: triggered ({f['reason']}) but found no new excerpts: {r2.reason if r2 else 'did not run'}"
 
     def dump(self) -> dict:
         """The web field: round 1's fields (backward compatible) plus per-round details and follow-up info."""

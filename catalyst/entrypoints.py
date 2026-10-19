@@ -249,7 +249,7 @@ def inspect(event: str, target: str | None = None, *, candidate_id: str | None =
     elif candidate:
         focus = f"\nDirection chosen by the user (from Discover, id={candidate_id or candidate.get('id')}): {json.dumps(candidate, ensure_ascii=False)}"
     elif candidate_id:
-        warnings.append(f"只收到 candidate_id={candidate_id}，没有候选内容：请传 candidate=<Discover 返回的候选>")
+        warnings.append(f"got candidate_id={candidate_id} without the candidate itself: pass candidate=<the Discover candidate>")
         focus = f"\nId of the direction chosen by the user: {candidate_id} (content not provided)"
     user = (f"Today: {cfg.today}\nEvent (the user's words): {event}\nTarget instrument: {target or '(not given; decide from the chosen direction or the material)'}{focus}\n\n"
             f"Evidence pack:\n{_pack_text(pack)}")

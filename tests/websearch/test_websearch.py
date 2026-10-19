@@ -206,19 +206,19 @@ def test_excerpt_cap(wl):
 def test_empty_and_failure_fall_back(wl, tmp_path):
     empty = ws.run_web_stage("e", None, cfg=CFG, store=None, reasoner=Scripted([]),
                              searcher=FakeSearcher([{"content": [], "usage": {}}]))
-    assert empty.status == "empty" and empty.pack is None and "没有拿到片段" in empty.message()
+    assert empty.status == "empty" and empty.pack is None and "no excerpts were kept" in empty.message()
 
     class Boom(FakeSearcher):
         def search(self, **k):
             raise RuntimeError("rate limited")
     failed = ws.run_web_stage("e", None, cfg=CFG, store=None, reasoner=Scripted([]), searcher=Boom())
-    assert failed.status == "failed" and "rate limited" in failed.message() and "本地资料包" in failed.message()
+    assert failed.status == "failed" and "rate limited" in failed.message() and "local packs only" in failed.message()
 
 
 def test_default_off_never_searches():
     assert ep.Config().online is False
     res = ws.run_web_stage("e", None, cfg=ep.Config(), store=None, reasoner=None, searcher=NoNetwork)
-    assert res.status == "off" and res.message().startswith("联网：关")
+    assert res.status == "off" and res.message().startswith("Web search: off")
 
 
 # ---- replay -----------------------------------------------------------------
@@ -253,7 +253,7 @@ def test_cli_record_then_replay_offline(tmp_path, monkeypatch, capsys):
     runs = tmp_path / "runs"
     cli(["run", str(case), "--live", "--online", "--runs-dir", str(runs), "--packs-dir", str(packs)])
     out = capsys.readouterr().out
-    assert "联网：开，拿到 2 段" in out
+    assert "Web search: on, 2 excerpts" in out
     rec = next((runs / "W1").iterdir())
     meta = json.loads((rec / "case.json").read_text())
     assert meta["online"] is True and meta["web"]["excerpts"] == 2 and meta["packs"][0] == "hz"
@@ -264,7 +264,7 @@ def test_cli_record_then_replay_offline(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(ws, "AnthropicSearcher", NoNetwork)
     monkeypatch.setattr("catalyst.__main__.default_reasoner", NoNetwork)
     cli(["run", str(case), "--replay", str(rec), "--packs-dir", str(packs)])
-    assert "回放冻结的联网资料包" in capsys.readouterr().out
+    assert "replayed the frozen web pack" in capsys.readouterr().out
     rep = next(p for p in (runs / "W1").iterdir() if ".replay-" in p.name)
     for kind in ("snapshots", "proposals", "observations"):
         for f in (rec / kind).glob("*.json"):
@@ -303,7 +303,7 @@ def test_api_online_shows_status_and_keeps_web_excerpts(api_env):
     api_env.setattr(ws, "AnthropicSearcher", FakeSearcher)
     res = api.create_run({"event": "霍尔木兹海峡下周重开", "target": "BZ", "today": "2026-10-18", "online": True})
     assert res["ok"] and res["web"]["status"] == "ok" and res["web"]["excerpts"] == 2
-    assert res["notes"][0].startswith("联网：开，拿到 2 段")
+    assert res["notes"][0].startswith("Web search: on, 2 excerpts")
     b = api._store(res["run_id"]).bundle(res["version"])
     assert [x["excerpt_id"] for x in b["excerpts"]][-2:] == ["web-001", "web-002"]
 
@@ -311,7 +311,7 @@ def test_api_online_shows_status_and_keeps_web_excerpts(api_env):
 def test_api_offline_and_failure_are_labelled(api_env):
     api_env.setattr(api, "_reasoner", lambda store: Scripted([_good()]))
     off = api.create_run({"event": "霍尔木兹海峡下周重开", "target": "BZ", "today": "2026-10-18"})
-    assert off["ok"] and off["web"]["online"] is False and off["web"]["message"].startswith("联网：关")
+    assert off["ok"] and off["web"]["online"] is False and off["web"]["message"].startswith("Web search: off")
 
     class Boom(FakeSearcher):
         def search(self, **k):
@@ -320,7 +320,7 @@ def test_api_offline_and_failure_are_labelled(api_env):
     api_env.setattr(ws, "AnthropicSearcher", Boom)
     failed = api.create_run({"event": "霍尔木兹海峡下周重开", "target": "BZ", "today": "2026-10-18", "online": True})
     assert failed["ok"] and failed["web"]["status"] == "failed" and "no key" in failed["web"]["message"]
-    assert failed["notes"][0].startswith("联网：开，但没有拿到片段")
+    assert failed["notes"][0].startswith("Web search: on, but no excerpts were kept")
 
 
 def test_web_model_defaults_to_haiku_independent_of_reasoning_model(monkeypatch):

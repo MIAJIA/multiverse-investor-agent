@@ -126,11 +126,11 @@ class WebResult:
 
     def message(self) -> str:
         if self.status == "off":
-            return "联网：关（只用本地资料包）"
+            return "Web search: off (local evidence packs only)"
         if self.status == "ok":
-            src = "回放冻结的联网资料包" if self.replayed else f"搜索 {self.searches} 次、抓取 {self.fetches} 次"
-            return f"联网：开，拿到 {self.n} 段（{src}，资料包 {self.pack.pack_id}）"
-        return f"联网：开，但没有拿到片段：{self.reason}。本轮只用本地资料包推理"
+            src = "replayed the frozen web pack" if self.replayed else f"{self.searches} searches, {self.fetches} fetches"
+            return f"Web search: on, {self.n} excerpts ({src}; pack {self.pack.pack_id})"
+        return f"Web search: on, but no excerpts were kept: {self.reason}. This round used the local packs only"
 
     def dump(self) -> dict:
         return {"online": self.status != "off", "status": self.status, "excerpts": self.n,
@@ -450,9 +450,9 @@ def retrieve_live(event: str, target: str | None, *, cfg, searcher: Searcher, re
     dropped += [{"reason": "over_limit", "url": c["url"], "text": c["text"][:200]} for c in over]
     base = dict(searches=searches, fetches=fetches, dropped=dropped, round=round, queries=record["queries"])
     if not cands:
-        why = "检索没有返回白名单内带引用的新片段"
+        why = "the search returned no new cited excerpts from allow-listed sites"
         if record["errors"]:
-            why += "（工具错误：" + ", ".join(sorted({str(e["error_code"]) for e in record["errors"]})) + "）"
+            why += " (tool errors: " + ", ".join(sorted({str(e["error_code"]) for e in record["errors"]})) + ")"
         return WebResult("empty", reason=why, **base)
     for i, c in enumerate(cands, 1):
         c["candidate_id"] = f"c{i}"
@@ -461,11 +461,11 @@ def retrieve_live(event: str, target: str | None, *, cfg, searcher: Searcher, re
                   output_model=WebLabelOutput, reasoner=reasoner, validate=_label_check(ids),
                   max_retries=cfg.max_retries, store=store)
     if not r.ok:
-        return WebResult("failed", reason="立场标注没有通过校验：" + "; ".join(r.errors[:3]), **base)
+        return WebResult("failed", reason="stance labelling failed validation: " + "; ".join(r.errors[:3]), **base)
     pack, prov, label_dropped = build_pack(event, target, cfg, wl, cands, r.value, round=round)
     base["dropped"] = dropped + label_dropped
     if not pack.excerpts:
-        return WebResult("empty", reason="候选片段都被标注为无关", **base)
+        return WebResult("empty", reason="every candidate excerpt was labelled irrelevant", **base)
     if store:
         freeze(store, pack, {"retrieval_key": retrieval_key(event, target, cfg, wl, round, gaps), "round": round,
                              "gaps": gaps or [], "whitelist": wl.version, "whitelist_digest": wl.digest,
